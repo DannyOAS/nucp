@@ -1,0 +1,51 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>{% block title %}Django Tailwind{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    {% tailwind_css %}
+</head>
+
+<body class="bg-gray-50 font-sans leading-normal tracking-normal">
+    
+    <!-- Header Section -->
+    <header class="py-6 text-center shadow-md w-full bg-[#004d40] text-white">
+        <h1 class="text-4xl font-extrabold tracking-tight">Northern Health Innovations</h1>
+        <p class="text-lg mt-2 italic">Bold Innovations. Secure Care.<sup>™</sup></p>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-md border-b border-gray-300">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <a href="https://nucp.ca" target="_blank" rel="noopener noreferrer" class="text-xl font-bold text-[#004d40]">
+	        NUCP<sup>™</sup> Login
+	    </a>
+            <div>
+                <a href="{% url 'home' %}" class="text-gray-700 hover:text-[#004d40] px-4">Home</a>
+                <a href="{% url 'blog_list' %}" class="text-gray-700 hover:text-[#004d40] px-4">About</a>
+                <a href="{% url 'contact' %}" class="text-gray-700 hover:text-[#004d40] px-4">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="container mx-auto my-6 px-4">
+        {% block content %}{% endblock %}
+    </main>
+
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-md py-6 mt-12">
+        <div class="container mx-auto text-center">
+            <p class="text-gray-600">&copy; 2025 Northern Health Innovations Inc. All rights reserved.</p>
+            <p class="text-gray-600 mt-1">5600-100 King Street West, Toronto, ON, M5X 1A9</p>
+            <p class="text-gray-600 mt-1">
+                Email: <a href="mailto:info@norhi.ca" class="text-[#004d40] hover:underline">info@norhi.ca</a>
+            </p>
+        </div>
+    </footer>
+</body>
+</html>

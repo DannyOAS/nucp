@@ -1,0 +1,206 @@
+{% extends "provider/base.html" %}
+{% block title %}Create Form - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Create Form: {{ template.name }}</h2>
+  <a href="{% url 'forms_dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+    </svg>
+    Back to Templates
+  </a>
+</div>
+
+<!-- Status message area -->
+<div id="statusMessage" class="hidden mb-6 p-4 rounded-lg">
+  <!-- Will be filled dynamically with appropriate status messages -->
+</div>
+
+<!-- Patient Information Summary -->
+{% if patient %}
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <h3 class="text-lg font-semibold text-[#004d40] mb-4">Patient Information</h3>
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div>
+      <p class="text-sm text-gray-500">Name</p>
+      <p class="font-medium text-gray-800">{{ patient.first_name }} {{ patient.last_name }}</p>
+    </div>
+    <div>
+      <p class="text-sm text-gray-500">Date of Birth</p>
+      <p class="font-medium text-gray-800">{{ patient.date_of_birth }}</p>
+    </div>
+    <div>
+      <p class="text-sm text-gray-500">OHIP Number</p>
+      <p class="font-medium text-gray-800">{{ patient.ohip_number }}</p>
+    </div>
+    <div>
+      <p class="text-sm text-gray-500">Contact</p>
+      <p class="font-medium text-gray-800">{{ patient.primary_phone }}</p>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Form Content -->
+<div class="bg-white rounded-xl shadow p-6">
+  <h3 class="text-lg font-semibold text-[#004d40] mb-4">{{ template.name }}</h3>
+  
+  <form method="post" action="">
+    {% csrf_token %}
+    
+    <!-- Form fields will vary based on template type -->
+    {% if template.template_type == 'lab_req' %}
+      <!-- Laboratory Requisition Fields -->
+      <div class="mb-6">
+        <h4 class="font-medium text-gray-800 mb-2">Tests</h4>
+        <div class="space-y-2">
+          <div class="flex items-center">
+            <input type="checkbox" id="test-cbc" name="tests[]" value="cbc" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="test-cbc" class="ml-2 text-gray-700">Complete Blood Count (CBC)</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="test-metabolic" name="tests[]" value="metabolic" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="test-metabolic" class="ml-2 text-gray-700">Comprehensive Metabolic Panel</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="test-lipid" name="tests[]" value="lipid" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="test-lipid" class="ml-2 text-gray-700">Lipid Panel</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="test-tsh" name="tests[]" value="tsh" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="test-tsh" class="ml-2 text-gray-700">Thyroid Stimulating Hormone (TSH)</label>
+          </div>
+          <div class="flex items-center">
+            <input type="checkbox" id="test-a1c" name="tests[]" value="a1c" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="test-a1c" class="ml-2 text-gray-700">Hemoglobin A1C</label>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mb-6">
+        <label for="lab-notes" class="block text-sm font-medium text-gray-700 mb-1">Additional Notes</label>
+        <textarea id="lab-notes" name="notes" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+      </div>
+      
+    {% elif template.template_type == 'sick_note' %}
+      <!-- Sick Note Fields -->
+      <div class="mb-6">
+        <label for="start-date" class="block text-sm font-medium text-gray-700 mb-1">Absence Start Date</label>
+        <input type="date" id="start-date" name="start_date" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      </div>
+      
+      <div class="mb-6">
+        <label for="end-date" class="block text-sm font-medium text-gray-700 mb-1">Absence End Date</label>
+        <input type="date" id="end-date" name="end_date" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+      </div>
+      
+      <div class="mb-6">
+        <label for="reason" class="block text-sm font-medium text-gray-700 mb-1">Reason for Absence</label>
+        <select id="reason" name="reason" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <option value="medical">Medical reasons</option>
+          <option value="surgery">Surgery and recovery</option>
+          <option value="injury">Injury</option>
+          <option value="mental">Mental health</option>
+          <option value="other">Other medical condition</option>
+        </select>
+      </div>
+      
+      <div class="mb-6">
+        <label for="restrictions" class="block text-sm font-medium text-gray-700 mb-1">Work/School Restrictions</label>
+        <textarea id="restrictions" name="restrictions" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+      </div>
+      
+    {% elif template.template_type == 'referral' %}
+      <!-- Referral Fields -->
+      <div class="mb-6">
+        <label for="specialist-type" class="block text-sm font-medium text-gray-700 mb-1">Specialist Type</label>
+        <select id="specialist-type" name="specialist_type" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <option value="cardiology">Cardiology</option>
+          <option value="dermatology">Dermatology</option>
+          <option value="endocrinology">Endocrinology</option>
+          <option value="gastroenterology">Gastroenterology</option>
+          <option value="neurology">Neurology</option>
+          <option value="orthopedics">Orthopedics</option>
+          <option value="psychiatry">Psychiatry</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      
+      <div class="mb-6">
+        <label for="reason-for-referral" class="block text-sm font-medium text-gray-700 mb-1">Reason for Referral</label>
+        <textarea id="reason-for-referral" name="reason_for_referral" rows="4" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+      </div>
+      
+      <div class="mb-6">
+        <label for="urgency" class="block text-sm font-medium text-gray-700 mb-1">Urgency</label>
+        <select id="urgency" name="urgency" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+          <option value="routine">Routine</option>
+          <option value="urgent">Urgent</option>
+          <option value="emergency">Emergency</option>
+        </select>
+      </div>
+      
+    {% else %}
+      <!-- Generic Form Fields -->
+      <div class="mb-6">
+        <label for="form-content" class="block text-sm font-medium text-gray-700 mb-1">Form Content</label>
+        <textarea id="form-content" name="content" rows="10" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
+      </div>
+    {% endif %}
+    
+    <!-- Buttons -->
+    <div class="flex justify-end space-x-2">
+      <a href="{% url 'forms_dashboard' %}" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50">
+        Cancel
+      </a>
+      <button type="submit" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+        Generate Document
+      </button>
+    </div>
+  </form>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Status message handling
+    function showStatusMessage(message, type) {
+      const statusMessage = document.getElementById('statusMessage');
+      
+      // Set the appropriate styling based on the message type
+      statusMessage.className = 'mb-6 p-4 rounded-lg';
+      
+      if (type === 'success') {
+        statusMessage.classList.add('bg-green-100', 'text-green-700');
+      } else if (type === 'error') {
+        statusMessage.classList.add('bg-red-100', 'text-red-700');
+      } else if (type === 'info') {
+        statusMessage.classList.add('bg-blue-100', 'text-blue-700');
+      } else if (type === 'warning') {
+        statusMessage.classList.add('bg-yellow-100', 'text-yellow-700');
+      }
+      
+      // Set the message text
+      statusMessage.textContent = message;
+      
+      // Show the message
+      statusMessage.classList.remove('hidden');
+      
+      // Hide the message after 5 seconds
+      setTimeout(function() {
+        statusMessage.classList.add('hidden');
+      }, 5000);
+    }
+    
+    // Form validation
+    const form = document.querySelector('form');
+    form.addEventListener('submit', function(e) {
+      // Add any form validation logic here
+      // For now, we'll just log the submission
+      console.log('Form submitted');
+      
+      // Optionally, show a message
+      showStatusMessage('Generating document...', 'info');
+    });
+  });
+</script>
+{% endblock %}

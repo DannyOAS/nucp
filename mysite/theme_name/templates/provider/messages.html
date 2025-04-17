@@ -1,0 +1,367 @@
+{% extends "provider/base.html" %}
+{% block title %}Messages - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Messages</h2>
+  <div class="flex space-x-2">
+    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      New Message
+    </a>
+  </div>
+</div>
+
+<!-- Message stats -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+  <div class="bg-white p-4 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 4H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-2m-4-1v8m0 0l3-3m-3 3L9 8m-5 5h2.586a1 1 0 01.707.293l2.414 2.414a1 1 0 00.707.293h3.172a1 1 0 00.707-.293l2.414-2.414a1 1 0 01.707-.293H20" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Inbox</h3>
+        <p class="text-2xl font-semibold text-gray-800">24</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white p-4 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full bg-red-200 bg-opacity-75">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Unread</h3>
+        <p class="text-2xl font-semibold text-gray-800">8</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white p-4 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Awaiting Reply</h3>
+        <p class="text-2xl font-semibold text-gray-800">5</p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white p-4 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Today's Messages</h3>
+        <p class="text-2xl font-semibold text-gray-800">12</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Message Interface -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+  <!-- Sidebar -->
+  <div class="md:col-span-1">
+    <div class="bg-white rounded-xl shadow">
+      <!-- Filters -->
+      <div class="p-4 border-b border-gray-200">
+        <div class="relative">
+          <input 
+            type="text" 
+            placeholder="Search messages..." 
+            class="w-full border border-gray-300 rounded-lg py-2 pl-10 pr-4"
+          >
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Message categories -->
+      <div class="px-4 py-2 border-b border-gray-200">
+        <div class="flex flex-col space-y-1">
+          <a href="#" class="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md bg-[#edf7f5] text-[#004d40]">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+              Inbox
+            </div>
+            <span class="bg-[#004d40] text-white text-xs font-bold px-2 py-1 rounded-full">24</span>
+          </a>
+          
+          <a href="#" class="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 text-gray-700">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Trash
+            </div>
+            <span class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">3</span>
+          </a>
+          
+          <a href="#" class="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 text-gray-700">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+              Archived
+            </div>
+            <span class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">15</span>
+          </a>
+          
+          <a href="#" class="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 text-gray-700">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              Sent
+            </div>
+            <span class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">42</span>
+          </a>
+          
+          <a href="#" class="flex items-center justify-between px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 text-gray-700">
+            <div class="flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+              </svg>
+              Flagged
+            </div>
+            <span class="bg-gray-200 text-gray-700 text-xs font-bold px-2 py-1 rounded-full">7</span>
+          </a>
+        </div>
+      </div>
+      
+      <!-- Messages list -->
+      <div class="overflow-y-auto max-h-96">
+        <div class="border-l-4 border-[#004d40] bg-[#edf7f5] p-4 hover:bg-[#e1f0ee] cursor-pointer">
+          <div class="flex justify-between">
+            <div class="flex items-center">
+              <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                JD
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">Jane Doe</div>
+                <div class="text-xs text-gray-500">Patient</div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">10:30 AM</div>
+          </div>
+          <div class="mt-2">
+            <div class="text-sm font-semibold">Prescription question</div>
+            <div class="text-xs text-gray-600 truncate">I had a question about the side effects of the new medication you prescribed yesterday...</div>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between">
+            <div class="flex items-center">
+              <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm">
+                JS
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">John Smith</div>
+                <div class="text-xs text-gray-500">Patient</div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">Yesterday</div>
+          </div>
+          <div class="mt-2">
+            <div class="text-sm font-semibold">Blood test results</div>
+            <div class="text-xs text-gray-600 truncate">Thank you for sending my lab results. I have a few questions about the cholesterol numbers...</div>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between">
+            <div class="flex items-center">
+              <div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-medium text-sm">
+                NW
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">Nurse Williams</div>
+                <div class="text-xs text-gray-500">Staff</div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">Yesterday</div>
+          </div>
+          <div class="mt-2">
+            <div class="text-sm font-semibold">Patient follow-up</div>
+            <div class="text-xs text-gray-600 truncate">I called Mr. Johnson about his appointment tomorrow. He confirmed he will be there at 2 PM.</div>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between">
+            <div class="flex items-center">
+              <div class="h-8 w-8 rounded-full bg-yellow-100 flex items-center justify-center text-yellow-600 font-medium text-sm">
+                RJ
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">Robert Johnson</div>
+                <div class="text-xs text-gray-500">Patient</div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">Apr 1</div>
+          </div>
+          <div class="mt-2">
+            <div class="text-sm font-semibold">Refill request</div>
+            <div class="text-xs text-gray-600 truncate">I'm running low on my diabetes medication. Could you please authorize a refill?</div>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between">
+            <div class="flex items-center">
+              <div class="h-8 w-8 rounded-full bg-red-100 flex items-center justify-center text-red-600 font-medium text-sm">
+                EW
+              </div>
+              <div class="ml-3">
+                <div class="text-sm font-medium text-gray-900">Emily Williams</div>
+                <div class="text-xs text-gray-500">Patient</div>
+              </div>
+            </div>
+            <div class="text-xs text-gray-500">Mar 31</div>
+          </div>
+          <div class="mt-2">
+            <div class="text-sm font-semibold">Appointment request</div>
+            <div class="text-xs text-gray-600 truncate">I need to schedule an appointment for next week. What days are available?</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Message content -->
+  <div class="md:col-span-2">
+    <div class="bg-white rounded-xl shadow h-full flex flex-col">
+      <!-- Message header -->
+      <div class="p-4 border-b border-gray-200 flex justify-between items-center">
+        <div class="flex items-center">
+          <div class="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+            JD
+          </div>
+          <div class="ml-3">
+            <div class="text-md font-medium text-gray-900">Jane Doe</div>
+            <div class="text-xs text-gray-500">Today at 10:30 AM</div>
+          </div>
+        </div>
+        <div class="flex space-x-2">
+          <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+          </button>
+          <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+          <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+          </button>
+          <button class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Message thread -->
+      <div class="flex-1 p-4 overflow-y-auto">
+        <div>
+          <div class="flex items-center mb-2">
+            <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+              JD
+            </div>
+            <div class="ml-2 text-sm font-medium text-gray-900">Jane Doe</div>
+            <div class="ml-2 text-xs text-gray-500">10:30 AM</div>
+          </div>
+          <div class="ml-10 p-3 bg-gray-100 rounded-lg">
+            <p class="text-sm text-gray-800">
+              Hello Dr. Smith,<br><br>
+              I had a question about the side effects of the new medication you prescribed yesterday (Sertraline 50mg). I've been experiencing some dizziness and was wondering if that's normal in the first few days? Should I continue taking it?<br><br>
+              Thank you,<br>
+              Jane
+            </p>
+          </div>
+        </div>
+        
+        <div class="mt-6">
+          <div class="flex items-center justify-end mb-2">
+            <div class="mr-2 text-xs text-gray-500">10:45 AM</div>
+            <div class="text-sm font-medium text-gray-900">Dr. Smith</div>
+            <div class="ml-2 h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm">
+              DS
+            </div>
+          </div>
+          <div class="mr-10 p-3 bg-[#edf7f5] rounded-lg">
+            <p class="text-sm text-gray-800">
+              Hi Jane,<br><br>
+              Thank you for reaching out. Dizziness can be a common side effect when starting Sertraline, especially in the first few days. This typically improves as your body adjusts to the medication.<br><br>
+              A few recommendations:<br>
+              1. Take the medication with food<br>
+              2. Stay well hydrated<br>
+              3. If the dizziness is severe or does not improve within a week, please let me know<br><br>
+              For now, continue taking the medication as prescribed unless the dizziness is severe or accompanied by other concerning symptoms.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Reply box -->
+      <div class="p-4 border-t border-gray-200">
+        <div class="bg-gray-100 rounded-lg">
+          <div class="px-4 py-2 border-b border-gray-200 flex items-center">
+            <button class="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200 mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+            </button>
+            <button class="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200 mr-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </button>
+            <button class="p-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-200">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          </div>
+          <div class="p-4">
+            <textarea rows="3" class="w-full border-0 focus:ring-0 resize-none bg-transparent placeholder-gray-400" placeholder="Type your message..."></textarea>
+          </div>
+          <div class="px-4 py-2 border-t border-gray-200 flex justify-between">
+            <div>
+              <button class="text-[#004d40] hover:text-[#00332e] text-sm">Add template response</button>
+            </div>
+            <div>
+              <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-4 rounded-lg text-sm">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

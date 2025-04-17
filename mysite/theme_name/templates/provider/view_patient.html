@@ -1,0 +1,436 @@
+{% extends "provider/base.html" %}
+{% block title %}Patient Details - {{ patient_name }} - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Patient Details</h2>
+  <div class="flex space-x-2">
+    <a href="{% url 'provider_patients' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back to Patients
+    </a>
+    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+      Edit Patient
+    </a>
+  </div>
+</div>
+
+<!-- Patient Overview Card -->
+<div class="bg-white rounded-xl shadow mb-6">
+  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+    <h3 class="text-lg font-semibold text-[#004d40]">Patient Overview</h3>
+    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+      {% if patient.status == 'Stable' %}bg-green-100 text-green-800
+      {% elif patient.status == 'Follow-up Needed' %}bg-yellow-100 text-yellow-800
+      {% elif patient.status == 'Critical Review' %}bg-red-100 text-red-800
+      {% else %}bg-gray-100 text-gray-800{% endif %}">
+      {{ patient.status|default:"Stable" }}
+    </span>
+  </div>
+  
+  <div class="p-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <!-- Basic Information -->
+      <div>
+        <div class="flex items-center mb-4">
+          <div class="h-16 w-16 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-gray-500 text-xl">
+            {{ patient.first_name|first }}{{ patient.last_name|first }}
+          </div>
+          <div class="ml-4">
+            <h4 class="text-xl font-medium text-gray-900">{{ patient.first_name }} {{ patient.last_name }}</h4>
+            <p class="text-sm text-gray-500">
+              {% if patient.date_of_birth %}
+                {% with dob=patient.date_of_birth|date:"Y-m-d" %}
+                  {% now "Y" as current_year %}
+                  {% with age=current_year|add:"-"|add:dob|slice:":4" %}
+                    {{ patient.gender|default:"" }}{% if patient.gender %}, {% endif %}{{ age }} years
+                  {% endwith %}
+                {% endwith %}
+              {% else %}
+                {{ patient.gender|default:"" }}
+              {% endif %}
+            </p>
+          </div>
+        </div>
+        
+        <div class="mt-6 grid grid-cols-2 gap-3">
+          <div>
+            <h5 class="text-xs uppercase text-gray-500 font-medium">Date of Birth</h5>
+            <p class="text-sm text-gray-900">{{ patient.date_of_birth|date:"F j, Y" }}</p>
+          </div>
+          <div>
+            <h5 class="text-xs uppercase text-gray-500 font-medium">OHIP Number</h5>
+            <p class="text-sm text-gray-900">{{ patient.ohip_number }}</p>
+          </div>
+          <div>
+            <h5 class="text-xs uppercase text-gray-500 font-medium">Primary Phone</h5>
+            <p class="text-sm text-gray-900">{{ patient.primary_phone }}</p>
+          </div>
+          <div>
+            <h5 class="text-xs uppercase text-gray-500 font-medium">Email</h5>
+            <p class="text-sm text-gray-900">{{ patient.email }}</p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Medical Information -->
+      <div>
+        <h4 class="font-medium text-gray-900 mb-2">Medical Information</h4>
+        
+        <div class="mb-3">
+          <h5 class="text-xs uppercase text-gray-500 font-medium">Current Medications</h5>
+          <p class="text-sm text-gray-900">{{ patient.current_medications|default:"None documented" }}</p>
+        </div>
+        
+        <div class="mb-3">
+          <h5 class="text-xs uppercase text-gray-500 font-medium">Allergies</h5>
+          <p class="text-sm text-gray-900">{{ patient.allergies|default:"None documented" }}</p>
+        </div>
+        
+        <div>
+          <h5 class="text-xs uppercase text-gray-500 font-medium">Preferred Pharmacy</h5>
+          <p class="text-sm text-gray-900">{{ patient.pharmacy_details|default:"None specified" }}</p>
+        </div>
+      </div>
+      
+      <!-- Additional Information -->
+      <div>
+        <h4 class="font-medium text-gray-900 mb-2">Additional Information</h4>
+        
+        <div class="mb-3">
+          <h5 class="text-xs uppercase text-gray-500 font-medium">Address</h5>
+          <p class="text-sm text-gray-900">{{ patient.address|default:"Not provided" }}</p>
+        </div>
+        
+        <div class="mb-3">
+          <h5 class="text-xs uppercase text-gray-500 font-medium">Emergency Contact</h5>
+          <p class="text-sm text-gray-900">{{ patient.emergency_contact_name|default:"None specified" }}</p>
+          {% if patient.emergency_contact_phone %}
+          <p class="text-sm text-gray-900">{{ patient.emergency_contact_phone }}</p>
+          {% endif %}
+        </div>
+        
+        <div>
+          <h5 class="text-xs uppercase text-gray-500 font-medium">Last Visit</h5>
+          <p class="text-sm text-gray-900">{{ patient.last_visit|default:"No visits yet" }}</p>
+          {% if patient.last_visit_reason %}
+          <p class="text-xs text-gray-500">{{ patient.last_visit_reason }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <div class="mt-8 flex space-x-4">
+      <button class="text-[#004d40] border border-[#004d40] hover:bg-[#004d40] hover:text-white py-2 px-4 rounded-lg flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V8z" clip-rule="evenodd" />
+        </svg>
+        Add Note
+      </button>
+      <button class="text-[#004d40] border border-[#004d40] hover:bg-[#004d40] hover:text-white py-2 px-4 rounded-lg flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M18 5v8a2 2 0 01-2 2h-5l-5 4v-4H4a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2zM7 8H5v2h2V8zm2 0h2v2H9V8zm6 0h-2v2h2V8z" clip-rule="evenodd" />
+        </svg>
+        Message Patient
+      </button>
+      <button class="text-[#004d40] border border-[#004d40] hover:bg-[#004d40] hover:text-white py-2 px-4 rounded-lg flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+        </svg>
+        Schedule Video Call
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Tabbed Content -->
+<div class="bg-white rounded-xl shadow mb-6">
+  <div class="border-b border-gray-200">
+    <nav class="-mb-px flex" aria-label="Tabs">
+      <button id="tab-appointments" class="border-[#004d40] text-[#004d40] whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+        Appointments
+      </button>
+      <button id="tab-prescriptions" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+        Prescriptions
+      </button>
+      <button id="tab-notes" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+        Clinical Notes
+      </button>
+      <button id="tab-files" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+        Files & Documents
+      </button>
+    </nav>
+  </div>
+  
+  <!-- Appointments Tab Content -->
+  <div id="content-appointments" class="p-6">
+    <div class="mb-4">
+      <h4 class="text-lg font-medium text-gray-900 mb-2">Upcoming Appointments</h4>
+      {% if appointments %}
+        <div class="divide-y divide-gray-200">
+          {% for appointment in appointments %}
+            <div class="py-3">
+              <div class="flex justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ appointment.time }}</p>
+                  <p class="text-sm text-gray-500">{{ appointment.reason }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {% if appointment.type == 'Virtual' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                    {{ appointment.type }}
+                  </span>
+                  <p class="text-sm text-gray-500">{{ appointment.location }}</p>
+                </div>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500 italic">No upcoming appointments scheduled.</p>
+      {% endif %}
+      
+      <div class="mt-4">
+        <button class="text-[#004d40] hover:text-[#00332e] text-sm font-medium flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Schedule New Appointment
+        </button>
+      </div>
+    </div>
+    
+    <div class="mt-8">
+      <h4 class="text-lg font-medium text-gray-900 mb-2">Past Appointments</h4>
+      {% if past_appointments %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for appointment in past_appointments %}
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ appointment.time }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ appointment.doctor }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ appointment.reason }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full {% if appointment.type == 'Virtual' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">
+                      {{ appointment.type }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a href="#" class="text-[#004d40] hover:text-[#00332e]">View Notes</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500 italic">No past appointments found.</p>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Prescriptions Tab Content -->
+  <div id="content-prescriptions" class="p-6 hidden">
+    <div class="mb-4">
+      <h4 class="text-lg font-medium text-gray-900 mb-2">Active Prescriptions</h4>
+      {% if prescriptions %}
+        <div class="divide-y divide-gray-200">
+          {% for prescription in prescriptions %}
+            <div class="py-3">
+              <div class="flex justify-between">
+                <div>
+                  <p class="text-sm font-medium text-gray-900">{{ prescription.medication_name }}</p>
+                  <p class="text-sm text-gray-500">{{ prescription.dosage }}</p>
+                </div>
+                <div class="text-right">
+                  <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                    {{ prescription.status }}
+                  </span>
+                  <p class="text-sm text-gray-500">Expires: {{ prescription.expires }}</p>
+                </div>
+              </div>
+              <div class="mt-2">
+                <p class="text-xs text-gray-500">{{ prescription.instructions }}</p>
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500 italic">No active prescriptions found.</p>
+      {% endif %}
+      
+      <div class="mt-4">
+        <button class="text-[#004d40] hover:text-[#00332e] text-sm font-medium flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+          </svg>
+          Add New Prescription
+        </button>
+      </div>
+    </div>
+    
+    <div class="mt-8">
+      <h4 class="text-lg font-medium text-gray-900 mb-2">Prescription History</h4>
+      {% if historical_prescriptions %}
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prescribed</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for prescription in historical_prescriptions %}
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ prescription.medication_name }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ prescription.prescribed_date }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ prescription.prescribed_by }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ prescription.dosage }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                      {{ prescription.status }}
+                    </span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="text-sm text-gray-500 italic">No prescription history found.</p>
+      {% endif %}
+    </div>
+  </div>
+  
+  <!-- Clinical Notes Tab Content -->
+  <div id="content-notes" class="p-6 hidden">
+    <div class="flex justify-between items-center mb-4">
+      <h4 class="text-lg font-medium text-gray-900">Clinical Notes</h4>
+      <button class="text-[#004d40] hover:text-[#00332e] text-sm font-medium flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clip-rule="evenodd" />
+        </svg>
+        Add New Note
+      </button>
+    </div>
+    
+    <div class="border border-gray-200 rounded-lg p-4 mb-4">
+      <div class="flex justify-between mb-2">
+        <h5 class="text-sm font-medium text-gray-900">Initial Consultation</h5>
+        <p class="text-xs text-gray-500">March 15, 2025</p>
+      </div>
+      <p class="text-sm text-gray-700">
+        Patient presented with symptoms of hypertension. Blood pressure readings were 140/90 mmHg.
+        Discussed lifestyle modifications including diet and exercise. Started on Lisinopril 10mg daily.
+        Patient to follow up in 4 weeks to monitor blood pressure and medication efficacy.
+      </p>
+    </div>
+    
+    <div class="border border-gray-200 rounded-lg p-4">
+      <div class="flex justify-between mb-2">
+        <h5 class="text-sm font-medium text-gray-900">Follow-up Visit</h5>
+        <p class="text-xs text-gray-500">February 28, 2025</p>
+      </div>
+      <p class="text-sm text-gray-700">
+        Patient reports improved symptoms. Blood pressure readings show improvement at 130/85 mmHg.
+        No adverse effects from medication reported. Advised continued compliance with medication regimen
+        and ongoing lifestyle modifications.
+      </p>
+    </div>
+  </div>
+  
+  <!-- Files & Documents Tab Content -->
+  <div id="content-files" class="p-6 hidden">
+    <div class="flex justify-between items-center mb-4">
+      <h4 class="text-lg font-medium text-gray-900">Files & Documents</h4>
+      <button class="text-[#004d40] hover:text-[#00332e] text-sm font-medium flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+        </svg>
+        Upload Document
+      </button>
+    </div>
+    
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date Added</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Added By</th>
+            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Patient Registration Form</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Registration</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">January 5, 2025</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Self-Registration</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
+              <a href="#" class="text-[#004d40] hover:text-[#00332e]">Download</a>
+            </td>
+          </tr>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Blood Test Results</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Lab Report</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">March 10, 2025</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Smith</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
+              <a href="#" class="text-[#004d40] hover:text-[#00332e]">Download</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for Tab Switching -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    const tabs = [
+      { tab: document.getElementById('tab-appointments'), content: document.getElementById('content-appointments') },
+      { tab: document.getElementById('tab-prescriptions'), content: document.getElementById('content-prescriptions') },
+      { tab: document.getElementById('tab-notes'), content: document.getElementById('content-notes') },
+      { tab: document.getElementById('tab-files'), content: document.getElementById('content-files') }
+    ];
+    
+    tabs.forEach(({tab, content}) => {
+      tab.addEventListener('click', () => {
+        // Hide all content
+        tabs.forEach(item => {
+          item.content.classList.add('hidden');
+          item.tab.classList.remove('border-[#004d40]', 'text-[#004d40]');
+          item.tab.classList.add('border-transparent', 'text-gray-500');
+        });
+        
+        // Show selected content
+        content.classList.remove('hidden');
+        tab.classList.remove('border-transparent', 'text-gray-500');
+        tab.classList.add('border-[#004d40]', 'text-[#004d40]');
+      });
+    });
+  });
+</script>
+{% endblock %}

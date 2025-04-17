@@ -1,0 +1,424 @@
+{% extends "provider/base.html" %}
+
+{% block title %}
+  Prescriptions - Northern Health Innovations
+{% endblock %}
+
+{% block content %}
+  {# Add message display area at the top #}
+  <div id="message-display" class="{% if messages %}block{% else %}hidden{% endif %} transition-opacity duration-500 mb-6">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-blue-100 text-blue-700{% endif %}">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  {# Header: Title, search form, and "New Prescription" button #}
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Prescriptions</h2>
+    <div class="flex space-x-2">
+      {# Search Form #}
+      <div class="relative">
+        <form method="GET" action="{% url 'provider_prescriptions' %}">
+          <input
+            type="text"
+            name="search"
+            value="{{ search_query|default:'' }}"
+            placeholder="Search prescriptions..."
+            class="border border-gray-300 rounded-lg py-2 pl-10 pr-4"
+          >
+          <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg"
+                 class="h-5 w-5 text-gray-400"
+                 fill="none"
+                 viewBox="0 0 24 24"
+                 stroke="currentColor">
+              <path stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+        </form>
+      </div>
+
+      {# New Prescription Button #}
+      <a href="{% url 'create_prescription' %}"
+         class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center"
+         id="new-prescription-btn">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             class="h-5 w-5 mr-2"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor">
+          <path stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 4v16m8-8H4" />
+        </svg>
+        New Prescription
+      </a>
+    </div>
+  </div>
+
+  {# Prescription Stats Section #}
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+    {# Active Prescriptions Card #}
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-6 w-6 text-blue-700"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Active Prescriptions</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.active_prescriptions }}</p>
+        </div>
+      </div>
+    </div>
+    
+    {# Pending Renewals Card #}
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-6 w-6 text-yellow-700"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Pending Renewals</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.pending_renewals }}</p>
+        </div>
+      </div>
+    </div>
+    
+    {# New Today Card #}
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-6 w-6 text-green-700"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">New Today</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.new_today }}</p>
+        </div>
+      </div>
+    </div>
+    
+    {# Refill Requests Card #}
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-purple-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg"
+               class="h-6 w-6 text-purple-700"
+               fill="none"
+               viewBox="0 0 24 24"
+               stroke="currentColor">
+            <path stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a1.994 1.994 0 01-1.414-.586m0 0L11 14h4a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2v4l.586-.586z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Refill Requests</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.refill_requests }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {# Prescription Renewals Section #}
+  <div class="bg-white rounded-xl shadow mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-semibold text-[#004d40]">Pending Prescription Renewals</h3>
+    </div>
+
+    <div class="overflow-x-auto">
+      {% if prescription_requests %}
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Dosage</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiration</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for request in prescription_requests %}
+              <tr class="hover:bg-gray-50" data-prescription-id="{{ request.id }}">
+                {# Patient Info #}
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="flex items-center">
+                    <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                      {{ request.patient_name|slice:":2" }}
+                    </div>
+                    <div class="ml-3">
+                      <div class="text-sm font-medium text-gray-900">{{ request.patient_name }}</div>
+                      <div class="text-xs text-gray-500">{{ request.patient_details|default:"" }}</div>
+                    </div>
+                  </div>
+                </td>
+                {# Medication Info #}
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ request.medication_name }}</div>
+                  <div class="text-xs text-gray-500">{{ request.medication_type|default:"" }}</div>
+                </td>
+                {# Dosage #}
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ request.current_dosage }}</div>
+                </td>
+                {# Expiration Date #}
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm {% if request.days_left < 3 %}text-red-600{% elif request.days_left < 7 %}text-orange-600{% else %}text-gray-900{% endif %} font-medium" data-days-remaining="{{ request.days_left }}">
+                    {{ request.expiration_date|default:"N/A" }}
+                  </div>
+                  <div class="text-xs text-gray-500">
+                    {% if request.days_left %}{{ request.days_left }} days left{% endif %}
+                  </div>
+                </td>
+                {# Status #}
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                    {{ request.status }}
+                  </span>
+                </td>
+                {# Actions #}
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <form method="POST" action="{% url 'approve_prescription' request.id %}" class="inline renew-form">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="text-white bg-[#004d40] hover:bg-[#00332e] px-2 py-1 rounded-md text-xs mr-1 renew-button">
+                      Renew
+                    </button>
+                  </form>
+                  <a href="{% url 'review_prescription' request.id %}"
+                     class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-2 py-1 rounded-md text-xs inline-block review-button">
+                    Review
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="px-6 py-4 text-center text-gray-500">
+          <p>No pending prescription renewals at this time.</p>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Recent Prescriptions Section #}
+  <div class="bg-white rounded-xl shadow">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-[#004d40]">Recently Prescribed</h3>
+      <div class="flex space-x-2">
+        <a href="{% url 'provider_prescriptions' %}?period=today"
+           class="bg-white border period-filter {% if time_period == 'today' %}border-[#004d40] text-[#004d40]{% else %}border-gray-300 text-gray-700{% endif %} rounded-md px-3 py-1 text-sm"
+           data-period="today">
+          Today
+        </a>
+        <a href="{% url 'provider_prescriptions' %}?period=week"
+           class="bg-white border period-filter {% if time_period == 'week' %}border-[#004d40] text-[#004d40]{% else %}border-gray-300 text-gray-700{% endif %} rounded-md px-3 py-1 text-sm"
+           data-period="week">
+          This Week
+        </a>
+        <a href="{% url 'provider_prescriptions' %}?period=month"
+           class="bg-white border period-filter {% if time_period == 'month' %}border-[#004d40] text-[#004d40]{% else %}border-gray-300 text-gray-700{% endif %} rounded-md px-3 py-1 text-sm"
+           data-period="month">
+          This Month
+        </a>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      {% if recent_prescriptions %}
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Refills</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pharmacy</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            {% for prescription in recent_prescriptions %}
+              <tr class="hover:bg-gray-50" data-prescription-id="{{ prescription.id }}">
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ prescription.date }}</div>
+                  <div class="text-xs text-gray-500">{{ prescription.time }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ prescription.patient_name }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm font-medium text-gray-900">{{ prescription.medication }}</div>
+                  <div class="text-xs text-gray-500">{{ prescription.medication_type }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ prescription.dosage }}</div>
+                  <div class="text-xs text-gray-500">{{ prescription.duration }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ prescription.refills }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <div class="text-sm text-gray-900">{{ prescription.pharmacy }}</div>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                  <a href="{% url 'edit_prescription' prescription.id %}"
+                     class="text-[#004d40] hover:text-[#00332e]">
+                    Edit
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="px-6 py-4 text-center text-gray-500">
+          <p>No prescriptions found for the selected time period.</p>
+        </div>
+      {% endif %}
+    </div>
+    
+    {# Include pagination if recent prescriptions exist #}
+    {% if recent_prescriptions %}
+      {% include "partials/pagination.html" with page_obj=page_obj %}
+    {% endif %}
+  </div>
+
+  {# Include inline JavaScript directly in the template #}
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // ------- PRESCRIPTION BUTTON HANDLERS -------
+      
+      // Handle New Prescription button click
+      const newPrescriptionBtn = document.getElementById('new-prescription-btn');
+      if (newPrescriptionBtn) {
+        newPrescriptionBtn.addEventListener('click', function(e) {
+          // We'll keep the default link behavior, but could add confirmation or validation here
+          console.log('Navigating to create new prescription form');
+        });
+      }
+
+      // Handle Renew Prescription button clicks
+      const renewButtons = document.querySelectorAll('.renew-button');
+      renewButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          if (!confirm('Are you sure you want to renew this prescription?')) {
+            e.preventDefault();
+            return false;
+          }
+          
+          // Show loading state
+          this.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Processing...';
+          this.disabled = true;
+          
+          // Form will be submitted automatically
+        });
+      });
+      
+      // Handle Review Prescription button clicks  
+      const reviewButtons = document.querySelectorAll('.review-button');
+      reviewButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+          // Show loading indicator on click
+          this.innerHTML = '<span class="inline-block animate-spin mr-2">↻</span> Loading...';
+          
+          // Default link behavior will handle navigation
+        });
+      });
+      
+      // ------- UTILITY FUNCTIONS -------
+      
+      // Update expiration indicators based on days remaining
+      function updateExpirationIndicators() {
+        document.querySelectorAll('[data-days-remaining]').forEach(element => {
+          const daysRemaining = parseInt(element.dataset.daysRemaining, 10);
+          
+          if (isNaN(daysRemaining)) return;
+          
+          if (daysRemaining < 0) {
+            element.classList.add('text-red-600', 'font-bold');
+            element.textContent = 'EXPIRED';
+          } else if (daysRemaining < 3) {
+            element.classList.add('text-red-600');
+          } else if (daysRemaining < 7) {
+            element.classList.add('text-orange-600');
+          }
+        });
+      }
+      
+      // ------- TIME PERIOD FILTER HANDLERS -------
+      
+      // Make time period filters more interactive
+      const periodFilters = document.querySelectorAll('.period-filter');
+      periodFilters.forEach(filter => {
+        filter.addEventListener('click', function(e) {
+          // Visual feedback on click
+          this.style.transform = 'scale(0.95)';
+          setTimeout(() => { this.style.transform = 'scale(1)'; }, 100);
+          
+          // Let the default link behavior handle navigation
+        });
+      });
+      
+      // ------- MESSAGE HANDLING -------
+      
+      // Auto-hide messages after 5 seconds
+      const messageDisplay = document.getElementById('message-display');
+      if (messageDisplay && !messageDisplay.classList.contains('hidden')) {
+        setTimeout(() => {
+          messageDisplay.style.opacity = '0';
+          setTimeout(() => {
+            messageDisplay.style.display = 'none';
+          }, 500);
+        }, 5000);
+      }
+      
+      // ------- INITIALIZATION -------
+      
+      // Run on page load
+      updateExpirationIndicators();
+      
+      // Log initialization for debugging
+      console.log('Prescription management initialized');
+    });
+  </script>
+{% endblock %}

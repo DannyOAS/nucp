@@ -1,0 +1,494 @@
+{% extends "provider/base.html" %}
+{% block title %}AI Scribe - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">AI Scribe</h2>
+  <div class="flex space-x-2">
+    <button id="testMicButton" class="bg-white border border-[#004d40] text-[#004d40] py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+      </svg>
+      Test Microphone
+    </button>
+    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Help & Tutorial
+    </a>
+  </div>
+</div>
+
+<!-- Status message area -->
+<div id="statusMessage" class="hidden mb-6 p-4 rounded-lg">
+  <!-- Will be filled dynamically with appropriate status messages -->
+</div>
+
+<!-- Main content grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Recording panel -->
+  <div class="lg:col-span-1 bg-white rounded-xl shadow p-6">
+    <h3 class="text-lg font-semibold text-[#004d40] mb-4">Recording Controls</h3>
+    
+    <!-- Patient & appointment selector -->
+    <div class="mb-4">
+      <label for="appointmentSelect" class="block text-sm font-medium text-gray-700 mb-1">Current Patient/Appointment</label>
+      <select id="appointmentSelect" class="w-full border border-gray-300 rounded-lg p-2">
+        <option value="">Select an appointment</option>
+        <option value="1">Jane Doe - 10:00 AM - Annual Checkup</option>
+        <option value="2">John Smith - 11:30 AM - Follow-up</option>
+        <option value="3">Emily Williams - 2:15 PM - New Patient Visit</option>
+      </select>
+    </div>
+    
+    <!-- Recording timer and controls -->
+    <div class="text-center p-4 mb-4 bg-gray-50 rounded-lg">
+      <div id="recordingTimer" class="font-mono text-3xl mb-2">00:00:00</div>
+      <div id="recordingStatus" class="text-sm text-gray-600 mb-4">Ready to record</div>
+      
+      <div class="flex justify-center space-x-4">
+        <button id="startRecordingBtn" class="relative inline-flex items-center justify-center p-4 px-6 py-3 overflow-hidden font-medium text-[#004d40] transition duration-300 ease-out border-2 border-[#004d40] rounded-full shadow-md group">
+          <span class="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-[#004d40] group-hover:translate-x-0 ease">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3l14 9-14 9V3z" />
+            </svg>
+          </span>
+          <span class="absolute flex items-center justify-center w-full h-full text-[#004d40] transition-all duration-300 transform group-hover:translate-x-full ease">Start Recording</span>
+          <span class="relative invisible">Start Recording</span>
+        </button>
+        
+        <button id="stopRecordingBtn" class="hidden relative inline-flex items-center justify-center p-4 px-6 py-3 overflow-hidden font-medium text-red-600 transition duration-300 ease-out border-2 border-red-600 rounded-full shadow-md group">
+          <span class="absolute inset-0 flex items-center justify-center w-full h-full text-white duration-300 -translate-x-full bg-red-600 group-hover:translate-x-0 ease">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z" />
+            </svg>
+          </span>
+          <span class="absolute flex items-center justify-center w-full h-full text-red-600 transition-all duration-300 transform group-hover:translate-x-full ease">Stop Recording</span>
+          <span class="relative invisible">Stop Recording</span>
+        </button>
+      </div>
+    </div>
+    
+    <!-- Voice activity indicator -->
+    <div class="mb-4">
+      <h4 class="text-sm font-medium text-gray-700 mb-1">Voice Activity</h4>
+      <div class="bg-gray-200 rounded-full h-4">
+        <div id="voiceActivityIndicator" class="bg-green-500 h-4 rounded-full" style="width: 0%"></div>
+      </div>
+    </div>
+    
+    <!-- Recording settings -->
+    <div>
+      <h4 class="text-sm font-medium text-gray-700 mb-2">Settings</h4>
+      <div class="space-y-2">
+        <div class="flex items-center">
+          <input id="autoTranscribe" name="autoTranscribe" type="checkbox" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" checked>
+          <label for="autoTranscribe" class="ml-2 block text-sm text-gray-700">Auto-transcribe after recording</label>
+        </div>
+        <div class="flex items-center">
+          <input id="generateNotes" name="generateNotes" type="checkbox" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" checked>
+          <label for="generateNotes" class="ml-2 block text-sm text-gray-700">Auto-generate clinical notes</label>
+        </div>
+        <div class="flex items-center">
+          <input id="saveRecording" name="saveRecording" type="checkbox" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" checked>
+          <label for="saveRecording" class="ml-2 block text-sm text-gray-700">Save recording for future reference</label>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Transcription panel -->
+  <div class="lg:col-span-2 bg-white rounded-xl shadow p-6">
+    <h3 class="text-lg font-semibold text-[#004d40] mb-4">Transcription & Notes</h3>
+    
+    <!-- Tabs -->
+    <div class="border-b border-gray-200 mb-6">
+      <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+        <button id="transcriptionTab" class="border-[#004d40] text-[#004d40] whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm" aria-current="page">
+          Transcription
+        </button>
+        <button id="clinicalNotesTab" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm">
+          Clinical Notes
+        </button>
+      </nav>
+    </div>
+    
+    <!-- Transcription content -->
+    <div id="transcriptionContent" class="mb-4">
+      <div class="bg-gray-50 p-4 rounded-lg mb-4 h-80 overflow-y-auto">
+        <div id="transcriptionText" class="whitespace-pre-wrap">
+          <!-- Transcription content will be loaded here -->
+          <p class="text-gray-400 italic">No active transcription. Start a recording or select a recent one from below.</p>
+        </div>
+      </div>
+      
+      <div class="flex justify-between">
+        <div>
+          <button id="regenerateTranscriptionBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] px-3 py-1 rounded-md text-sm font-medium inline-block" disabled>
+            Regenerate
+          </button>
+          <button id="editTranscriptionBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] px-3 py-1 rounded-md text-sm font-medium inline-block ml-2" disabled>
+            Edit
+          </button>
+        </div>
+        <button id="generateNotesBtn" class="bg-[#004d40] hover:bg-[#00332e] text-white px-3 py-1 rounded-md text-sm font-medium inline-block" disabled>
+          Generate Clinical Notes
+        </button>
+      </div>
+    </div>
+    
+    <!-- Clinical Notes content (hidden initially) -->
+    <div id="clinicalNotesContent" class="mb-4 hidden">
+      <div class="bg-gray-50 p-4 rounded-lg mb-4 h-80 overflow-y-auto">
+        <div id="clinicalNotesText" class="whitespace-pre-wrap">
+          <!-- Clinical notes content will be loaded here -->
+          <p class="text-gray-400 italic">No clinical notes generated yet. Generate notes from a transcription first.</p>
+        </div>
+      </div>
+      
+      <div class="flex justify-between">
+        <div>
+          <button id="regenerateNotesBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] px-3 py-1 rounded-md text-sm font-medium inline-block" disabled>
+            Regenerate
+          </button>
+          <button id="editNotesBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] px-3 py-1 rounded-md text-sm font-medium inline-block ml-2" disabled>
+            Edit
+          </button>
+        </div>
+        <button id="saveNotesBtn" class="bg-[#004d40] hover:bg-[#00332e] text-white px-3 py-1 rounded-md text-sm font-medium inline-block" disabled>
+          Save to Patient Record
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent recordings section -->
+<div class="mt-6 bg-white rounded-xl shadow p-6">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold text-[#004d40]">Recent Recordings</h3>
+    <a href="#" class="text-[#004d40] hover:underline text-sm">View All</a>
+  </div>
+  
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for recording in recent_transcriptions %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">{{ recording.patient_name }}</div>
+              <div class="text-sm text-gray-500">{{ recording.appointment_type }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ recording.timestamp }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">8:45</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                Completed
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+              <button class="text-[#004d40] hover:text-[#00332e] mr-3 load-recording" data-id="{{ recording.id }}">View</button>
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="px-6 py-4 text-center text-sm text-gray-500">
+              No recordings found
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- JavaScript for AI Scribe functionality -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Tab switching
+    const transcriptionTab = document.getElementById('transcriptionTab');
+    const clinicalNotesTab = document.getElementById('clinicalNotesTab');
+    const transcriptionContent = document.getElementById('transcriptionContent');
+    const clinicalNotesContent = document.getElementById('clinicalNotesContent');
+    
+    transcriptionTab.addEventListener('click', function() {
+      transcriptionTab.classList.add('border-[#004d40]', 'text-[#004d40]');
+      transcriptionTab.classList.remove('border-transparent', 'text-gray-500');
+      clinicalNotesTab.classList.add('border-transparent', 'text-gray-500');
+      clinicalNotesTab.classList.remove('border-[#004d40]', 'text-[#004d40]');
+      
+      transcriptionContent.classList.remove('hidden');
+      clinicalNotesContent.classList.add('hidden');
+    });
+    
+    clinicalNotesTab.addEventListener('click', function() {
+      clinicalNotesTab.classList.add('border-[#004d40]', 'text-[#004d40]');
+      clinicalNotesTab.classList.remove('border-transparent', 'text-gray-500');
+      transcriptionTab.classList.add('border-transparent', 'text-gray-500');
+      transcriptionTab.classList.remove('border-[#004d40]', 'text-[#004d40]');
+      
+      clinicalNotesContent.classList.remove('hidden');
+      transcriptionContent.classList.add('hidden');
+    });
+    
+    // Recording controls
+    const startRecordingBtn = document.getElementById('startRecordingBtn');
+    const stopRecordingBtn = document.getElementById('stopRecordingBtn');
+    const recordingTimer = document.getElementById('recordingTimer');
+    const recordingStatus = document.getElementById('recordingStatus');
+    const voiceActivityIndicator = document.getElementById('voiceActivityIndicator');
+    
+    let timerInterval;
+    let secondsElapsed = 0;
+    let currentRecordingId = null;
+    
+    function formatTime(seconds) {
+      const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+      const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+      const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+      return `${h}:${m}:${s}`;
+    }
+    
+    function startTimer() {
+      secondsElapsed = 0;
+      recordingTimer.textContent = formatTime(secondsElapsed);
+      
+      timerInterval = setInterval(function() {
+        secondsElapsed++;
+        recordingTimer.textContent = formatTime(secondsElapsed);
+        
+        // Simulate voice activity
+        const activity = Math.random() * 100;
+        voiceActivityIndicator.style.width = `${activity}%`;
+      }, 1000);
+    }
+    
+    function stopTimer() {
+      clearInterval(timerInterval);
+      voiceActivityIndicator.style.width = '0%';
+    }
+    
+    startRecordingBtn.addEventListener('click', function() {
+      // Check if an appointment is selected
+      const appointmentSelect = document.getElementById('appointmentSelect');
+      const appointmentId = appointmentSelect.value;
+      
+      if (!appointmentId) {
+        showStatusMessage('Please select a patient/appointment before starting a recording.', 'error');
+        return;
+      }
+      
+      // Show loading state
+      startRecordingBtn.disabled = true;
+      startRecordingBtn.querySelector('.absolute:last-of-type').textContent = 'Starting...';
+      
+      // Simulate API call to start recording
+      setTimeout(function() {
+        // Hide the start button and show the stop button
+        startRecordingBtn.classList.add('hidden');
+        stopRecordingBtn.classList.remove('hidden');
+        
+        // Update status
+        recordingStatus.textContent = 'Recording in progress...';
+        recordingStatus.classList.add('text-red-600');
+        recordingStatus.classList.remove('text-gray-600');
+        
+        // Start the timer and voice activity simulation
+        startTimer();
+        
+        // Simulate a recording ID
+        currentRecordingId = Math.floor(Math.random() * 1000);
+        
+        showStatusMessage('Recording started successfully.', 'success');
+      }, 1000);
+    });
+    
+    stopRecordingBtn.addEventListener('click', function() {
+      // Show loading state
+      stopRecordingBtn.disabled = true;
+      stopRecordingBtn.querySelector('.absolute:last-of-type').textContent = 'Stopping...';
+      
+      // Simulate API call to stop recording
+      setTimeout(function() {
+        // Hide the stop button and show the start button
+        stopRecordingBtn.classList.add('hidden');
+        startRecordingBtn.classList.remove('hidden');
+        startRecordingBtn.disabled = false;
+        startRecordingBtn.querySelector('.absolute:last-of-type').textContent = 'Start Recording';
+        
+        // Update status
+        recordingStatus.textContent = 'Processing recording...';
+        recordingStatus.classList.remove('text-red-600');
+        recordingStatus.classList.add('text-gray-600');
+        
+        // Stop the timer
+        stopTimer();
+        
+        showStatusMessage('Recording stopped. Processing transcription...', 'info');
+        
+        // Simulate transcription processing
+        setTimeout(function() {
+          // Enable the transcription buttons
+          document.getElementById('regenerateTranscriptionBtn').disabled = false;
+          document.getElementById('editTranscriptionBtn').disabled = false;
+          document.getElementById('generateNotesBtn').disabled = false;
+          
+          // Update the transcription text
+          document.getElementById('transcriptionText').innerHTML = `
+            <p><strong>Doctor:</strong> Hello, how are you feeling today?</p>
+            <p><strong>Patient:</strong> I've been having these headaches for about a week now.</p>
+            <p><strong>Doctor:</strong> Can you describe the pain?</p>
+            <p><strong>Patient:</strong> It's a throbbing pain, mainly on the right side of my head. Sometimes it gets worse when I'm looking at screens for too long.</p>
+            <p><strong>Doctor:</strong> Do you have any history of migraines?</p>
+            <p><strong>Patient:</strong> Yes, I was diagnosed with migraines about 3 years ago.</p>
+            <p><strong>Doctor:</strong> Are you currently taking any medication for it?</p>
+            <p><strong>Patient:</strong> I have some sumatriptan that I take when it gets really bad, but I try not to use it too often.</p>
+            <p><strong>Doctor:</strong> How's your water intake been?</p>
+            <p><strong>Patient:</strong> Probably not enough, to be honest.</p>
+          `;
+          
+          // Update recording status
+          recordingStatus.textContent = 'Transcription complete';
+          
+          showStatusMessage('Transcription completed successfully.', 'success');
+        }, 3000);
+      }, 1000);
+    });
+    
+    // Generate clinical notes
+    const generateNotesBtn = document.getElementById('generateNotesBtn');
+    
+    generateNotesBtn.addEventListener('click', function() {
+      // Show loading state
+      generateNotesBtn.disabled = true;
+      generateNotesBtn.textContent = 'Generating...';
+      
+      // Simulate API call to generate notes
+      setTimeout(function() {
+        // Switch to the clinical notes tab
+        clinicalNotesTab.click();
+        
+        // Enable the clinical notes buttons
+        document.getElementById('regenerateNotesBtn').disabled = false;
+        document.getElementById('editNotesBtn').disabled = false;
+        document.getElementById('saveNotesBtn').disabled = false;
+        
+        // Update the clinical notes text
+        document.getElementById('clinicalNotesText').innerHTML = `
+          <h3 class="font-bold text-lg mb-2">SUBJECTIVE:</h3>
+          <p class="mb-4">Patient presents with complaints of headache and fatigue for the past week. Describes the pain as throbbing, mainly on the right side of the head. Reports that the pain worsens with prolonged screen time. Patient has a history of migraines diagnosed 3 years ago.</p>
+          
+          <h3 class="font-bold text-lg mb-2">OBJECTIVE:</h3>
+          <p class="mb-4">Vital signs stable. No fever. No neck stiffness or neurological deficits noted. Patient appears well-hydrated.</p>
+          
+          <h3 class="font-bold text-lg mb-2">ASSESSMENT:</h3>
+          <p class="mb-4">Migraine headache, consistent with patient's history.</p>
+          
+          <h3 class="font-bold text-lg mb-2">PLAN:</h3>
+          <ol class="list-decimal list-inside mb-4">
+            <li>Continue sumatriptan as needed for acute episodes.</li>
+            <li>Increase water intake to at least 8 glasses per day.</li>
+            <li>Recommend regular breaks from screen time (20-20-20 rule: every 20 minutes, look at something 20 feet away for 20 seconds).</li>
+            <li>Consider preventive treatment if frequency increases.</li>
+            <li>Follow up in 2 weeks if symptoms persist or worsen.</li>
+          </ol>
+        `;
+        
+        // Reset the generate button
+        generateNotesBtn.disabled = false;
+        generateNotesBtn.textContent = 'Generate Clinical Notes';
+        
+        showStatusMessage('Clinical notes generated successfully.', 'success');
+      }, 2000);
+    });
+    
+    // Status message handling
+    function showStatusMessage(message, type) {
+      const statusMessage = document.getElementById('statusMessage');
+      
+      // Set the appropriate styling based on the message type
+      statusMessage.className = 'mb-6 p-4 rounded-lg';
+      
+      if (type === 'success') {
+        statusMessage.classList.add('bg-green-100', 'text-green-700');
+      } else if (type === 'error') {
+        statusMessage.classList.add('bg-red-100', 'text-red-700');
+      } else if (type === 'info') {
+        statusMessage.classList.add('bg-blue-100', 'text-blue-700');
+      } else if (type === 'warning') {
+        statusMessage.classList.add('bg-yellow-100', 'text-yellow-700');
+      }
+      
+      // Set the message text
+      statusMessage.textContent = message;
+      
+      // Show the message
+      statusMessage.classList.remove('hidden');
+      
+      // Hide the message after 5 seconds
+      setTimeout(function() {
+        statusMessage.classList.add('hidden');
+      }, 5000);
+    }
+    
+    // Test microphone button
+    const testMicButton = document.getElementById('testMicButton');
+    
+    testMicButton.addEventListener('click', function() {
+      showStatusMessage('Testing microphone... Please speak now.', 'info');
+      
+      // Simulate microphone test
+      setTimeout(function() {
+        showStatusMessage('Microphone is working properly.', 'success');
+      }, 2000);
+    });
+    
+    // Load recording buttons
+    const loadRecordingButtons = document.querySelectorAll('.load-recording');
+    
+    loadRecordingButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const recordingId = this.getAttribute('data-id');
+        
+        showStatusMessage('Loading recording...', 'info');
+        
+        // Simulate loading a recording
+        setTimeout(function() {
+          // Switch to the transcription tab
+          transcriptionTab.click();
+          
+          // Enable the transcription buttons
+          document.getElementById('regenerateTranscriptionBtn').disabled = false;
+          document.getElementById('editTranscriptionBtn').disabled = false;
+          document.getElementById('generateNotesBtn').disabled = false;
+          
+          // Update the transcription text with a sample transcription
+          document.getElementById('transcriptionText').innerHTML = `
+            <p><strong>Doctor:</strong> Hello, how have you been since our last appointment?</p>
+            <p><strong>Patient:</strong> Much better, thank you. The new medication has really helped with my symptoms.</p>
+            <p><strong>Doctor:</strong> That's great to hear. Any side effects?</p>
+            <p><strong>Patient:</strong> None that I've noticed.</p>
+            <p><strong>Doctor:</strong> Excellent. Let's discuss your latest test results...</p>
+          `;
+          
+          showStatusMessage('Recording loaded successfully.', 'success');
+        }, 1500);
+      });
+    });
+  });
+</script>
+{% endblock %}

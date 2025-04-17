@@ -1,0 +1,452 @@
+{% extends "provider/base.html" %}
+{% block title %}Video Consultations - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <div>
+    <h2 class="text-xl font-bold text-gray-800">Video Consultations</h2>
+    <p class="text-gray-600">Manage and conduct remote appointments with patients</p>
+  </div>
+  <div class="flex space-x-2">
+    <button id="testConnectionBtn" class="bg-white border border-[#004d40] text-[#004d40] py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+      Test Connection
+    </button>
+    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+      Schedule New
+    </a>
+  </div>
+</div>
+
+<!-- Status message area -->
+<div id="statusMessage" class="hidden mb-6 p-4 rounded-lg">
+  <!-- Will be filled dynamically with appropriate status messages -->
+</div>
+
+<!-- Main content grid -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+  <!-- Left sidebar - Appointments list -->
+  <div class="lg:col-span-1">
+    <!-- Upcoming appointments section -->
+    <div class="bg-white rounded-xl shadow mb-6">
+      <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl">
+        <h3 class="font-semibold text-[#004d40]">Today's Appointments</h3>
+      </div>
+      
+      <div class="divide-y divide-gray-200 max-h-96 overflow-y-auto">
+        <div class="p-4 hover:bg-gray-50 cursor-pointer consultation-item active" data-patient-id="1">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">Jane Doe</p>
+              <p class="text-sm text-gray-500">10:00 AM - Annual Checkup</p>
+            </div>
+            <span class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">Now</span>
+          </div>
+          <div class="flex space-x-2 mt-2">
+            <button class="join-meeting-btn bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">
+              Join Meeting
+            </button>
+            <button class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">
+              View Chart
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer consultation-item" data-patient-id="2">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">John Smith</p>
+              <p class="text-sm text-gray-500">11:30 AM - Follow-up</p>
+            </div>
+            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
+          </div>
+          <div class="flex space-x-2 mt-2">
+            <button class="join-meeting-btn bg-gray-400 text-white py-1 px-3 rounded text-sm" disabled>
+              Join Meeting
+            </button>
+            <button class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">
+              View Chart
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer consultation-item" data-patient-id="3">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">Emily Williams</p>
+              <p class="text-sm text-gray-500">2:15 PM - New Patient Visit</p>
+            </div>
+            <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">Upcoming</span>
+          </div>
+          <div class="flex space-x-2 mt-2">
+            <button class="join-meeting-btn bg-gray-400 text-white py-1 px-3 rounded text-sm" disabled>
+              Join Meeting
+            </button>
+            <button class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">
+              View Chart
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Past consultations section -->
+    <div class="bg-white rounded-xl shadow">
+      <div class="p-4 border-b border-gray-200 bg-gray-50 rounded-t-xl flex justify-between items-center">
+        <h3 class="font-semibold text-[#004d40]">Past Consultations</h3>
+        <a href="#" class="text-sm text-[#004d40] hover:underline">View All</a>
+      </div>
+      
+      <div class="divide-y divide-gray-200 max-h-72 overflow-y-auto">
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">Robert Johnson</p>
+              <p class="text-sm text-gray-500">Today, 9:00 AM - Blood Work Results</p>
+            </div>
+            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">Sarah Parker</p>
+              <p class="text-sm text-gray-500">Apr 2, 2025 - Medication Review</p>
+            </div>
+            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">Michael Brown</p>
+              <p class="text-sm text-gray-500">Apr 1, 2025 - Follow-up</p>
+            </div>
+            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>
+          </div>
+        </div>
+        
+        <div class="p-4 hover:bg-gray-50 cursor-pointer">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-900">Lisa Garcia</p>
+              <p class="text-sm text-gray-500">Mar 30, 2025 - Annual Checkup</p>
+            </div>
+            <span class="bg-gray-100 text-gray-800 text-xs px-2 py-1 rounded-full">Completed</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Main content area - Video call interface -->
+  <div class="lg:col-span-2">
+    <!-- Video call container -->
+    <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
+      <div class="p-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+        <div class="flex items-center">
+          <h3 class="font-semibold text-[#004d40]">
+            <span id="activePatientName">Jane Doe</span> 
+            <span class="text-sm font-normal text-gray-500">- <span id="activeAppointmentType">Annual Checkup</span></span>
+          </h3>
+        </div>
+        <div class="flex space-x-2">
+          <button id="aiScribeBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+            AI Scribe
+          </button>
+          <button id="screenShareBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
+            Share Screen
+          </button>
+        </div>
+      </div>
+      
+      <!-- Video call area -->
+      <div class="relative">
+        <!-- Video call container -->
+        <div id="videoContainer" class="bg-gray-900 w-full h-[420px] flex justify-center items-center">
+          <!-- This placeholder would be replaced with actual video components in production -->
+          <div class="text-center text-white">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 mx-auto mb-4 text-white opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <p class="text-lg font-medium">Click "Join Meeting" to start the video consultation</p>
+            <p class="text-sm opacity-75 mt-2">Make sure your camera and microphone are accessible</p>
+          </div>
+          
+          <!-- Self video preview (would be hidden initially) -->
+          <div id="selfVideoPreview" class="absolute bottom-4 right-4 w-48 h-36 bg-gray-800 rounded-lg hidden">
+            <!-- Self-view video would be injected here -->
+          </div>
+        </div>
+        
+        <!-- Video call controls -->
+        <div class="bg-gray-800 p-3 flex justify-center space-x-4">
+          <button id="toggleMicBtn" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+            </svg>
+          </button>
+          <button id="toggleCameraBtn" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+          </button>
+          <button id="endCallBtn" class="bg-red-600 hover:bg-red-700 text-white p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
+            </svg>
+          </button>
+          <button id="toggleChatBtn" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </button>
+          <button id="toggleSettingsBtn" class="bg-gray-700 hover:bg-gray-600 text-white p-3 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tabs for patient info and chat -->
+    <div class="bg-white rounded-xl shadow overflow-hidden">
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex" aria-label="Tabs">
+          <button id="patientInfoTab" class="border-[#004d40] text-[#004d40] whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm" aria-current="page">
+            Patient Info
+          </button>
+          <button id="chatTab" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+            Chat
+          </button>
+          <button id="notesTab" class="border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-6 border-b-2 font-medium text-sm">
+            Notes
+          </button>
+        </nav>
+      </div>
+      
+      <!-- Patient Info Tab Content -->
+      <div id="patientInfoContent" class="p-4 max-h-80 overflow-y-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Patient demographics -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-2">Patient Demographics</h4>
+            <div class="space-y-2">
+              <p class="text-sm"><span class="font-medium text-gray-600">DOB:</span> April 12, 1985 (40 years)</p>
+              <p class="text-sm"><span class="font-medium text-gray-600">Gender:</span> Female</p>
+              <p class="text-sm"><span class="font-medium text-gray-600">Phone:</span> (555) 123-4567</p>
+              <p class="text-sm"><span class="font-medium text-gray-600">Email:</span> jane.doe@example.com</p>
+              <p class="text-sm"><span class="font-medium text-gray-600">OHIP:</span> 1234567890</p>
+            </div>
+          </div>
+          
+          <!-- Recent appointments -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-2">Recent Appointments</h4>
+            <div class="space-y-2">
+              <p class="text-sm"><span class="font-medium text-gray-600">Last Visit:</span> Feb 28, 2025 - Blood Work Results</p>
+              <p class="text-sm"><span class="font-medium text-gray-600">Previous Visit:</span> Jan 10, 2025 - Annual Checkup</p>
+            </div>
+          </div>
+          
+          <!-- Medications -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-2">Current Medications</h4>
+            <div class="space-y-1">
+              <p class="text-sm">• Lisinopril 10mg, once daily</p>
+              <p class="text-sm">• Metformin 500mg, twice daily with meals</p>
+              <p class="text-sm">• Simvastatin 20mg, once daily at bedtime</p>
+            </div>
+          </div>
+          
+          <!-- Allergies -->
+          <div>
+            <h4 class="font-medium text-gray-700 mb-2">Allergies</h4>
+            <div class="space-y-1">
+              <p class="text-sm">• Penicillin (Hives, Difficulty Breathing)</p>
+              <p class="text-sm">• Shellfish (Anaphylaxis)</p>
+              <p class="text-sm">• Pollen (Seasonal)</p>
+            </div>
+          </div>
+          
+          <!-- Vital signs -->
+          <div class="md:col-span-2">
+            <h4 class="font-medium text-gray-700 mb-2">Last Recorded Vital Signs (Feb 28, 2025)</h4>
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <div class="bg-gray-50 p-2 rounded">
+                <p class="text-xs text-gray-500">Blood Pressure</p>
+                <p class="text-sm font-medium">120/80 mmHg</p>
+              </div>
+              <div class="bg-gray-50 p-2 rounded">
+                <p class="text-xs text-gray-500">Heart Rate</p>
+                <p class="text-sm font-medium">72 bpm</p>
+              </div>
+              <div class="bg-gray-50 p-2 rounded">
+                <p class="text-xs text-gray-500">Temperature</p>
+                <p class="text-sm font-medium">98.6 °F</p>
+              </div>
+              <div class="bg-gray-50 p-2 rounded">
+                <p class="text-xs text-gray-500">Weight</p>
+                <p class="text-sm font-medium">148 lbs</p>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Action buttons for patient record -->
+          <div class="md:col-span-2 flex space-x-2 mt-2">
+            <button class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">
+              View Full Chart
+            </button>
+            <button class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">
+              Lab Results
+            </button>
+            <button class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">
+              Prescriptions
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Chat Tab Content -->
+      <div id="chatContent" class="hidden h-80 flex flex-col">
+        <div class="flex-1 p-4 overflow-y-auto space-y-4">
+          <div class="flex justify-end">
+            <div class="bg-[#edf7f5] text-gray-800 rounded-lg py-2 px-4 max-w-xs">
+              <p class="text-sm">Hello, Jane. How are you feeling today?</p>
+              <p class="text-xs text-gray-500 text-right mt-1">10:01 AM</p>
+            </div>
+          </div>
+          
+          <div class="flex justify-start">
+            <div class="bg-gray-100 text-gray-800 rounded-lg py-2 px-4 max-w-xs">
+              <p class="text-sm">I'm feeling better, Doctor. The new medication has been helping with my symptoms.</p>
+              <p class="text-xs text-gray-500 mt-1">10:02 AM</p>
+            </div>
+          </div>
+          
+          <div class="flex justify-end">
+            <div class="bg-[#edf7f5] text-gray-800 rounded-lg py-2 px-4 max-w-xs">
+              <p class="text-sm">That's great to hear! Any side effects we should discuss?</p>
+              <p class="text-xs text-gray-500 text-right mt-1">10:03 AM</p>
+            </div>
+          </div>
+        </div>
+        
+        <div class="border-t border-gray-200 p-3">
+          <form class="flex items-center">
+            <input type="text" placeholder="Type a message..." class="flex-1 border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#004d40]">
+            <button type="submit" class="ml-2 bg-[#004d40] text-white p-2 rounded-lg">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+      
+      <!-- Notes Tab Content -->
+      <div id="notesContent" class="hidden h-80 flex flex-col">
+        <div class="flex-1 p-4 overflow-y-auto">
+          <textarea
+            placeholder="Add your consultation notes here..."
+            class="w-full h-full border border-gray-300 rounded-lg py-2 px-3 focus:outline-none focus:ring-2 focus:ring-[#004d40]"
+          ></textarea>
+        </div>
+        
+        <div class="border-t border-gray-200 p-3 flex justify-end space-x-2">
+          <button id="aiGenerateNotesBtn" class="text-[#004d40] border border-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Generate with AI
+          </button>
+          <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">
+            Save Notes
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Telehealth configuration section -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <h3 class="text-lg font-semibold text-[#004d40] mb-4">Telehealth Configuration</h3>
+  
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <!-- Video settings -->
+    <div class="border border-gray-200 rounded-lg p-4">
+      <h4 class="font-medium text-gray-800 mb-3">Video Settings</h4>
+      
+      <div class="space-y-4">
+        <div>
+          <label for="cameraSelect" class="block text-sm font-medium text-gray-700 mb-1">Camera</label>
+          <select id="cameraSelect" class="w-full border border-gray-300 rounded-lg p-2">
+            <option value="default">Default Camera</option>
+            <option value="camera1">FaceTime HD Camera</option>
+            <option value="camera2">External USB Webcam</option>
+          </select>
+        </div>
+        
+      </div>
+
+        <!-- Microphone settings -->
+        <div>
+          <label for="microphoneSelect" class="block text-sm font-medium text-gray-700 mb-1">Microphone</label>
+          <select id="microphoneSelect" class="w-full border border-gray-300 rounded-lg p-2">
+            <option value="default">Default Microphone</option>
+            <option value="mic1">Built-in Microphone</option>
+            <option value="mic2">External USB Mic</option>
+          </select>
+        </div>
+
+        <!-- Speaker settings -->
+        <div>
+          <label for="speakerSelect" class="block text-sm font-medium text-gray-700 mb-1">Speakers</label>
+          <select id="speakerSelect" class="w-full border border-gray-300 rounded-lg p-2">
+            <option value="default">Default Speakers</option>
+            <option value="speaker1">Headphones</option>
+            <option value="speaker2">External Speakers</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Network diagnostics -->
+    <div class="border border-gray-200 rounded-lg p-4">
+      <h4 class="font-medium text-gray-800 mb-3">Network Diagnostics</h4>
+      <div class="space-y-2 text-sm text-gray-700">
+        <p><span class="font-medium">Connection Status:</span> <span id="connectionStatus">Not tested</span></p>
+        <p><span class="font-medium">Latency:</span> <span id="latency">-</span></p>
+        <p><span class="font-medium">Packet Loss:</span> <span id="packetLoss">-</span></p>
+        <p><span class="font-medium">Bandwidth:</span> <span id="bandwidth">-</span></p>
+      </div>
+    </div>
+
+    <!-- Help and support -->
+    <div class="border border-gray-200 rounded-lg p-4">
+      <h4 class="font-medium text-gray-800 mb-3">Help & Support</h4>
+      <ul class="list-disc list-inside text-sm text-gray-700 space-y-1">
+        <li><a href="#" class="text-[#004d40] hover:underline">Video troubleshooting guide</a></li>
+        <li><a href="#" class="text-[#004d40] hover:underline">Audio setup support</a></li>
+        <li><a href="#" class="text-[#004d40] hover:underline">Contact IT support</a></li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

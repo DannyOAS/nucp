@@ -1,0 +1,185 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <title>{% block title %}Django Tailwind{% endblock %}</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    {% tailwind_css %}
+    <style>
+        /* Custom hover styles for dropdown items */
+        .dropdown-item:hover {
+            background-color: #004d40;
+            color: white;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50 font-sans leading-normal tracking-normal">
+
+    <!-- Header Section -->
+    <header class="py-6 text-center shadow-md w-full bg-[#004d40] text-white">
+        <h1 class="text-4xl font-extrabold tracking-tight">Northern Health Innovations</h1>
+        <p class="text-lg mt-2 italic">Bold Innovations. Secure Care.<sup>™</sup></p>
+    </header>
+
+    <!-- Navigation-->
+    <nav class="bg-white shadow-md border-b border-gray-300">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <!-- Left side - NUCP Login -->
+            <a href="https://u1.isnord.ca/auth" target="_blank" rel="noopener noreferrer"
+               class="text-xl font-bold text-[#004d40]">
+                NUCP<sup>™</sup> Login
+            </a>
+
+            <!-- Center/Right side -->
+            <div class="hidden md:flex items-center space-x-6">
+                <!-- Main Navigation-->
+                <a href="{% url 'home' %}" class="text-gray-700 hover:text-[#004d40] px-4">Home</a>
+                <a href="{% url 'blog_list' %}" class="text-gray-700 hover:text-[#004d40] px-4">About</a>
+                <a href="{% url 'contact' %}" class="text-gray-700 hover:text-[#004d40] px-4">Contact</a>
+
+                <!-- Patient Portal Dropdown -->
+                <div class="relative">
+                    <button type="button"
+                            onclick="toggleDropdown('patientDropdown', event)"
+                            class="text-gray-700 hover:text-[#004d40] px-4 flex items-center">
+                        Patient Portal
+                    </button>
+                    <!-- Dropdown menu -->
+                    <div id="patientDropdown"
+                         class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden z-50">
+                        <a href="{% url 'registration' %}"
+                           class="dropdown-item block px-4 py-2 text-gray-700 rounded-t-lg">
+                            Register
+                        </a>
+                        <a href="{% url 'patient_dashboard' %}"
+                           class="dropdown-item block px-4 py-2 text-gray-700 rounded-b-lg">
+                            Login
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Provider Portal Dropdown -->
+                <div class="relative">
+                    <button type="button"
+                            onclick="toggleDropdown('providerDropdown', event)"
+                            class="text-gray-700 hover:text-[#004d40] px-4 flex items-center">
+                        Provider Portal
+                    </button>
+                    <!-- Dropdown menu -->
+                    <div id="providerDropdown"
+                         class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden z-50">
+                        <a href="{% url 'provider_dashboard' %}"
+                           class="dropdown-item block px-4 py-2 text-gray-700 rounded-lg">
+                            Login
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mobile Menu Button - ONLY HERE -->
+            <button id="menu-toggle" class="block md:hidden focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                     xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 6h16M4 12h16m-7 6h7"></path>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-md px-4 py-3">
+           
+            <a href="{% url 'home' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">Home</a>
+            <a href="{% url 'blog_list' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">About</a>
+            <a href="{% url 'contact' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">Contact</a>
+
+            <!-- Mobile Patient Portal Section -->
+            <div class="py-2">
+                <div class="font-semibold text-gray-700 mb-2">Patient Portal</div>
+                <a href="{% url 'registration' %}" class="block py-2 pl-4 text-gray-700 hover:text-[#004d40]">Register</a>
+                <a href="{% url 'patient_dashboard' %}" class="block py-2 pl-4 text-gray-700 hover:text-[#004d40]">Login</a>
+            </div>
+
+            <!-- Mobile Provider Portal Section -->
+            <div class="py-2">
+                <div class="font-semibold text-gray-700 mb-2">Provider Portal</div>
+                <a href="{% url 'provider_dashboard' %}" class="block py-2 pl-4 text-gray-700 hover:text-[#004d40]">Login</a>
+            </div>
+        </div>
+    </nav>
+       
+
+    <!-- Main Content -->
+    <main class="container mx-auto my-6 px-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white shadow-md py-6 mt-12">
+        <div class="container mx-auto text-center">
+            <p class="text-gray-600">&copy; 2025 Northern Health Innovations Inc. All rights reserved.</p>
+            <p class="text-gray-600 mt-1">5600-100 King Street West, Toronto, ON, M5X 1A9</p>
+            <p class="text-gray-600 mt-1">
+                Email: <a href="mailto:info@norhi.ca" class="text-[#004d40] hover:underline">info@norhi.ca</a>
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript for Mobile Menu Toggle -->
+    <script>
+        // Define currentDropdown in global scope
+        let currentDropdown = null;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Mobile menu elements
+            const menuToggle = document.getElementById("menu-toggle");
+            const mobileMenu = document.getElementById("mobile-menu");
+
+            // Mobile menu functionality
+            menuToggle.addEventListener("click", function () {
+                mobileMenu.classList.toggle("hidden");
+            });
+
+            // Close dropdown when clicking outside
+            document.addEventListener('click', function(event) {
+                // If clicking outside of dropdown container
+                if (!event.target.closest('.relative') && 
+                    !event.target.matches('button[onclick^="toggleDropdown"]')) {
+                    // Close all dropdowns
+                    const dropdowns = document.querySelectorAll('[id$="Dropdown"]');
+                    dropdowns.forEach(dropdown => {
+                        dropdown.classList.add('hidden');
+                    });
+                    currentDropdown = null;
+                }
+            });
+        });
+
+        // Global toggle dropdown function
+        function toggleDropdown(dropdownId, event) {
+            // Prevent default behavior and stop propagation
+            if (event) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            const dropdown = document.getElementById(dropdownId);
+            
+            // If there's an open dropdown and it's not the one we're clicking
+            if (currentDropdown && currentDropdown !== dropdown) {
+                currentDropdown.classList.add('hidden');
+            }
+            
+            // Toggle the clicked dropdown
+            dropdown.classList.toggle('hidden');
+            
+            // Update current dropdown reference
+            currentDropdown = dropdown.classList.contains('hidden') ? null : dropdown;
+        }
+    </script>
+</body>
+</html>

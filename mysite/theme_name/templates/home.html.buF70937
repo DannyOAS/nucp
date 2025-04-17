@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}  <!-- ✅ Ensure the static tag is loaded -->
+
+{% block title %}Home - Northern Health Innovations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12">
+
+    <!-- Welcome Section -->
+    <div class="text-center">
+        <h1 class="text-4xl font-extrabold text-[#004d40]">
+            Welcome | Bienvenue | Tân'si
+        </h1>
+        <p class="mt-4 text-base text-lg-700 max-w-3xl mx-auto">
+            Welcome to <span class="font-semibold">Northern Health Innovations Inc.</span>, where we're dedicated to 
+            empowering healthcare providers with innovative software and modern programming.
+        </p>
+    </div>
+
+    <!-- Mission Section -->
+    <div class="mt-12 bg-gray-100 rounded-2xl p-8 shadow-md">
+        <h2 class="text-3xl font-bold text-[#004d40] text-center">Our Mission</h2>
+        <ul class="mt-6 space-y-4 text-lg text-gray-700 list-disc list-inside">
+            <li>Improve patient outcomes and healthcare provider wellbeing through innovative care delivery systems.</li>
+            <li>Simplify documentation and care coordination, allowing healthcare professionals to focus on patient care.</li>
+            <li>Promote the efficient function of Canada’s public healthcare system.</li>
+        </ul>
+    </div>
+
+    <!-- Approach Section -->
+    <div class="mt-12">
+        <h2 class="text-3xl font-bold text-[#004d40] text-center">Our Approach</h2>
+        <p class="mt-4 text-lg text-gray-700 text-center max-w-4xl mx-auto">
+            We are excited to have released a **provisional model** of our care platform in **January 2025**.  
+            The <span class="font-semibold">Norhi Unified Care Platform (NUCP)<sup>™</sup></span> offers benefits such as automation, 
+            care coordination, documentation efficiencies, interoperable health records, and high security standards.
+        </p>
+        <p class="mt-6 text-lg text-gray-700 text-center max-w-4xl mx-auto">
+            As we build on our progress, we're excited to share further updates and anticipate 
+            **clinical use beginning in Spring 2025**.
+        </p>
+    </div>
+
+    <!-- Profile Section -->
+    <div class="mt-12 text-center">
+        <img src="{% static 'images/dr-victor-vien.png' %}" 
+             alt="Dr. Victor Vien" 
+             class="w-48 h-64 rounded-lg mx-auto shadow-md object-cover">    
+        <h3 class="mt-4 text-2xl font-bold text-[#004d40]">Dr. Victor Vien, MD FRCPC</h3>
+        <p class="text-lg text-gray-700">Psychiatrist and Founder of Northern Health Innovations Inc.</p>
+    </div>
+</div>
+{% endblock %}

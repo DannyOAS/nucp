@@ -1,0 +1,70 @@
+{% extends "provider/base.html" %}
+{% block title %}View Document - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Document Preview</h2>
+  <div class="flex space-x-2">
+    <a href="{% url 'forms_dashboard' %}" class="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back to Templates
+    </a>
+    
+    {% if pdf_available %}
+    <a href="{% url 'download_document_pdf' document_id=document_id %}" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+      </svg>
+      Download PDF
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Document Preview -->
+<div class="bg-white rounded-xl shadow p-6">
+  <div class="border-b border-gray-200 pb-4 mb-4">
+    <h3 class="text-lg font-semibold text-[#004d40]">Document Preview</h3>
+    <p class="text-sm text-gray-500">This is a preview of how your document will appear.</p>
+  </div>
+  
+  <div class="bg-gray-50 border border-gray-200 rounded-lg p-8">
+    <!-- Render the HTML content -->
+    <div id="document-preview">
+      {{ html_content|safe }}
+    </div>
+  </div>
+  
+  <!-- Document Actions -->
+  <div class="mt-6 flex justify-end space-x-3">
+    <a href="{% url 'forms_dashboard' %}" class="bg-white border border-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-50">
+      Cancel
+    </a>
+    <button id="editBtn" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg">
+      Edit
+    </button>
+    <button id="approveBtn" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+      Approve & Send
+    </button>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Edit button handler
+    document.getElementById('editBtn').addEventListener('click', function() {
+      // Redirect back to edit page
+      window.location.href = "/provider/forms/create/{{ document_id }}/";
+    });
+    
+    // Approve button handler
+    document.getElementById('approveBtn').addEventListener('click', function() {
+      // In a real implementation, this would make an AJAX call to update status
+      alert('Document approved and sent successfully!');
+      // Redirect to forms dashboard
+      window.location.href = "{% url 'forms_dashboard' %}";
+    });
+  });
+</script>
+{% endblock %}

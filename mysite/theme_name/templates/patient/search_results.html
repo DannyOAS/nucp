@@ -1,0 +1,126 @@
+{% extends "patient/base.html" %}
+{% block title %}Search Results{% endblock %}
+{% block content %}
+<main class="p-4">
+  <!-- Page header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Search Results</h1>
+      <p class="text-gray-600">Results for: "{{ query }}"</p>
+    </div>
+    
+    <!-- Search form -->
+    <form action="{% url 'patient_search' %}" method="get" class="w-full md:w-auto">
+      <div class="relative">
+        <input type="text" name="query" value="{{ query }}" placeholder="Search health records..."
+               class="bg-gray-200 p-2 pl-10 pr-4 rounded-full w-full md:w-64 border-0 focus:outline-none focus:ring-2 focus:ring-[#004d40]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <button type="submit" class="absolute right-3 top-1/2 transform -translate-y-1/2 text-[#004d40]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  {% if not query %}
+    <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-blue-700">Enter a search term to find information in your health records.</p>
+        </div>
+      </div>
+    </div>
+  {% elif results.prescriptions|length == 0 and results.appointments|length == 0 and results.messages|length == 0 %}
+    <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+      <div class="flex">
+        <div class="flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <div class="ml-3">
+          <p class="text-sm text-yellow-700">No results found for "{{ query }}". Try another search term.</p>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if results.prescriptions %}
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Prescriptions ({{ results.prescriptions|length }})</h2>
+      <div class="grid grid-cols-1 gap-4">
+        {% for prescription in results.prescriptions %}
+          <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+            <div class="flex flex-col md:flex-row justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-xl font-semibold text-gray-800">{{ prescription.medication_name }}</span>
+                  <span class="ml-2 px-2 py-1 bg-{% if prescription.status == 'Active' %}green{% elif prescription.status == 'Renewal Soon' %}yellow{% else %}gray{% endif %}-100 text-{% if prescription.status == 'Active' %}green{% elif prescription.status == 'Renewal Soon' %}yellow{% else %}gray{% endif %}-800 text-xs font-semibold rounded">
+                    {{ prescription.status }}
+                  </span>
+                </div>
+                <p class="text-gray-600 mb-1"><span class="font-medium">Dosage:</span> {{ prescription.dosage }}</p>
+                <p class="text-gray-600 mb-4"><span class="font-medium">Instructions:</span> {{ prescription.instructions }}</p>
+                <div class="flex flex-wrap gap-2">
+                  <a href="{% url 'prescription_detail' prescription.id %}" class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">View Details</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if results.appointments %}
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Appointments ({{ results.appointments|length }})</h2>
+      <div class="grid grid-cols-1 gap-4">
+        {% for appointment in results.appointments %}
+          <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+            <div class="flex flex-col md:flex-row justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-xl font-semibold text-gray-800">{{ appointment.doctor }} - {{ appointment.reason }}</span>
+                  <span class="ml-2 px-2 py-1 bg-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-100 text-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-800 text-xs font-semibold rounded">
+                    {{ appointment.type }}
+                  </span>
+                </div>
+                <p class="text-gray-600 mb-1"><span class="font-medium">Date & Time:</span> {{ appointment.time }}</p>
+                <p class="text-gray-600 mb-1"><span class="font-medium">Location:</span> {{ appointment.location }}</p>
+                <p class="text-gray-600 mb-4"><span class="font-medium">Notes:</span> {{ appointment.notes }}</p>
+              </div>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+
+  {% if results.messages %}
+    <div class="mb-8">
+      <h2 class="text-xl font-bold text-gray-800 mb-4">Messages ({{ results.messages|length }})</h2>
+      <div class="grid grid-cols-1 gap-4">
+        {% for message in results.messages %}
+          <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+            <div class="flex justify-between mb-2">
+              <span class="font-semibold text-[#004d40]">{{ message.sender }}</span>
+              <span class="text-sm text-gray-500">{{ message.timestamp }}</span>
+            </div>
+            <p class="text-gray-800">{{ message.content }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</main>
+{% endblock %}

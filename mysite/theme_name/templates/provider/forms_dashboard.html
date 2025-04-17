@@ -1,0 +1,387 @@
+{% extends "provider/base.html" %}
+{% block title %}Forms & Templates - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Forms & Templates</h2>
+  <div class="flex space-x-2">
+    <button id="recentDocsButton" class="bg-white border border-[#004d40] text-[#004d40] py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+      Recent Documents
+    </button>
+    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      Help & Usage
+    </a>
+  </div>
+</div>
+
+<!-- Status message area -->
+<div id="statusMessage" class="hidden mb-6 p-4 rounded-lg">
+  <!-- Will be filled dynamically with appropriate status messages -->
+</div>
+
+<!-- Patient Selection -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <h3 class="text-lg font-semibold text-[#004d40] mb-4">Select Patient</h3>
+  
+  <div class="flex flex-wrap gap-4 items-end">
+    <div class="w-full md:w-64">
+      <label for="patientSelect" class="block text-sm font-medium text-gray-700 mb-1">Patient</label>
+      <select id="patientSelect" class="w-full border border-gray-300 rounded-lg p-2">
+        <option value="">Select a patient</option>
+          {% for patient in patients %}
+        <option value="{{ patient.id }}">{{ patient.first_name }} {{ patient.last_name }}</option>
+          {% endfor %}
+        </select>
+    </div>
+    
+    <div>
+      <button id="searchPatientBtn" class="bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-4 rounded-lg flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        Search
+      </button>
+    </div>
+    
+    <div id="patientInfoPanel" class="hidden w-full bg-gray-50 p-4 rounded-lg mt-4">
+      <div class="flex justify-between items-start">
+        <div>
+          <h4 class="font-medium text-gray-800" id="selectedPatientName">Jane Doe</h4>
+          <p class="text-sm text-gray-600" id="selectedPatientDOB">DOB: April 12, 1985</p>
+          <p class="text-sm text-gray-600" id="selectedPatientOHIP">OHIP: 1234567890</p>
+        </div>
+        <button id="clearPatientBtn" class="text-gray-400 hover:text-gray-600">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Available Templates Grid -->
+<div class="bg-white rounded-xl shadow p-6 mb-6">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold text-[#004d40]">Available Templates</h3>
+    
+    <div class="relative">
+      <input type="text" placeholder="Search templates..." id="searchTemplatesInput" class="border border-gray-300 rounded-lg py-2 pl-10 pr-4">
+      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Filter tabs -->
+  <div class="flex space-x-2 border-b border-gray-200 mb-4 overflow-x-auto">
+    <button id="tab-all" class="template-tab active text-[#004d40] border-b-2 border-[#004d40] py-2 px-4 font-medium text-sm" data-type="all">All</button>
+    <button id="tab-lab" class="template-tab text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm" data-type="lab_req">Laboratory</button>
+    <button id="tab-work" class="template-tab text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm" data-type="sick_note">Work/School</button>
+    <button id="tab-referral" class="template-tab text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm" data-type="referral">Referrals</button>
+    <button id="tab-insurance" class="template-tab text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm" data-type="insurance">Insurance</button>
+    <button id="tab-prescription" class="template-tab text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm" data-type="prescription">Prescriptions</button>
+  </div>
+  
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    {% for template in templates %}
+      <div class="template-card border border-gray-200 rounded-lg p-4 hover:border-[#004d40] transition-colors duration-200" data-type="{{ template.template_type }}">
+        <div class="flex justify-between items-start">
+          <div>
+            <h4 class="font-medium text-gray-800">{{ template.name }}</h4>
+            <p class="text-sm text-gray-500 mb-2">{{ template.description }}</p>
+          </div>
+          <span class="bg-gray-100 text-gray-600 text-xs px-2 py-1 rounded-full">
+            {% if template.template_type == 'lab_req' %}
+              Laboratory
+            {% elif template.template_type == 'sick_note' %}
+              Work/School
+            {% elif template.template_type == 'referral' %}
+              Referral
+            {% elif template.template_type == 'insurance' %}
+              Insurance
+            {% elif template.template_type == 'prescription' %}
+              Prescription
+            {% else %}
+              {{ template.template_type|title }}
+            {% endif %}
+          </span>
+        </div>
+        
+        <div class="mt-4 flex justify-between items-center">
+          <div class="flex space-x-1">
+            {% if template.requires_patient_data %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+                Patient Data
+              </span>
+            {% endif %}
+            {% if template.requires_provider_data %}
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                Provider Data
+              </span>
+            {% endif %}
+          </div>
+          
+          <a href="#" class="create-form-btn text-[#004d40] hover:text-[#00332e]" data-template-id="{{ template.id }}">
+            Create →
+          </a>
+        </div>
+      </div>
+    {% empty %}
+      <!-- Fallback content if no templates are available -->
+      <div class="col-span-3 text-center py-8 text-gray-500">
+        No templates available. Please contact your administrator.
+      </div>
+    {% endfor %}
+    
+  </div>
+</div>
+
+<!-- Recent Documents -->
+<div class="bg-white rounded-xl shadow p-6">
+  <div class="flex justify-between items-center mb-4">
+    <h3 class="text-lg font-semibold text-[#004d40]">Recent Documents</h3>
+  </div>
+  
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Document</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <!-- Recent documents would be populated here -->
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">Lab Requisition</div>
+            <div class="text-sm text-gray-500">Standard Lab Requisition</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">Jane Doe</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">Today, 11:23 AM</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+              Completed
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
+            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+            <a href="#" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
+          </td>
+        </tr>
+        
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">Sick Note</div>
+            <div class="text-sm text-gray-500">Short-term Sick Note</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">John Smith</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">Yesterday, 3:45 PM</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+              Draft
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
+            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+            <a href="#" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
+          </td>
+        </tr>
+        
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm font-medium text-gray-900">Specialist Referral</div>
+            <div class="text-sm text-gray-500">Cardiology Referral</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">Emily Williams</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <div class="text-sm text-gray-900">March 30, 2025</div>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+              Sent
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
+            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+            <a href="#" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- JavaScript for Forms functionality -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Patient selection handling
+    const patientSelect = document.getElementById('patientSelect');
+    const patientInfoPanel = document.getElementById('patientInfoPanel');
+    const selectedPatientName = document.getElementById('selectedPatientName');
+    const selectedPatientDOB = document.getElementById('selectedPatientDOB');
+    const selectedPatientOHIP = document.getElementById('selectedPatientOHIP');
+    const clearPatientBtn = document.getElementById('clearPatientBtn');
+    
+    // Update the patient info based on selected patient
+    patientSelect.addEventListener('change', function() {
+      const patientId = this.value;
+  
+      if (patientId) {
+        // Show the patient info panel
+        patientInfoPanel.classList.remove('hidden');
+    
+        // Find the selected patient data
+        {% for patient in patients %}
+        if (patientId == "{{ patient.id }}") {
+          selectedPatientName.textContent = "{{ patient.first_name }} {{ patient.last_name }}";
+          selectedPatientDOB.textContent = "DOB: {{ patient.date_of_birth }}";
+          selectedPatientOHIP.textContent = "OHIP: {{ patient.ohip_number }}";
+        }
+        {% endfor %}
+      } else {
+        // Hide the patient info panel if no patient is selected
+        patientInfoPanel.classList.add('hidden');
+      }
+    });
+    
+    clearPatientBtn.addEventListener('click', function() {
+      // Clear the patient selection
+      patientSelect.value = '';
+      patientInfoPanel.classList.add('hidden');
+    });
+    
+    // Template creation
+    const createFormButtons = document.querySelectorAll('.create-form-btn');
+    
+    createFormButtons.forEach(button => {
+      button.addEventListener('click', function(e) {
+        e.preventDefault();
+        
+        const templateId = this.getAttribute('data-template-id');
+        const patientId = patientSelect.value;
+        
+        if (!patientId) {
+          showStatusMessage('Please select a patient before creating a form.', 'error');
+          return;
+        }
+        
+        // In a real implementation, would redirect to the form creation page
+        // For now, just show a success message
+        showStatusMessage('Redirecting to form creation page...', 'info');
+        
+        // Simulate a redirect
+        setTimeout(function() {
+          window.location.href = `/provider/forms/create/${templateId}/?patient_id=${patientId}`;
+        }, 1000);
+      });
+    });
+    
+    // Status message handling
+    function showStatusMessage(message, type) {
+      const statusMessage = document.getElementById('statusMessage');
+      
+      // Set the appropriate styling based on the message type
+      statusMessage.className = 'mb-6 p-4 rounded-lg';
+      
+      if (type === 'success') {
+        statusMessage.classList.add('bg-green-100', 'text-green-700');
+      } else if (type === 'error') {
+        statusMessage.classList.add('bg-red-100', 'text-red-700');
+      } else if (type === 'info') {
+        statusMessage.classList.add('bg-blue-100', 'text-blue-700');
+      } else if (type === 'warning') {
+        statusMessage.classList.add('bg-yellow-100', 'text-yellow-700');
+      }
+      
+      // Set the message text
+      statusMessage.textContent = message;
+      
+      // Show the message
+      statusMessage.classList.remove('hidden');
+      
+      // Hide the message after 5 seconds
+      setTimeout(function() {
+        statusMessage.classList.add('hidden');
+      }, 5000);
+    }
+    
+    // Search templates input
+    const searchTemplatesInput = document.getElementById('searchTemplatesInput');
+    
+    searchTemplatesInput.addEventListener('input', function() {
+      const searchTerm = this.value.toLowerCase();
+      const templateCards = document.querySelectorAll('.border.border-gray-200.rounded-lg');
+      
+      templateCards.forEach(card => {
+        const templateName = card.querySelector('h4').textContent.toLowerCase();
+        const templateDescription = card.querySelector('p').textContent.toLowerCase();
+        
+        if (templateName.includes(searchTerm) || templateDescription.includes(searchTerm)) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+
+  //tab filtering
+  document.addEventListener('DOMContentLoaded', function() {
+  // Get all tab buttons and template cards
+  const tabButtons = document.querySelectorAll('.template-tab');
+  const templateCards = document.querySelectorAll('.template-card');
+  
+  // Add click event to each tab button
+  tabButtons.forEach(button => {
+    button.addEventListener('click', function() {
+      const filterType = this.getAttribute('data-type');
+      
+      // Update active tab styling
+      tabButtons.forEach(btn => {
+        btn.classList.remove('active', 'text-[#004d40]', 'border-b-2', 'border-[#004d40]');
+        btn.classList.add('text-gray-500', 'hover:text-[#004d40]', 'hover:border-b-2', 'hover:border-[#004d40]');
+      });
+      
+      this.classList.remove('text-gray-500', 'hover:text-[#004d40]', 'hover:border-b-2', 'hover:border-[#004d40]');
+      this.classList.add('active', 'text-[#004d40]', 'border-b-2', 'border-[#004d40]');
+      
+      // Filter template cards
+      templateCards.forEach(card => {
+        const cardType = card.getAttribute('data-type');
+        
+        if (filterType === 'all' || cardType === filterType) {
+          card.style.display = '';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    });
+  });
+});
+</script>
+{% endblock %}

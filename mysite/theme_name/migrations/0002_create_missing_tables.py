@@ -1,0 +1,66 @@
+from django.db import migrations, models
+
+class Migration(migrations.Migration):
+    dependencies = [
+        ('theme_name', '0001_initial'),
+    ]
+
+    operations = [
+        migrations.CreateModel(
+            name='BlogPost',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('title', models.CharField(max_length=200)),
+                ('content', models.TextField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('updated_at', models.DateTimeField(auto_now=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='PatientRegistration',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('first_name', models.CharField(max_length=100)),
+                ('last_name', models.CharField(max_length=100)),
+                ('primary_phone', models.CharField(max_length=20)),
+                ('alternate_phone', models.CharField(blank=True, max_length=20)),
+                ('email', models.EmailField(max_length=254)),
+                ('date_of_birth', models.DateField()),
+                ('address', models.TextField()),
+                ('ohip_number', models.CharField(max_length=12)),
+                ('current_medications', models.TextField(blank=True)),
+                ('allergies', models.TextField(blank=True)),
+                ('supplements', models.TextField(blank=True)),
+                ('pharmacy_details', models.CharField(blank=True, max_length=200)),
+                ('emergency_contact_name', models.CharField(max_length=100)),
+                ('emergency_contact_phone', models.CharField(max_length=20)),
+                ('emergency_contact_alternate_phone', models.CharField(blank=True, max_length=20)),
+                ('virtual_care_consent', models.BooleanField()),
+                ('ehr_consent', models.BooleanField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('erpnext_id', models.CharField(blank=True, max_length=255, null=True)),
+            ],
+        ),
+        migrations.CreateModel(
+            name='PrescriptionRequest',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('first_name', models.CharField(max_length=100)),
+                ('last_name', models.CharField(max_length=100)),
+                ('date_of_birth', models.DateField()),
+                ('ohip_number', models.CharField(max_length=12)),
+                ('phone_number', models.CharField(max_length=20)),
+                ('medication_name', models.CharField(max_length=200)),
+                ('current_dosage', models.CharField(max_length=100)),
+                ('medication_duration', models.CharField(max_length=100)),
+                ('last_refill_date', models.DateField()),
+                ('preferred_pharmacy', models.CharField(max_length=200)),
+                ('new_medical_conditions', models.TextField(blank=True)),
+                ('new_medications', models.TextField(blank=True)),
+                ('side_effects', models.TextField(blank=True)),
+                ('information_consent', models.BooleanField()),
+                ('pharmacy_consent', models.BooleanField()),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+            ],
+        ),
+    ]

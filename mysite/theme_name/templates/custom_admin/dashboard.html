@@ -1,0 +1,412 @@
+{% extends "custom_admin/base.html" %}
+{% block title %}Admin Dashboard - Northern Health Innovations{% endblock %}
+{% block content %}
+  <!-- Welcome alert -->
+  <div class="bg-purple-100 text-purple-700 px-6 py-4 rounded-lg relative mb-5 mt-0">
+    <div>
+      <strong class="font-bold">Welcome, {{ admin_name|default:"Administrator" }}!</strong>
+      <span class="block sm:inline"> Platform status is operational. All systems are functioning normally.</span>
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">System Overview</h2>
+    <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      Refresh Data
+    </button>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <!-- Patients -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Total Patients</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.total_patients|default:"55" }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Providers -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Total Providers</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.total_providers|default:"3" }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Appointments -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Today's Appointments</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.total_appointments.today|default:"8" }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- System Uptime -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-purple-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">System Uptime</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.system_uptime|default:"99.9%" }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+    <!-- Activity Chart -->
+    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-[#004d40]">System Activity</h3>
+        <div class="flex gap-2">
+          <button class="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Day</button>
+          <button class="px-3 py-1 text-sm border border-gray-300 rounded-md text-white bg-[#004d40]">Week</button>
+          <button class="px-3 py-1 text-sm border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50">Month</button>
+        </div>
+      </div>
+      
+      <!-- Placeholder for Chart -->
+      <div class="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
+        <div class="text-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-gray-400 mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <p class="text-gray-500">Usage Analytics Chart</p>
+          <p class="text-sm text-gray-400">Activity over last 7 days</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Recent Activity Log -->
+    <div class="bg-white p-6 rounded-xl shadow mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-xl font-semibold text-[#004d40]">Recent Activity</h3>
+        <a href="{% url 'admin_logs' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+      </div>
+      
+      <div class="space-y-4 max-h-96 overflow-y-auto">
+        {% for log in logs|slice:":5" %}
+          <div class="border-l-4 
+            {% if log.action == 'LOGIN' %}border-green-500
+            {% elif log.action == 'CREATE_USER' %}border-blue-500
+            {% elif log.action == 'BACKUP' %}border-yellow-500
+            {% else %}border-gray-500{% endif %} 
+            pl-3 py-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-medium text-gray-800">{{ log.action }}</p>
+                <p class="text-xs text-gray-500">{{ log.user }}</p>
+              </div>
+              <span class="text-xs text-gray-500">{{ log.timestamp }}</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">{{ log.details }}</p>
+          </div>
+        {% empty %}
+          <!-- Sample logs if none provided -->
+          <div class="border-l-4 border-green-500 pl-3 py-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-medium text-gray-800">LOGIN</p>
+                <p class="text-xs text-gray-500">dr.smith</p>
+              </div>
+              <span class="text-xs text-gray-500">10:35:22</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">Successful login</p>
+          </div>
+          
+          <div class="border-l-4 border-blue-500 pl-3 py-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-medium text-gray-800">CREATE_USER</p>
+                <p class="text-xs text-gray-500">admin</p>
+              </div>
+              <span class="text-xs text-gray-500">09:32:15</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">Created new provider account: dr.wilson</p>
+          </div>
+          
+          <div class="border-l-4 border-yellow-500 pl-3 py-2">
+            <div class="flex justify-between items-start">
+              <div>
+                <p class="text-sm font-medium text-gray-800">BACKUP</p>
+                <p class="text-xs text-gray-500">system</p>
+              </div>
+              <span class="text-xs text-gray-500">04:20:45</span>
+            </div>
+            <p class="text-sm text-gray-600 mt-1">Daily backup completed successfully</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+    
+    <!-- LLM & AI Configuration -->
+    <div class="lg:col-span-2 bg-white p-6 rounded-xl shadow mb-6">
+      <div class="flex items-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#004d40] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <h3 class="text-xl font-semibold text-[#004d40]">AI & LLM Configuration</h3>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- LLM Server Status -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-medium text-gray-800">LLM Server Status</h4>
+            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Online</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Server IP:</span>
+              <span class="text-sm text-gray-700">192.168.1.101</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">API Version:</span>
+              <span class="text-sm text-gray-700">v1.2.3</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Active Connections:</span>
+              <span class="text-sm text-gray-700">17</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Response Time:</span>
+              <span class="text-sm text-gray-700">156ms</span>
+            </div>
+          </div>
+          <div class="mt-4">
+            <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">Restart Server</button>
+          </div>
+        </div>
+        
+        <!-- Voice-to-Text Configuration -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="flex justify-between items-center mb-2">
+            <h4 class="font-medium text-gray-800">Voice-to-Text Status</h4>
+            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">Active</span>
+          </div>
+          <div class="space-y-2">
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Transcription Engine:</span>
+              <span class="text-sm text-gray-700">Local API</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Storage Capacity:</span>
+              <span class="text-sm text-gray-700">76% (812GB/1TB)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Avg. Processing Time:</span>
+              <span class="text-sm text-gray-700">0.8x (real-time)</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-sm text-gray-500">Error Rate:</span>
+              <span class="text-sm text-gray-700">2.3%</span>
+            </div>
+          </div>
+          <div class="mt-4">
+            <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">Test Transcription</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Model Management -->
+      <div class="mt-6">
+        <h4 class="font-medium text-gray-800 mb-3">AI Model Management</h4>
+        <div class="bg-gray-50 p-4 rounded-lg">
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Model</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Version</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Last Updated</th>
+                  <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-200">
+                <tr>
+                  <td class="px-3 py-2 text-sm text-gray-800">Clinical Notes</td>
+                  <td class="px-3 py-2 text-sm text-gray-600">2.4.1</td>
+                  <td class="px-3 py-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+                  </td>
+                  <td class="px-3 py-2 text-sm text-gray-600">March 28, 2025</td>
+                  <td class="px-3 py-2 text-sm">
+                    <button class="text-[#004d40] hover:underline">Update</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 text-sm text-gray-800">Medical Transcription</td>
+                  <td class="px-3 py-2 text-sm text-gray-600">1.8.0</td>
+                  <td class="px-3 py-2">
+                    <span class="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">Active</span>
+                  </td>
+                  <td class="px-3 py-2 text-sm text-gray-600">March 15, 2025</td>
+                  <td class="px-3 py-2 text-sm">
+                    <button class="text-[#004d40] hover:underline">Update</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td class="px-3 py-2 text-sm text-gray-800">Form Automation</td>
+                  <td class="px-3 py-2 text-sm text-gray-600">3.1.2</td>
+                  <td class="px-3 py-2">
+                    <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">Update Available</span>
+                  </td>
+                  <td class="px-3 py-2 text-sm text-gray-600">February 12, 2025</td>
+                  <td class="px-3 py-2 text-sm">
+                    <button class="text-[#004d40] hover:underline">Update Now</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Form Template Management -->
+    <div class="bg-white p-6 rounded-xl shadow">
+      <div class="flex items-center mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#004d40] mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        <h3 class="text-xl font-semibold text-[#004d40]">Form Templates</h3>
+      </div>
+      
+      <div class="mb-4">
+        <div class="relative">
+          <input type="text" 
+            placeholder="Search templates..." 
+            class="w-full border border-gray-300 rounded-lg p-2 pl-10">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+      </div>
+      
+      <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="font-medium text-gray-800">Lab Requisition</p>
+            <p class="text-xs text-gray-500">Last edited: March 24, 2025</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="text-[#004d40] hover:bg-[#edf7f5] p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button class="text-red-500 hover:bg-red-50 p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="font-medium text-gray-800">Sick Note</p>
+            <p class="text-xs text-gray-500">Last edited: March 18, 2025</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="text-[#004d40] hover:bg-[#edf7f5] p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button class="text-red-500 hover:bg-red-50 p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="font-medium text-gray-800">Referral Letter</p>
+            <p class="text-xs text-gray-500">Last edited: March 12, 2025</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="text-[#004d40] hover:bg-[#edf7f5] p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button class="text-red-500 hover:bg-red-50 p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <div class="p-3 bg-gray-50 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="font-medium text-gray-800">Insurance Form</p>
+            <p class="text-xs text-gray-500">Last edited: February 28, 2025</p>
+          </div>
+          <div class="flex gap-2">
+            <button class="text-[#004d40] hover:bg-[#edf7f5] p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+              </svg>
+            </button>
+            <button class="text-red-500 hover:bg-red-50 p-1 rounded">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <div class="mt-4 flex justify-center">
+        <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          Create New Template
+        </button>
+      </div>
+    </div>
+  </div>
+{% endblock %}

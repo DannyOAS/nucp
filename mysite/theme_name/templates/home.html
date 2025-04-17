@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Home - Northern Health Innovations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 py-12">
+    <!-- Welcome Section -->
+    <div class="text-center">
+        <h1 class="text-4xl font-extrabold text-[#004d40]">
+            Welcome | Bienvenue | Tân'si
+        </h1>
+        <p class="mt-4 text-lg text-gray-700 max-w-3xl mx-auto">
+            At <span class="font-semibold">Northern Health Innovations Inc.</span>, we empower healthcare providers
+            with cutting-edge software solutions, utilizing modern technology to streamline workflows and enhance patient care.
+        </p>
+    </div>
+
+    <!-- Mission Section -->
+    <div class="mt-12 bg-gray-100 rounded-2xl p-8 shadow-md">
+        <h2 class="text-3xl font-bold text-[#004d40] text-center">Our Mission</h2>
+        <ul class="mt-6 space-y-4 text-lg text-gray-700 list-disc list-inside">
+            <li>Our mission is to transform healthcare by equipping providers with advanced tools that enhance efficiency and simplify care coordination.</li>
+            <li>Enhance patient outcomes by improving continuity of care.</li>
+            <li>Reduce provider burnout by minimizing administrative burdens and after-hours documentation.</li>
+            <li>Promote the efficient functioning of Canada's publicly funded healthcare system.</li>
+        </ul>
+    </div>
+
+    <!-- Approach Section -->
+    <div class="mt-12">
+        <h2 class="text-3xl font-bold text-[#004d40] text-center">Our Approach</h2>
+        <p class="mt-4 text-lg text-gray-700 text-center max-w-4xl mx-auto">
+            We are excited to have released a <span class="font-semibold">provisional model</span> of our care platform in
+            <span class="font-semibold">January 2025</span>. The
+            <span class="font-semibold">Norhi Unified Care Platform (NUCP)<sup>™</sup></span> delivers
+            <span class="font-semibold">automation, seamless care coordination, improved documentation efficiency, interoperable health records, and robust security standards.</span>
+        </p>
+        <p class="mt-6 text-lg text-gray-700 text-center max-w-4xl mx-auto">
+            As we build on our progress, we're excited to share further updates and anticipate
+            <span class="font-semibold">clinical use beginning in Spring 2025</span>.
+        </p>
+    </div>
+
+    <!-- Profile Section -->
+    <div class="mt-12 text-center">
+        <img src="{% static 'images/dr-victor-vien.png' %}"
+             alt="Dr. Victor Vien"
+             class="w-48 h-64 rounded-lg mx-auto shadow-md object-cover">
+        <h3 class="mt-4 text-2xl font-bold text-[#004d40]">Dr. Victor Vien, MD FRCPC</h3>
+        <p class="text-lg text-gray-700">Psychiatrist and Founder of Northern Health Innovations Inc.</p>
+        <p class="mt-2 text-lg text-gray-700 max-w-3xl mx-auto">
+            With a passion for innovation in healthcare, Dr. Vien leads the development of advanced digital solutions that enhance provider efficiency and improve patient care.
+        </p>
+    </div>
+</div>
+
+<script>
+function showChoices() {
+    document.getElementById('startJourney').classList.add('hidden');
+    document.getElementById('choicesSection').classList.remove('hidden');
+}
+// Enable continue button when a choice is made
+document.querySelectorAll('input[name="userType"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        document.getElementById('continueButton').disabled = false;
+    });
+});
+function proceedToRegistration() {
+    const selectedType = document.querySelector('input[name="userType"]:checked').value;
+    // Hide only the continue button
+    document.getElementById('continueButton').classList.add('hidden');
+    // Show the appropriate options
+    document.getElementById(selectedType + 'Options').classList.remove('hidden');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,311 @@
+{% extends "patient/base.html" %}
+{% block title %}Jitsi Video Consultations{% endblock %}
+{% block content %}
+<main class="p-4">
+  <!-- Page header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Jitsi Video Consultations</h1>
+      <p class="text-gray-600">Connect with your healthcare providers remotely</p>
+    </div>
+    <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+      Test Connection
+    </button>
+  </div>
+
+  <!-- Info Alert -->
+  <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded">
+    <div class="flex">
+      <div class="flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <div class="ml-3">
+        <p class="text-sm text-blue-700">
+          For the best video consultation experience, please use a device with a camera and microphone. Test your connection before your appointment.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upcoming Video Consultations -->
+  <div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Upcoming Video Consultations</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Consultation 1 -->
+      <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <span class="text-xl font-semibold text-gray-800">Dr. Smith - Follow-up</span>
+          </div>
+          <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+            Scheduled
+          </span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <p class="text-sm text-gray-500">Date</p>
+            <p class="font-medium text-gray-800">April 10, 2025</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Time</p>
+            <p class="font-medium text-gray-800">2:30 PM</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Duration</p>
+            <p class="font-medium text-gray-800">30 minutes</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Platform</p>
+            <p class="font-medium text-gray-800">Jitsi Video</p>
+          </div>
+        </div>
+        
+        <div class="border-t border-gray-200 pt-4">
+          <div class="flex flex-wrap gap-2">
+            <button class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium inline-block disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              Join Meeting
+            </button>
+            <div class="text-sm text-gray-500 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Available 15 minutes before appointment
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Consultation 2 -->
+      <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex items-center justify-between mb-4">
+          <div>
+            <span class="text-xl font-semibold text-gray-800">Dr. Wilson - Consultation</span>
+          </div>
+          <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
+            Scheduled
+          </span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4 mb-4">
+          <div>
+            <p class="text-sm text-gray-500">Date</p>
+            <p class="font-medium text-gray-800">April 17, 2025</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Time</p>
+            <p class="font-medium text-gray-800">11:00 AM</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Duration</p>
+            <p class="font-medium text-gray-800">45 minutes</p>
+          </div>
+          <div>
+            <p class="text-sm text-gray-500">Platform</p>
+            <p class="font-medium text-gray-800">Jitsi Video</p>
+          </div>
+        </div>
+        
+        <div class="border-t border-gray-200 pt-4">
+          <div class="flex flex-wrap gap-2">
+            <button class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium inline-block disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+              Join Meeting
+            </button>
+            <div class="text-sm text-gray-500 flex items-center">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Available 15 minutes before appointment
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Video Call Features -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <div class="bg-white p-6 rounded-xl shadow text-center">
+      <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-green-100 text-green-600 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-800 mb-2">High Quality Video</h3>
+      <p class="text-gray-600">Experience HD video quality for clear communication with your healthcare provider.</p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl shadow text-center">
+      <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 text-blue-600 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-800 mb-2">Secure & Private</h3>
+      <p class="text-gray-600">All video consultations are encrypted and comply with healthcare privacy regulations.</p>
+    </div>
+    
+    <div class="bg-white p-6 rounded-xl shadow text-center">
+      <div class="inline-flex items-center justify-center h-12 w-12 rounded-full bg-purple-100 text-purple-600 mb-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <h3 class="text-lg font-semibold text-gray-800 mb-2">Easy Scheduling</h3>
+      <p class="text-gray-600">Book, reschedule, or cancel video appointments with just a few clicks.</p>
+    </div>
+  </div>
+
+  <!-- Video Consultation History -->
+  <div class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold text-gray-800">Past Video Consultations</h2>
+      <button class="text-[#004d40] hover:underline font-medium">View All</button>
+    </div>
+    
+    <div class="bg-white shadow overflow-hidden rounded-lg">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Time</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Dr. Wilson</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Mar 15, 2025, 11:30 AM</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">32 minutes</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Prescription Review</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Summary</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Dr. Smith</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Feb 28, 2025, 3:00 PM</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">45 minutes</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Blood Work Results</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Summary</a>
+              </td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Dr. Johnson</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Jan 10, 2025, 9:15 AM</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">28 minutes</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Initial Consultation</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Summary</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tips for a Successful Video Consultation -->
+  <div class="bg-white p-6 rounded-xl shadow mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Tips for a Successful Video Consultation</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-medium text-gray-800 mb-2">Before Your Appointment</h3>
+        <ul class="space-y-2 text-gray-600 list-disc list-inside">
+          <li>Test your camera and microphone at least 15 minutes before your appointment</li>
+          <li>Ensure you have a stable internet connection</li>
+          <li>Find a quiet, well-lit location for your call</li>
+          <li>Have a list of questions or concerns ready to discuss</li>
+          <li>Have your current medications nearby for reference</li>
+        </ul>
+      </div>
+      
+      <div>
+        <h3 class="font-medium text-gray-800 mb-2">During Your Appointment</h3>
+        <ul class="space-y-2 text-gray-600 list-disc list-inside">
+          <li>Position your camera at eye level for the most natural interaction</li>
+          <li>Speak clearly and try to minimize background noise</li>
+          <li>Take notes on any instructions or recommendations</li>
+          <li>Ask for clarification if you don't understand something</li>
+          <li>Ensure you know next steps before ending the call</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Help Section -->
+  <div class="bg-white p-6 rounded-xl shadow mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Need Help?</h2>
+    
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <h3 class="font-medium text-gray-800">Technical Support</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">If you're experiencing technical issues with your video consultation.</p>
+        <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium w-full">Contact Support</button>
+      </div>
+      
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          </svg>
+          <h3 class="font-medium text-gray-800">FAQ</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">Find answers to common questions about video consultations.</p>
+        <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium w-full">View FAQs</button>
+      </div>
+      
+      <div class="border border-gray-200 rounded-lg p-4">
+        <div class="flex items-center mb-3">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+          </svg>
+          <h3 class="font-medium text-gray-800">Contact Clinic</h3>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">Need to reschedule or have medical questions? Contact us directly.</p>
+        <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium w-full">Call Clinic</button>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

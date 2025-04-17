@@ -1,0 +1,211 @@
+{% load static tailwind_tags %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Admin Dashboard - Northern Health Innovations{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" /> 
+  {% tailwind_css %}
+  <style>
+    #mobile-menu { display: none; }
+    #mobile-menu.show { display: block; }
+
+    @media (min-width: 768px) {
+      .md\:block { display: block !important; }
+      .md\:hidden { display: none !important; }
+    }
+
+    body {
+      overflow-x: hidden;
+      height: 100vh;
+    }
+
+    .dashboard-content {
+      overflow-y: auto;
+      height: calc(100vh - 5rem);
+      margin-top: 3rem;
+      padding-bottom: 6rem;
+    }
+
+    input:focus {
+      outline: none;
+      box-shadow: none;
+      border: none;
+    }
+  </style>
+</head>
+
+<body class="bg-gray-100 flex flex-col">
+  <!-- Fixed Header -->
+  <header class="w-full fixed top-0 z-20">
+    <div class="bg-[#004d40] text-white p-4 w-full">
+      <div class="container mx-auto text-center">
+        <h1 class="text-4xl font-bold">{{ site_name }}</h1>
+        <p class="text-lg mt-1 italic">{{ site_tagline }}<sup>™</sup></p>
+      </div>
+    </div>
+
+    <!-- Search and Profile -->
+    <div class="bg-white shadow-md w-full z-20 fixed top-24 right-0">
+      <div class="md:ml-64 px-4 py-2 flex justify-between items-center">
+        <div class="md:hidden flex items-center">
+          <button id="menuButton" class="mr-2 p-2 rounded-md hover:bg-gray-200">
+            <svg id="menu-open-icon" xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
+        <div class="hidden md:block"></div>
+        <div class="flex items-center space-x-4">
+          <div class="relative hidden md:block">
+            <input 
+              placeholder="Search across platform..." 
+              class="bg-gray-200 p-2 pl-10 rounded-full w-64 border-0 focus:outline-none focus:ring-0"
+            >
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              class="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500" 
+              fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+            </svg>
+          </div>
+          <button class="p-2 rounded-full hover:bg-gray-200">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+            </svg>
+          </button>
+          <div class="h-8 w-8 bg-purple-200 text-purple-600 rounded-full flex items-center justify-center font-semibold">
+            A
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex pt-0 mt-24">
+    <!-- Sidebar -->
+    <section class="bg-white w-64 shadow-md hidden md:block h-screen fixed left-0 top-24 overflow-y-auto z-30">
+      <div class="p-4">
+        <div class="text-center py-4 mb-6 mt-4">
+          <div class="h-24 w-24 rounded-full bg-gray-200 mx-auto mb-4 overflow-hidden">
+            <svg class="h-full w-full text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M24 20.993V24H0v-2.996A14.977 14.977 0 0112.004 15c4.904 0 9.26 2.354 11.996 5.993zM16.002 8.999a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+          </div>
+          <h4 class="text-lg font-semibold text-gray-800">Welcome, {{ admin_name|default:"Administrator" }}</h4>
+          <p class="text-sm text-gray-500">Admin Dashboard</p>
+        </div>
+        
+        <!-- Admin Navigation Menu -->
+        <nav>
+          <a href="{% url 'admin_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'dashboard' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">🏠</span> Dashboard
+          </a>
+          <a href="{% url 'admin_patients' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'patients' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">👥</span> Patients
+          </a>
+          <a href="{% url 'admin_providers' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'providers' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">👨‍⚕️</span> Providers
+          </a>
+          <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'appointments' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">📅</span> Appointments
+          </a>
+          <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'analytics' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">📊</span> Analytics
+          </a>
+          <div class="border-t border-gray-200 my-3"></div>
+          <a href="{% url 'ai_config_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'ai_config' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">🤖</span> AI Configuration
+          </a>
+          <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'templates' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">📄</span> Form Templates
+          </a>
+          <a href="{% url 'admin_logs' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'logs' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">📝</span> System Logs
+          </a>
+          <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'settings' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+            <span class="mr-2">⚙️</span> System Settings
+          </a>
+        </nav>
+      </div>
+    </section>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="bg-white shadow-md p-4 md:hidden fixed top-24 left-0 w-full z-20">
+      <div class="flex justify-end mb-2">
+        <button id="closeMenuButton" class="p-2 rounded-md hover:bg-gray-200">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <!-- Mobile Navigation Menu -->
+      <nav>
+        <a href="{% url 'admin_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'dashboard' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">🏠</span> Dashboard
+        </a>
+        <a href="{% url 'admin_patients' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'patients' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">👥</span> Patients
+        </a>
+        <a href="{% url 'admin_providers' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'providers' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">👨‍⚕️</span> Providers
+        </a>
+        <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'appointments' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">📅</span> Appointments
+        </a>
+        <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'analytics' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">📊</span> Analytics
+        </a>
+        <div class="border-t border-gray-200 my-3"></div>
+        <a href="{% url 'ai_config_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'ai_config' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">🤖</span> AI Configuration
+        </a>
+        <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'templates' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">📄</span> Form Templates
+        </a>
+        <a href="{% url 'admin_logs' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'logs' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">📝</span> System Logs
+        </a>
+        <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'settings' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <span class="mr-2">⚙️</span> System Settings
+        </a>
+      </nav>
+    </div>
+
+    <!-- Main Content Area -->
+    <section class="flex-1 dashboard-content md:ml-64">
+      <main class="p-4">
+        <div>
+          {% block content %}
+          <h2 class="text-xl font-bold text-gray-800 mb-4">Welcome to the Admin Dashboard</h2>
+          <p class="text-gray-600">Here you can manage system settings, users, and monitor platform performance.</p>
+          {% endblock %}
+        </div>
+      </main>
+    </section>
+
+  </div>
+
+  <!-- JS -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var menuButton = document.getElementById('menuButton');
+      var closeMenuButton = document.getElementById('closeMenuButton');
+      var mobileMenu = document.getElementById('mobile-menu');
+
+      if (menuButton && mobileMenu) {
+        menuButton.addEventListener('click', function() {
+          mobileMenu.classList.add('show');
+        });
+      }
+
+      if (closeMenuButton && mobileMenu) {
+        closeMenuButton.addEventListener('click', function() {
+          mobileMenu.classList.remove('show');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,551 @@
+{% extends "custom_admin/base.html" %}
+{% block title %}AI Configuration - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">AI System Configuration</h2>
+  <div class="flex space-x-2">
+    <button id="refreshStatusBtn" class="bg-white border border-[#004d40] text-[#004d40] py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+      Refresh Status
+    </button>
+    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+      </svg>
+      Add New Model
+    </a>
+  </div>
+</div>
+
+<!-- Status message area -->
+<div id="statusMessage" class="hidden mb-6 p-4 rounded-lg">
+  <!-- Will be filled dynamically with appropriate status messages -->
+</div>
+
+<!-- System Status Overview -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+  <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full 
+        {% if system_status.llm_api.status == 'online' %}
+          bg-green-200 text-green-700
+        {% else %}
+          bg-red-200 text-red-700
+        {% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">LLM API Status</h3>
+        <p class="text-xl font-semibold 
+          {% if system_status.llm_api.status == 'online' %}
+            text-green-700
+          {% else %}
+            text-red-700
+          {% endif %}">
+          {{ system_status.llm_api.status|default:"Online"|title }}
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full 
+        {% if system_status.transcription.status == 'active' %}
+          bg-green-200 text-green-700
+        {% else %}
+          bg-red-200 text-red-700
+        {% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Voice-to-Text</h3>
+        <p class="text-xl font-semibold 
+          {% if system_status.transcription.status == 'active' %}
+            text-green-700
+          {% else %}
+            text-red-700
+          {% endif %}">
+          {{ system_status.transcription.status|default:"Active"|title }}
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full 
+        {% if system_status.storage.status == 'available' %}
+          bg-green-200 text-green-700
+        {% else %}
+          bg-yellow-200 text-yellow-700
+        {% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Storage Status</h3>
+        <p class="text-xl font-semibold 
+          {% if system_status.storage.status == 'available' %}
+            text-green-700
+          {% elif system_status.storage.usage_percent > 90 %}
+            text-red-700
+          {% elif system_status.storage.usage_percent > 75 %}
+            text-yellow-700
+          {% else %}
+            text-green-700
+          {% endif %}">
+          {{ system_status.storage.usage_percent|default:"79" }}% Used
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+    <div class="flex items-center">
+      <div class="p-3 rounded-full 
+        {% if system_status.overall_status == 'operational' %}
+          bg-green-200 text-green-700
+        {% else %}
+          bg-yellow-200 text-yellow-700
+        {% endif %}">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+      </div>
+      <div class="ml-4">
+        <h3 class="text-sm text-gray-500">Overall Status</h3>
+        <p class="text-xl font-semibold 
+          {% if system_status.overall_status == 'operational' %}
+            text-green-700
+          {% else %}
+            text-yellow-700
+          {% endif %}">
+          {{ system_status.overall_status|default:"Operational"|title }}
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Main Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+  <!-- LLM Server Details -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <div class="flex items-center mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+      </svg>
+      <h3 class="text-lg font-semibold text-[#004d40]">LLM Server</h3>
+    </div>
+    
+    <div class="space-y-4">
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Server IP:</span>
+        <span class="text-sm font-medium">{{ system_status.llm_api.server_ip|default:"192.168.1.101" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">API Version:</span>
+        <span class="text-sm font-medium">{{ system_status.llm_api.api_version|default:"v1.2.3" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Active Connections:</span>
+        <span class="text-sm font-medium">{{ system_status.llm_api.active_connections|default:"17" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Response Time:</span>
+        <span class="text-sm font-medium">{{ system_status.llm_api.response_time_ms|default:"156" }}ms</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Last Restart:</span>
+        <span class="text-sm font-medium">{{ system_status.llm_api.last_restart|default:"April 1, 2025 06:30 AM" }}</span>
+      </div>
+    </div>
+    
+    <div class="mt-4 flex space-x-2">
+      <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">Restart Server</button>
+      <button class="border border-[#004d40] text-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">View Logs</button>
+    </div>
+  </div>
+  
+  <!-- Voice-to-Text Details -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <div class="flex items-center mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+      </svg>
+      <h3 class="text-lg font-semibold text-[#004d40]">Voice-to-Text</h3>
+    </div>
+    
+    <div class="space-y-4">
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Engine:</span>
+        <span class="text-sm font-medium">{{ system_status.transcription.engine|default:"Local API" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Processing Time:</span>
+        <span class="text-sm font-medium">{{ system_status.transcription.processing_time_factor|default:"0.8" }}x (real-time)</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Error Rate:</span>
+        <span class="text-sm font-medium">{{ system_status.transcription.error_rate_percent|default:"2.3" }}%</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Recordings Today:</span>
+        <span class="text-sm font-medium">{{ system_status.transcription.recordings_today|default:"12" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Avg. Length:</span>
+        <span class="text-sm font-medium">{{ system_status.transcription.avg_length|default:"8m 32s" }}</span>
+      </div>
+    </div>
+    
+    <div class="mt-4 flex space-x-2">
+      <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">Test Transcription</button>
+      <button class="border border-[#004d40] text-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">View Statistics</button>
+    </div>
+  </div>
+  
+  <!-- Storage Details -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <div class="flex items-center mb-4">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+      </svg>
+      <h3 class="text-lg font-semibold text-[#004d40]">Storage</h3>
+    </div>
+    
+    <div class="space-y-4">
+      <div>
+        <span class="text-sm text-gray-600">Storage Usage:</span>
+        <div class="mt-1 h-2 bg-gray-200 rounded-full">
+          <div class="h-2 bg-green-500 rounded-full" style="width: {{ system_status.storage.usage_percent|default:'79' }}%"></div>
+        </div>
+        <div class="flex justify-between text-xs mt-1">
+          <span>0%</span>
+          <span>{{ system_status.storage.usage_percent|default:"79" }}%</span>
+          <span>100%</span>
+        </div>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Used Space:</span>
+        <span class="text-sm font-medium">{{ system_status.storage.used_space_gb|default:"812" }} GB</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Total Space:</span>
+        <span class="text-sm font-medium">{{ system_status.storage.total_space_gb|default:"1024" }} GB</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Recordings Count:</span>
+        <span class="text-sm font-medium">{{ system_status.storage.recordings_count|default:"1245" }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="text-sm text-gray-600">Documents Count:</span>
+        <span class="text-sm font-medium">{{ system_status.storage.documents_count|default:"3782" }}</span>
+      </div>
+    </div>
+    
+    <div class="mt-4 flex space-x-2">
+      <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-1 px-3 rounded text-sm">Clean Old Files</button>
+      <button class="border border-[#004d40] text-[#004d40] hover:bg-[#edf7f5] py-1 px-3 rounded text-sm">Storage Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- AI Models Management -->
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <div class="flex items-center mb-4">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+    <h3 class="text-lg font-semibold text-[#004d40]">AI Models</h3>
+  </div>
+  
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Model</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
+          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        {% for config in model_configs %}
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">{{ config.name }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ config.model_type|title }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ config.version }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {% if config.is_active %}bg-green-100 text-green-800{% else %}bg-gray-100 text-gray-800{% endif %}">
+                {% if config.is_active %}Active{% else %}Inactive{% endif %}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ config.updated_at }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="{% url 'edit_model_config' config.id %}" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+              <button class="text-red-600 hover:text-red-900">Deactivate</button>
+            </td>
+          </tr>
+        {% empty %}
+          <!-- Sample model configs if none provided -->
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">Clinical Notes Model</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">Clinical Notes</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">2.4.1</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                Active
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">March 28, 2025</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+              <button class="text-red-600 hover:text-red-900">Deactivate</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">Medical Transcription Model</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">Transcription</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">1.8.0</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                Active
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">March 15, 2025</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+              <button class="text-red-600 hover:text-red-900">Deactivate</button>
+            </td>
+          </tr>
+          <tr>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">Form Automation Model</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">Form Automation</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">3.1.2</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                Update Available
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">February 12, 2025</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Update</a>
+              <button class="text-red-600 hover:text-red-900">Deactivate</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- System Logs -->
+<div class="bg-white p-6 rounded-xl shadow">
+  <div class="flex justify-between items-center mb-4">
+    <div class="flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-[#004d40] mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+      <h3 class="text-lg font-semibold text-[#004d40]">System Logs</h3>
+    </div>
+    <a href="{% url 'admin_logs' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+  </div>
+  
+  <!-- Filter tabs -->
+  <div class="flex space-x-2 border-b border-gray-200 mb-4 overflow-x-auto">
+    <button class="text-[#004d40] border-b-2 border-[#004d40] py-2 px-4 font-medium text-sm">All</button>
+    <button class="text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm">Errors</button>
+    <button class="text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm">Warnings</button>
+    <button class="text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm">Info</button>
+    <button class="text-gray-500 hover:text-[#004d40] hover:border-b-2 hover:border-[#004d40] py-2 px-4 font-medium text-sm">AI Activity</button>
+  </div>
+  
+  <div class="max-h-96 overflow-y-auto">
+    <div class="space-y-3">
+      {% for log in logs %}
+        <div class="border-l-4 
+          {% if log.action == 'LOGIN' %}border-green-500
+          {% elif log.action == 'CREATE_USER' %}border-blue-500
+          {% elif log.action == 'BACKUP' %}border-yellow-500
+          {% elif log.action == 'ERROR' %}border-red-500
+          {% else %}border-gray-500{% endif %} 
+          pl-3 py-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-800">{{ log.action }}</p>
+              <p class="text-xs text-gray-500">{{ log.user }}</p>
+            </div>
+            <span class="text-xs text-gray-500">{{ log.timestamp }}</span>
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Successful login</p>
+        </div>
+        
+        <div class="border-l-4 border-blue-500 pl-3 py-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-800">CREATE_USER</p>
+              <p class="text-xs text-gray-500">admin</p>
+            </div>
+            <span class="text-xs text-gray-500">09:32:15</span>
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Created new provider account: dr.wilson</p>
+        </div>
+        
+        <div class="border-l-4 border-yellow-500 pl-3 py-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-800">BACKUP</p>
+              <p class="text-xs text-gray-500">system</p>
+            </div>
+            <span class="text-xs text-gray-500">04:20:45</span>
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Daily backup completed successfully</p>
+        </div>
+        
+        <div class="border-l-4 border-red-500 pl-3 py-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="text-sm font-medium text-gray-800">ERROR</p>
+              <p class="text-xs text-gray-500">ai_service</p>
+            </div>
+            <span class="text-xs text-gray-500">02:15:33</span>
+          </div>
+          <p class="text-sm text-gray-600 mt-1">Failed to transcribe recording ID #4561: Audio format not supported</p>
+        </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- JavaScript for AI Config functionality -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Status message handling
+    function showStatusMessage(message, type) {
+      const statusMessage = document.getElementById('statusMessage');
+      
+      // Set the appropriate styling based on the message type
+      statusMessage.className = 'mb-6 p-4 rounded-lg';
+      
+      if (type === 'success') {
+        statusMessage.classList.add('bg-green-100', 'text-green-700');
+      } else if (type === 'error') {
+        statusMessage.classList.add('bg-red-100', 'text-red-700');
+      } else if (type === 'info') {
+        statusMessage.classList.add('bg-blue-100', 'text-blue-700');
+      } else if (type === 'warning') {
+        statusMessage.classList.add('bg-yellow-100', 'text-yellow-700');
+      }
+      
+      // Set the message text
+      statusMessage.textContent = message;
+      
+      // Show the message
+      statusMessage.classList.remove('hidden');
+      
+      // Hide the message after 5 seconds
+      setTimeout(function() {
+        statusMessage.classList.add('hidden');
+      }, 5000);
+    }
+    
+    // Refresh Status button
+    const refreshStatusBtn = document.getElementById('refreshStatusBtn');
+    
+    if (refreshStatusBtn) {
+      refreshStatusBtn.addEventListener('click', function() {
+        // Show loading
+        this.disabled = true;
+        this.innerHTML = `
+          <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-[#004d40]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Refreshing...
+        `;
+        
+        // Simulate refreshing status
+        setTimeout(() => {
+          showStatusMessage('System status refreshed successfully.', 'success');
+          
+          // Reset button
+          this.disabled = false;
+          this.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            Refresh Status
+          `;
+        }, 1500);
+      });
+    }
+    
+    // Deactivate model buttons
+    const deactivateButtons = document.querySelectorAll('button.text-red-600');
+    
+    deactivateButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const row = this.closest('tr');
+        const modelName = row.querySelector('.text-sm.font-medium').textContent;
+        
+        if (confirm(`Are you sure you want to deactivate "${modelName}"? This may affect system functionality.`)) {
+          showStatusMessage(`Model "${modelName}" has been deactivated.`, 'warning');
+          
+          // Change the status indicator
+          const statusBadge = row.querySelector('.rounded-full');
+          statusBadge.className = 'px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800';
+          statusBadge.textContent = 'Inactive';
+          
+          // Change the button text
+          this.textContent = 'Activate';
+          this.className = 'text-green-600 hover:text-green-900';
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}
+

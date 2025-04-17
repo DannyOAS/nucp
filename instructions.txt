@@ -1,0 +1,504 @@
+--- full install of django base ---
+
+context:
+ubuntu 22.04 server with pro
+username victorpv
+apt update, apt upgrade, enable fips-updates, reboot
+called "portal"
+ip a of portal is 192.168.2.154
+ip a of rproxy is 192.168.2.115
+
+--- bash ---
+sudo cryptsetup --pbkdf=pbkdf2 luksAddKey /dev/vda3
+sudo hostnamectl set-hostname portal.norhi.ca
+sudo nano /etc/hosts
+#127.0.0.1 localhost
+#192.168.2.154 portal.norhi.ca portal
+sudo apt install nginx
+sudo apt install certbot python3-certbot-nginx -y
+sudo openssl dhparam -out /etc/letsencrypt/dhparam.pem 4096
+sudo chmod 600 /etc/letsencrypt/dhparam.pem
+curl -fsSL https://deb.nodesource.com/setup_22.x -o nodesource_setup.sh
+sudo -E bash nodesource_setup.sh
+sudo apt-get install -y nodejs
+sudo apt install python3.10-venv
+sudo apt install qutebrowser
+sudo apt install tree
+sudo apt update && sudo apt upgrade -y
+sudo reboot now
+
+--- import folder ---
+sudo scp -r victorpv@192.168.2.153:/home/victorpv/django_base_Feb12 /home/victorpv/django_base_Feb12
+
+--- bash ---
+sudo chown -R victorpv:www-data django_base_Feb12
+cd /var/www/html
+sudo rm index.nginx-debian.html
+sudo cp -r /home/victorpv/django_base_Feb12/mysite mysite
+sudo chown -R victorpv:www-data mysite
+cd mysite
+rm -r venv_installhere
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+--- settings.py ---
+ALLOWED_HOSTS = ['portal.norhi.ca', 'www.portal.norhi.ca', 'localhost', '127.0.0.1', '192.168.2.154']
+
+--- sudo nano /etc/systemd/system/gunicorn.service ---
+[Unit]
+Description=Gunicorn daemon for MyWebsite Django project
+After=network.target
+
+[Service]
+User=victorpv
+Group=www-data
+WorkingDirectory=/var/www/html/mysite
+
+# ✅ Use the Python binary from the virtual environment
+ExecStart=/var/www/html/mysite/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/var/www/html/mysite/mysite.sock \
+    --chdir /var/www/html/mysite \
+    mysite.wsgi:application
+
+# Restart settings for stability
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=append:/var/log/gunicorn/mysite.log
+StandardError=append:/var/log/gunicorn/mysite_error.log
+
+# ✅ Ensure correct permissions for the socket
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /var/log/gunicorn /var/www/html/mysite
+ExecStartPre=/bin/chown -R victorpv:www-data /var/www/html/mysite /var/log/gunicorn
+
+[Install]
+WantedBy=multi-user.target
+--- /gunicorn.service ---
+
+--- sudo nano /etc/nginx/sites-available/portal.norhi.ca ---
+# Backend Nginx configuration for portal.norhi.ca
+server {
+    listen 80;
+    server_name portal.norhi.ca;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none'; base-uri 'self';";
+
+    # Proxy requests to the Gunicorn socket (Django app)
+    location / {
+        proxy_pass http://unix:/var/www/html/mysite/mysite.sock;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_buffering off;  # Disable buffering to prevent latency issues
+
+        # Allow larger requests for Django forms/uploads
+        client_max_body_size 10M;
+    }
+
+    # Serve static files
+    location /static/ {
+        alias /var/www/html/mysite/staticfiles/;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Security settings
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+}
+--- / portal.norhi.ca ---
+
+sudo mkdir /var/log/gunicorn
+sudo chown -R victorpv:www-data /var/log/gunicorn
+cd /var/log/gunicorn
+touch mysite_error.log
+touch mysite.log
+sudo chown victorpv:www-data mysite_error.log
+sudo chown victorpv:www-data mysite.log
+
+cd /var/www/html/mysite
+sudo chown -R victorpv:www-data venv
+deactivate
+source venv/bin/activate
+
+python3 manage.py tailwind build
+cd /var/www/html/mysite/theme_name/static_src
+rm -rf node_modules
+npm install
+python3 manage.py collectstatic
+python3 manage.py makemigrations
+python3 manage.py migrate
+
+sudo chmod -R 755 /var/www/html/mysite/staticfiles/
+sudo chown -R www-data:www-data /var/www/html/mysite/staticfiles/
+sudo systemctl restart gunicorn
+sudo systemctl restart nginx
+
+--- Onto Nginx reverse proxy server, sudo nano /etc/nginx/sites-available/portal.norhi.ca ---
+# Reverse proxy configuration for portal.norhi.ca
+server {
+    listen 80;
+    server_name portal.norhi.ca;
+
+    # Redirect all HTTP traffic to HTTPS
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name portal.norhi.ca;
+
+    # SSL Certificates
+    ssl_certificate /etc/letsencrypt/live/portal.norhi.ca/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/portal.norhi.ca/privkey.pem;
+    ssl_dhparam /etc/letsencrypt/dhparam.pem;
+
+    # SSL Configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305';
+    ssl_prefer_server_ciphers on;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+
+    # Proxy OCSP Stapling
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # Proxy requests to the backend Nginx server
+    location / {
+        proxy_pass http://192.168.2.154:80;  # Backend Nginx server
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_buffering off;
+    }
+}
+--- / portal.norhi.ca ---
+
+sudo ln -s /etc/nginx/sites-available/portal.norhi.ca /etc/nginx/sites-enabled/
+must comment out all of 433 block.
+sudo systemctl reload nginx
+configure DNS A record
+sudo certbot --nginx -d portal.norhi.ca -d www.portal.norhi.ca
+now remove comments for the 433 block.
+sudo systemctl reload nginx
+
+return to portal.norhi.ca and bash:
+sudo rm /etc/nginx/sites-enabled/default
+sudo rm /etc/nginx/sites-available/default
+sudo ln -s /etc/nginx/sites-available/portal.norhi.ca /etc/nginx/sites-enabled/
+
+sudo systemctl enable gunicorn
+sudo systemctl start gunicorn
+sudo systemctl restart nginx
+sudo systemctl restart gunicorn
+sudo reboot now
+
+--- REFERENCE ---
+#install this package locally onto a system
+victorpv@nucp:~/django_base_Feb12/mysite$ tree -L 2
+.
+├── db.sqlite3
+├── manage.py
+├── mysite
+│   ├── asgi.py
+│   ├── __init__.py
+│   ├── __pycache__
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── mysite.sock
+├── requirements.txt
+├── staticfiles
+│   ├── admin
+│   ├── css
+│   ├── django-browser-reload
+│   ├── images
+│   ├── jazzmin
+│   ├── node_modules
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── postcss.config.js
+│   ├── src
+│   ├── tailwind.config.js
+│   └── vendor
+├── theme_name
+│   ├── admin.py
+│   ├── apps.py
+│   ├── forms.py
+│   ├── __init__.py
+│   ├── migrations
+│   ├── models.py
+│   ├── __pycache__
+│   ├── static
+│   ├── static_src
+│   ├── templates
+│   ├── urls.py
+│   └── views.py
+└── venv_installhere
+
+---REFERENCE 2 ---
+README
+
+Overview
+
+Today, we configured a Django project running with Gunicorn behind an Nginx reverse proxy. The focus was on resolving issues related to Tailwind CSS, static files, and development tools such as django-browser-reload in the production environment. This document outlines the steps taken to troubleshoot and resolve these issues.
+
+Key Actions
+
+1. Rebuilding Tailwind CSS for Production
+
+We rebuilt the Tailwind CSS file to ensure it was optimized for production:
+
+python3 manage.py tailwind build
+
+This command successfully compiled the styles.css file and placed it in the staticfiles/css/dist/ directory.
+
+2. Collecting Static Files
+
+We ran the collectstatic command to ensure all static files, including the newly built CSS file, were placed in the STATIC_ROOT directory:
+
+python3 manage.py collectstatic
+
+This moved all necessary files to /var/www/html/mysite/staticfiles.
+
+3. Configuring Nginx for Static Files
+
+We verified that Nginx was properly configured to serve static files. The configuration was updated as follows:
+
+location /static/ {
+    alias /var/www/html/mysite/staticfiles/;
+}
+
+location / {
+    proxy_pass http://unix:/var/www/html/mysite/mysite.sock;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+
+After making changes, we reloaded Nginx:
+
+sudo systemctl reload nginx
+
+4. Resolving Issues with django-browser-reload
+
+The errors related to django-browser-reload were resolved by removing the app from INSTALLED_APPS in settings.py:
+
+INSTALLED_APPS = [
+    # Other apps
+    # "django_browser_reload",  # Removed in production
+]
+
+This step ensured that requests to /__reload__/events/ and reload-worker.js stopped.
+
+5. Switching Node.js to a Stable Version
+
+We resolved Tailwind CSS build issues by installing a stable version of Node.js (v18) using nvm:
+
+nvm install 18
+nvm use 18
+
+After switching to Node.js v18, dependencies were reinstalled:
+
+cd /var/www/html/mysite/theme_name/static_src
+rm -rf node_modules
+npm install
+
+6. Restarting Services
+
+To apply changes, Gunicorn and Nginx services were restarted multiple times:
+
+sudo systemctl restart gunicorn
+sudo systemctl restart nginx
+
+7. Debugging Logs
+
+We reviewed logs to identify and fix errors:
+
+Nginx Logs:
+
+sudo tail -f /var/log/nginx/error.log
+
+Gunicorn Logs:
+
+sudo journalctl -u gunicorn
+
+This helped identify and resolve issues such as missing Gunicorn sockets and invalid requests.
+
+Final Configuration
+
+Django Settings
+
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STATICFILES_DIRS = [
+    BASE_DIR / "theme_name" / "static_src",
+]
+DEBUG = False
+
+Nginx Configuration
+
+server {
+    server_name nucp.norhi.ca;
+
+    location /static/ {
+        alias /var/www/html/mysite/staticfiles/;
+    }
+
+    location / {
+        proxy_pass http://unix:/var/www/html/mysite/mysite.sock;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+}
+
+Testing and Verification
+
+Static Files
+
+We verified that static files, including the compiled styles.css, were accessible by directly visiting:
+
+http://<your-domain>/static/css/dist/styles.css
+
+Browser Cache
+
+Browsers were cleared to ensure the latest CSS changes were applied.
+
+Remaining Tasks
+
+
+
+Conclusion
+
+The project is now correctly configured for production with Django, Gunicorn, Nginx, and Tailwind CSS. All errors related to static files and unnecessary development tools were resolved.
+
+--- REFERENCE 3 ---
+--- Single server with public ipa, nginx conf ---
+# Redirect www.norhi.ca to norhi.ca (force HTTPS)
+server {
+    listen 80;
+    server_name www.norhi.ca;
+    return 301 https://norhi.ca$request_uri;
+}
+
+# Redirect HTTP traffic on norhi.ca to HTTPS
+server {
+    listen 80;
+    server_name norhi.ca;
+    return 301 https://norhi.ca$request_uri;
+}
+
+# HTTPS server block for norhi.ca
+server {
+    listen 443 ssl http2;
+    listen [::]:443 ssl http2;
+    server_name norhi.ca www.norhi.ca;
+
+    # SSL Certificates
+    ssl_certificate /etc/letsencrypt/live/norhi.ca/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/norhi.ca/privkey.pem;
+    ssl_dhparam /etc/letsencrypt/dhparam.pem;  # Generate this if not created yet
+
+    # SSL Configuration - Enforce strong ciphers
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers 'TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-CHACHA20-POLY1305';
+    ssl_prefer_server_ciphers on;
+
+    # Security Headers
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains; preload" always;
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header Referrer-Policy "strict-origin-when-cross-origin";
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'; object-src 'none'; base-uri 'self';";
+
+
+    # OCSP Stapling for improved SSL handshake
+    ssl_stapling on;
+    ssl_stapling_verify on;
+    resolver 8.8.8.8 8.8.4.4 valid=300s;
+    resolver_timeout 5s;
+
+    # Proxy requests to Gunicorn (Django app)
+    location / {
+        proxy_pass http://unix:/var/www/html/mywebsite/mywebsite.sock;
+        proxy_http_version 1.1;
+        proxy_set_header Connection "";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_buffering off;  # Disable buffering to prevent latency issues
+
+        # Allow larger requests for Django forms/uploads
+        client_max_body_size 10M;
+    }
+
+    # Serve static files efficiently
+    location /static/ {
+        alias /var/www/html/mywebsite/staticfiles/;
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # Security settings
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+}
+--- / nginx sites available ---
+
+--- single server gunicorn ---
+[Unit]
+Description=Gunicorn daemon for MyWebsite Django project
+After=network.target
+
+[Service]
+User=victorv
+Group=www-data
+WorkingDirectory=/var/www/html/mywebsite
+
+# ✅ Use the Python binary from the virtual environment
+ExecStart=/var/www/html/mywebsite/venv/bin/gunicorn \
+    --workers 3 \
+    --bind unix:/var/www/html/mywebsite/mywebsite.sock \
+    --chdir /var/www/html/mywebsite \
+    mysite.wsgi:application
+
+# Restart settings for stability
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=append:/var/log/gunicorn/mywebsite.log
+StandardError=append:/var/log/gunicorn/mywebsite_error.log
+
+# ✅ Ensure correct permissions for the socket
+PermissionsStartOnly=true
+ExecStartPre=/bin/mkdir -p /var/log/gunicorn /var/www/html/mywebsite
+ExecStartPre=/bin/chown -R victorv:www-data /var/www/html/mywebsite /var/log/gunicorn
+
+[Install]
+WantedBy=multi-user.target
+--- / gunicorn ---

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Prescription Request</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 3em; position: relative; }
+        header, footer {
+            background-color: #004d40;
+            color: white;
+            text-align: center;
+            padding: 1em 0;
+        }
+        h1 {
+            color: #004d40;
+            margin-top: 2em;
+        }
+        .field {
+            margin-bottom: 1em;
+        }
+        .footer-text {
+            font-size: 0.85em;
+            color: #ccc;
+        }
+    </style>
+</head>
+<body>
+    <!-- Simulated Header -->
+    <header>
+        <h2>Northern Health Innovations</h2>
+    </header>
+
+    <main>
+        <p><strong>Date Submitted:</strong> {{ timestamp }}</p>
+        <h1>Prescription Request</h1>
+        {% for key, value in form_data.items %}
+            <div class="field">
+                <strong>{{ key|capfirst }}:</strong> {{ value }}
+            </div>
+        {% endfor %}
+    </main>
+
+    <!-- Simulated Footer -->
+    <footer>
+        <div class="footer-text">
+            5600-100 King Street West, Toronto,ON, M5X1A9 | info@norhi.ca
+        </div>
+    </footer>
+</body>
+</html>
+
