@@ -30,28 +30,28 @@
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <!-- Left side - NUCP Login -->
             <a href="https://u1.isnord.ca/auth" target="_blank" rel="noopener noreferrer"
-               class="text-xl font-bold text-[#004d40]">
-                NUCP<sup>™</sup> Login
+                class="bg-[#004d40] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#00332e] transition duration-300">
+                  NUCP<sup>™</sup> Platform
             </a>
-
             <!-- Center/Right side -->
             <div class="hidden md:flex items-center space-x-6">
                 <!-- Main Navigation-->
                 <a href="{% url 'home' %}" class="text-gray-700 hover:text-[#004d40] px-4">Home</a>
-                <a href="{% url 'blog_list' %}" class="text-gray-700 hover:text-[#004d40] px-4">About</a>
+                <a href="{% url 'about' %}" class="text-gray-700 hover:text-[#004d40] px-4">About</a>
                 <a href="{% url 'contact' %}" class="text-gray-700 hover:text-[#004d40] px-4">Contact</a>
+                <a href="{% url 'register_selection' %}" class="text-xl text-[#004d40] font-bold px-4">Register</a>
 
-                <!-- Patient Portal Dropdown -->
+                <!-- Patient Portal Dropdown 
                 <div class="relative">
                     <button type="button"
                             onclick="toggleDropdown('patientDropdown', event)"
                             class="text-gray-700 hover:text-[#004d40] px-4 flex items-center">
                         Patient Portal
                     </button>
-                    <!-- Dropdown menu -->
+                    <!-- Dropdown menu 
                     <div id="patientDropdown"
                          class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden z-50">
-                        <a href="{% url 'registration' %}"
+                        <a href="{% url 'register_selection' %}"
                            class="dropdown-item block px-4 py-2 text-gray-700 rounded-t-lg">
                             Register
                         </a>
@@ -62,14 +62,14 @@
                     </div>
                 </div>
 
-                <!-- Provider Portal Dropdown -->
+                <!-- Provider Portal Dropdown 
                 <div class="relative">
                     <button type="button"
                             onclick="toggleDropdown('providerDropdown', event)"
                             class="text-gray-700 hover:text-[#004d40] px-4 flex items-center">
                         Provider Portal
                     </button>
-                    <!-- Dropdown menu -->
+                    <!-- Dropdown menu 
                     <div id="providerDropdown"
                          class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden z-50">
                         <a href="{% url 'provider_dashboard' %}"
@@ -78,7 +78,7 @@
                         </a>
                     </div>
                 </div>
-            </div>
+            </div>-->
 
             <!-- Mobile Menu Button - ONLY HERE -->
             <button id="menu-toggle" class="block md:hidden focus:outline-none">
@@ -94,21 +94,9 @@
         <div id="mobile-menu" class="hidden md:hidden bg-white shadow-md px-4 py-3">
            
             <a href="{% url 'home' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">Home</a>
-            <a href="{% url 'blog_list' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">About</a>
+            <a href="{% url 'about' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">About</a>
             <a href="{% url 'contact' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">Contact</a>
-
-            <!-- Mobile Patient Portal Section -->
-            <div class="py-2">
-                <div class="font-semibold text-gray-700 mb-2">Patient Portal</div>
-                <a href="{% url 'registration' %}" class="block py-2 pl-4 text-gray-700 hover:text-[#004d40]">Register</a>
-                <a href="{% url 'patient_dashboard' %}" class="block py-2 pl-4 text-gray-700 hover:text-[#004d40]">Login</a>
-            </div>
-
-            <!-- Mobile Provider Portal Section -->
-            <div class="py-2">
-                <div class="font-semibold text-gray-700 mb-2">Provider Portal</div>
-                <a href="{% url 'provider_dashboard' %}" class="block py-2 pl-4 text-gray-700 hover:text-[#004d40]">Login</a>
-            </div>
+            <a href="{% url 'register_selection' %}" class="text-xl text-[#004d40] font-bold px-4">Register</a>
         </div>
     </nav>
        

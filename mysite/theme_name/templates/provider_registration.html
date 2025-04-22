@@ -1,24 +1,24 @@
 {% extends "base.html" %}
 
-{% block title %}Patient Registration - Northern Health Innovations{% endblock %}
+{% block title %}Provider Registration - Northern Health Innovations{% endblock %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8 max-w-6xl">
+<div class="container mx-auto px-4 py-12 max-w-6xl">
 
     <!-- Registration Header -->
     <div class="text-center mb-8">
-        <h1 class="text-4xl font-extrabold text-[#004d40]">Patient Registration</h1>
-        <p class="mt-4 text-lg text-gray-600 max-w-3xl mx-auto">
-            Please complete this registration form for virtual care services.
+        <h1 class="text-3xl font-bold text-[#004d40]">Healthcare Provider Registration</h1>
+        <p class="mt-2 text-gray-600 max-w-2xl mx-auto">
+            Please complete this registration form to join our healthcare provider network.
         </p>
     </div>
 
     <!-- Progress Indicator -->
     <div class="max-w-4xl mx-auto mb-8">
         <div class="flex justify-between">
-            <span class="text-[#004d40] font-medium">General Info</span>
-            <span class="text-[#004d40] font-medium">Medical Info</span>
-            <span class="text-[#004d40] font-medium">Emergency Contact</span>
+            <span class="text-[#004d40] font-medium">Personal Info</span>
+            <span class="text-[#004d40] font-medium">Professional Info</span>
+            <span class="text-[#004d40] font-medium">Practice Details</span>
             <span class="text-[#004d40] font-medium">Consent</span>
         </div>
         <div class="mt-2 h-2 bg-gray-200 rounded-full overflow-hidden">
@@ -45,13 +45,13 @@
     <form method="POST" class="max-w-4xl mx-auto" id="registration-form">
         {% csrf_token %}
 
-        <!-- 1. General Information Section -->
+        <!-- 1. Personal Information Section -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8" id="section-1">
             <div class="bg-[#004d40] px-6 py-4 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <h2 class="text-xl font-bold text-white">General Information</h2>
+                <h2 class="text-xl font-bold text-white">Personal Information</h2>
             </div>
             
             <div class="p-6 bg-gray-50">
@@ -67,33 +67,18 @@
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Primary Phone</label>
-                        {{ form.primary_phone }}
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Alternate Phone</label>
-                        {{ form.alternate_phone }}
-                    </div>
-
-                    <div class="space-y-2">
                         <label class="block text-gray-700 font-semibold">Email</label>
                         {{ form.email }}
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Date of Birth</label>
-                        {{ form.date_of_birth }}
+                        <label class="block text-gray-700 font-semibold">Phone</label>
+                        {{ form.phone }}
                     </div>
 
                     <div class="space-y-2 md:col-span-2">
                         <label class="block text-gray-700 font-semibold">Address</label>
                         {{ form.address }}
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">OHIP Number</label>
-                        {{ form.ohip_number }}
                     </div>
                 </div>
                 
@@ -105,39 +90,33 @@
             </div>
         </div>
 
-        <!-- 2. Medical Information Section -->
+        <!-- 2. Professional Information Section -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8 hidden" id="section-2">
             <div class="bg-[#004d40] px-6 py-4 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0016.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 002 8.5c0 2.3 1.5 4.05 3 5.5l7 7z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                 </svg>
-                <h2 class="text-xl font-bold text-white">Medical Information</h2>
+                <h2 class="text-xl font-bold text-white">Professional Information</h2>
             </div>
             
             <div class="p-6 bg-gray-50">
-                <div class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Current Medications</label>
-                        {{ form.current_medications }}
-                        <p class="text-gray-500 text-sm mt-1">List all current medications and dosages</p>
+                        <label class="block text-gray-700 font-semibold">Medical Specialty</label>
+                        {{ form.specialty }}
+                        <p class="text-gray-500 text-sm mt-1">Primary area of practice</p>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Allergies</label>
-                        {{ form.allergies }}
-                        <p class="text-gray-500 text-sm mt-1">Include drug, food, and environmental allergies</p>
+                        <label class="block text-gray-700 font-semibold">License Number</label>
+                        {{ form.license_number }}
+                        <p class="text-gray-500 text-sm mt-1">Your professional license/registration number</p>
                     </div>
 
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Supplements</label>
-                        {{ form.supplements }}
-                        <p class="text-gray-500 text-sm mt-1">List vitamins, minerals and other supplements</p>
-                    </div>
-
-                    <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Pharmacy Details</label>
-                        {{ form.pharmacy_details }}
-                        <p class="text-gray-500 text-sm mt-1">Include preferred pharmacy name and location</p>
+                    <div class="space-y-2 md:col-span-2">
+                        <label class="block text-gray-700 font-semibold">Professional Bio</label>
+                        {{ form.bio }}
+                        <p class="text-gray-500 text-sm mt-1">Brief description of your professional background and expertise</p>
                     </div>
                 </div>
                 
@@ -152,30 +131,44 @@
             </div>
         </div>
 
-        <!-- 3. Emergency Contact Section -->
+        <!-- 3. Practice Details Section -->
         <div class="bg-white rounded-xl shadow-md overflow-hidden mb-8 hidden" id="section-3">
             <div class="bg-[#004d40] px-6 py-4 flex items-center">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                 </svg>
-                <h2 class="text-xl font-bold text-white">Emergency Contact</h2>
+                <h2 class="text-xl font-bold text-white">Practice Details</h2>
             </div>
             
             <div class="p-6 bg-gray-50">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="block text-gray-700 font-semibold">Practice Name</label>
+                        <input type="text" name="practice_name" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Practice Name">
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="block text-gray-700 font-semibold">Practice Phone</label>
+                        <input type="text" name="practice_phone" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Practice Phone">
+                    </div>
+
                     <div class="space-y-2 md:col-span-2">
-                        <label class="block text-gray-700 font-semibold">Name</label>
-                        {{ form.emergency_contact_name }}
+                        <label class="block text-gray-700 font-semibold">Practice Address</label>
+                        <textarea name="practice_address" rows="3" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Practice Address"></textarea>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Phone</label>
-                        {{ form.emergency_contact_phone }}
+                        <label class="block text-gray-700 font-semibold">Available for Virtual Care</label>
+                        <select name="virtual_care_availability" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                            <option value="yes">Yes</option>
+                            <option value="no">No</option>
+                            <option value="limited">Limited Availability</option>
+                        </select>
                     </div>
 
                     <div class="space-y-2">
-                        <label class="block text-gray-700 font-semibold">Alternate Phone</label>
-                        {{ form.emergency_contact_alternate_phone }}
+                        <label class="block text-gray-700 font-semibold">Languages Spoken</label>
+                        <input type="text" name="languages" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="e.g., English, French, Spanish">
                     </div>
                 </div>
                 
@@ -196,30 +189,41 @@
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-                <h2 class="text-xl font-bold text-white">Consent</h2>
+                <h2 class="text-xl font-bold text-white">Consent & Agreement</h2>
             </div>
             
             <div class="p-6 bg-gray-50">
                 <div class="space-y-6">
                     <div class="p-4 bg-white rounded-lg border border-gray-200">
-                        <h3 class="font-semibold text-[#004d40] mb-2">Virtual Care Consent</h3>
+                        <h3 class="font-semibold text-[#004d40] mb-2">Terms of Service</h3>
                         <p class="text-gray-600 mb-4 text-sm">
-                            I consent to receive healthcare services via secure video conferencing. I understand that virtual care has limitations compared to in-person visits, and that I may be required to seek in-person care if my provider deems it necessary.
+                            By registering as a healthcare provider on the Northern Health Innovations platform, you agree to abide by our terms of service, which include maintaining the confidentiality of patient information, responding to patient inquiries in a timely manner, and adhering to professional standards of care.
                         </p>
                         <div class="flex items-center space-x-2">
-                            {{ form.virtual_care_consent }}
-                            <label class="text-gray-700">I consent to receive virtual care services</label>
+                            <input type="checkbox" name="terms_consent" id="terms_consent" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" required>
+                            <label for="terms_consent" class="text-gray-700">I agree to the Terms of Service</label>
                         </div>
                     </div>
 
                     <div class="p-4 bg-white rounded-lg border border-gray-200">
-                        <h3 class="font-semibold text-[#004d40] mb-2">Electronic Health Record Consent</h3>
+                        <h3 class="font-semibold text-[#004d40] mb-2">Data Usage Consent</h3>
                         <p class="text-gray-600 mb-4 text-sm">
-                            I consent to the creation and maintenance of an electronic health record. I understand that my health information will be stored securely and accessed only by authorized healthcare personnel involved in my care.
+                            I consent to the collection and storage of my professional information for the purpose of providing healthcare services through the Northern Health Innovations platform. I understand that my profile information will be visible to patients seeking care.
                         </p>
                         <div class="flex items-center space-x-2">
-                            {{ form.ehr_consent }}
-                            <label class="text-gray-700">I consent to the use of Electronic Health Records</label>
+                            {{ form.data_consent }}
+                            <label for="id_data_consent" class="text-gray-700">I consent to the use of my data as described</label>
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-white rounded-lg border border-gray-200">
+                        <h3 class="font-semibold text-[#004d40] mb-2">Credentials Verification</h3>
+                        <p class="text-gray-600 mb-4 text-sm">
+                            I understand that Northern Health Innovations will verify my professional credentials, including license status and specialty certification, before my account is fully activated. I authorize Northern Health Innovations to contact relevant licensing and certification bodies for this purpose.
+                        </p>
+                        <div class="flex items-center space-x-2">
+                            <input type="checkbox" name="verification_consent" id="verification_consent" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" required>
+                            <label for="verification_consent" class="text-gray-700">I authorize verification of my credentials</label>
                         </div>
                     </div>
                 </div>

@@ -41,6 +41,53 @@ class PatientRegistrationForm(forms.ModelForm):
             "ehr_consent": forms.CheckboxInput(attrs={"class": "h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]"})
         }
 
+
+class ProviderRegistrationForm(forms.Form):
+    # Personal Information
+    first_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "First Name"}
+    ))
+    last_name = forms.CharField(max_length=100, required=True, widget=forms.TextInput(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "Last Name"}
+    ))
+    email = forms.EmailField(required=True, widget=forms.EmailInput(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "Email"}
+    ))
+    phone = forms.CharField(max_length=20, required=True, widget=forms.TextInput(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "Phone Number"}
+    ))
+    address = forms.CharField(widget=forms.Textarea(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "Address", "rows": 3}
+    ))
+    
+    # Professional Information
+    specialty = forms.CharField(max_length=100, required=True, widget=forms.TextInput(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "Medical Specialty"}
+    ))
+    license_number = forms.CharField(max_length=50, required=True, widget=forms.TextInput(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "License Number"}
+    ))
+    bio = forms.CharField(required=False, widget=forms.Textarea(
+        attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", 
+               "placeholder": "Professional Bio (optional)", "rows": 4}
+    ))
+    
+    # Consent
+    data_consent = forms.BooleanField(required=True, widget=forms.CheckboxInput(
+        attrs={"class": "h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]"}
+    ))
+    
+    # Note: The Practice Details section fields are not included in this form class
+    # because they're added directly to the template with plain HTML inputs.
+    # If you want to validate these fields, you should add them here as well.
+
 # PATIENT PROFILE EDIT FORM
 class PatientProfileEditForm(forms.Form):
     first_name = forms.CharField(max_length=100, required=True)

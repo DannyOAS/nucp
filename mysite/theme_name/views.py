@@ -4,7 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse, Http404, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from .forms import (
-    ContactForm, PatientRegistrationForm, PrescriptionRequestForm, 
+    ContactForm, PatientRegistrationForm, ProviderRegistrationForm, PrescriptionRequestForm, 
     PatientForm, PatientProfileEditForm, ProviderProfileEditForm, PatientMessageForm, 
     ProviderMessageForm
 )
@@ -99,6 +99,71 @@ def registration_view(request):
         form = PatientRegistrationForm()
     return render(request, 'registration.html', {'form': form})
 
+########################################################################
+#NEW REGISTRATION
+
+def login_view(request):
+    """Redirect to Authelia login page"""
+    # You can configure this URL to point to your Authelia login endpoint
+    authelia_login_url = "https://auth.isnord.ca/auth/"  # Adjust to your actual Authelia URL
+    return redirect(authelia_login_url)
+
+def register_selection(request):
+    """View for the registration type selection page"""
+    return render(request, 'register.html')
+
+def patient_registration(request):
+    """View for patient registration form"""
+    if request.method == 'POST':
+        form = PatientRegistrationForm(request.POST)
+        if form.is_valid():
+            # Save form data
+            result = PatientService.register_patient(form.cleaned_data)
+            
+            # Success logic (similar to your existing registration_view)
+            if result['cloud_upload']['success'] and result['erp_sync']['success']:
+                messages.success(
+                    request,
+                    'Registration submitted successfully! Your information has been processed.'
+                )
+            elif result['cloud_upload']['success']:
+                messages.warning(
+                    request,
+                    'Registration submitted, but failed to sync with ERP system.'
+                )
+            elif result['erp_sync']['success']:
+                messages.warning(
+                    request,
+                    'Registration submitted, but failed to upload documents to secure storage.'
+                )
+            else:
+                messages.error(
+                    request,
+                    'Registration submitted locally, but external systems integration failed.'
+                )
+                
+            return redirect('registration_success')
+    else:
+        form = PatientRegistrationForm()
+    return render(request, 'patient_registration.html', {'form': form})
+
+def provider_registration(request):
+    """View for provider registration form"""
+    if request.method == 'POST':
+        form = ProviderRegistrationForm(request.POST)
+        if form.is_valid():
+            # Process provider registration
+            # Add your provider registration logic here
+            messages.success(request, 'Provider registration submitted successfully!')
+            return redirect('registration_success')
+    else:
+        form = ProviderRegistrationForm()  # You'll need to create this form
+    return render(request, 'provider_registration.html', {'form': form})
+
+def registration_success(request):
+    """View for registration success page"""
+    return render(request, 'registration_success.html')
+#########################################################################
 
 def prescription_view(request):
     if request.method == 'POST':

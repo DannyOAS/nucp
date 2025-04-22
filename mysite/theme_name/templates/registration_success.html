@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Registration Successful - Northern Health Innovations{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-16 max-w-3xl">
+
+    <!-- Success Card -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
+        <!-- Header -->
+        <div class="bg-[#004d40] p-6 flex justify-center">
+            <div class="h-24 w-24 bg-white rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-[#004d40]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Content -->
+        <div class="p-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">Registration Successful!</h1>
+            
+            <p class="text-gray-600 mb-6">
+                Thank you for registering with Northern Health Innovations. Your account has been created successfully.
+            </p>
+            
+            {% if messages %}
+                <div class="bg-gray-50 rounded-lg p-4 mb-6 border border-gray-200">
+                    {% for message in messages %}
+                        <p class="{% if message.tags == 'success' %}text-green-600{% elif message.tags == 'warning' %}text-yellow-600{% elif message.tags == 'error' %}text-red-600{% else %}text-gray-700{% endif %}">
+                            {{ message }}
+                        </p>
+                    {% endfor %}
+                </div>
+            {% endif %}
+            
+            <div class="space-y-2 mb-8">
+                <p class="text-gray-700">What happens next?</p>
+                <ul class="space-y-3 text-left mx-auto max-w-md">
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40] mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>You'll receive a confirmation email shortly with your account details.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40] mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Log in to your account using the credentials provided in the email.</span>
+                    </li>
+                    <li class="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40] mr-2 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                        </svg>
+                        <span>Complete your profile and explore the available services.</span>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <a href="{% url 'login' %}" class="bg-[#004d40] text-white font-bold py-3 px-6 rounded-lg hover:bg-[#00332e] transition-all duration-200">
+                    Log In Now
+                </a>
+                <a href="{% url 'home' %}" class="border border-[#004d40] text-[#004d40] font-bold py-3 px-6 rounded-lg hover:bg-gray-50 transition-all duration-200">
+                    Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Support Info -->
+    <div class="mt-8 text-center text-gray-600">
+        <p>
+            Need help? Contact our support team at 
+            <a href="mailto:support@northernhealth.example.com" class="text-[#004d40] hover:underline">
+                support@northernhealth.example.com
+            </a>
+        </p>
+    </div>
+</div>
+{% endblock %}

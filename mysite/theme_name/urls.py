@@ -16,6 +16,11 @@ website_urls = [
     path("nucp/", RedirectView.as_view(url="https://nucp.ca", permanent=True), name="nucp"),
     path('registration/', views.registration_view, name='registration'),
     path('prescription/', views.prescription_view, name='prescription'),
+    path('login/', views.login_view, name='login'),
+    path('register/', views.register_selection, name='register_selection'),
+    path('register/patient/', views.patient_registration, name='patient_registration'),
+    path('register/provider/', views.provider_registration, name='provider_registration'),
+    path('registration/success/', views.registration_success, name='registration_success'),
 ]
 
 # Provider dashboard URLs
