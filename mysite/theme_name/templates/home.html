@@ -1,386 +1,254 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}Home - Northern Health Innovations{% endblock %}
+{% block title %}Home - {{ site_name }}{% endblock %}
 
 {% block content %}
-<!--<div class="container mx-auto px-6 py-12">-->
     <!-- Welcome Section -->
-   <div class="text-center mt-12 mb-12">
-        <h1 class="text-4xl font-extrabold text-[#004d40]">
+    <div class="text-center mt-12 mb-12">
+        <h1 class="text-4xl font-extrabold text-[{{ primary_color }}]">
             Welcome | Bienvenue | Tân'si
         </h1>
         <p class="mt-4 text-lg text-gray-700 max-w-3xl mx-auto">
-            At <span class="font-semibold">Northern Health Innovations Inc.</span>, we empower healthcare providers
+            At <span class="font-semibold">{{ site_name }}</span>, we empower healthcare providers
             with cutting-edge software solutions, utilizing modern technology to streamline workflows and enhance care.
         </p>
     </div>
 
-<!-------------------------------------------------------------------------------------------------------------------------------------------------------------->
-<!-- Add this hero section after your existing navigation section -->
-<section class="bg-white py-12 border-b border-gray-200">
-    <div class="container mx-auto px-4">
-      <div class="flex flex-col md:flex-row items-center">
-        <!-- Left column: NUCP info -->
-        <div class="md:w-1/2 mb-8 md:mb-0 pr-0 md:pr-8">
-          <div class="flex items-center mb-4">
-            <div class="bg-[#004d40] text-white px-3 py-1 rounded-md text-sm font-bold">NEW</div>
-            <div class="ml-3 text-gray-500 text-sm">Redefining Healthcare Technology</div>
-          </div>
-          
-          <h2 class="text-3xl font-bold text-[#004d40] mb-4">Introducing NUCP<sup>™</sup></h2>
-          <h3 class="text-xl text-gray-700 mb-6">Norhi Unified Care Platform</h3>
-          
-          <p class="text-gray-600 mb-6">A comprehensive healthcare solution designed by physicians for optimal clinical workflow. Streamline your practice with cutting-edge AI assistance and PHIPA-compliant secure communication.</p>
-          
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div class="flex items-start">
-              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#edf7f5] flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-4">
-                <h4 class="text-lg font-medium text-gray-800">AI Scribe</h4>
-                <p class="text-sm text-gray-600">Voice-to-text with LLM assistance</p>
-              </div>
+    <!-- Hero Section -->
+    <section class="bg-white py-12 border-b border-gray-200">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center">
+                <!-- Left column: NUCP info -->
+                <div class="md:w-1/2 mb-8 md:mb-0 pr-0 md:pr-8">
+                    <div class="flex items-center mb-4">
+                        <div class="bg-[{{ primary_color }}] text-white px-3 py-1 rounded-md text-sm font-bold">NEW</div>
+                        <div class="ml-3 text-gray-500 text-sm">{{ nucp_tagline }}</div>
+                    </div>
+                    
+                    <h2 class="text-3xl font-bold text-[{{ primary_color }}] mb-4">Introducing {{ nucp_name }}</h2>
+                    <h3 class="text-xl text-gray-700 mb-6">{{ nucp_fullname }}</h3>
+                    
+                    <p class="text-gray-600 mb-6">{{ nucp_description }} Streamline your practice with cutting-edge AI assistance and PHIPA-compliant secure communication.</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                        {% for feature in nucp_features %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[{{ light_bg }}] flex items-center justify-center">
+                                {% if feature.icon_type == 'microphone' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                                </svg>
+                                {% elif feature.icon_type == 'lock' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                                </svg>
+                                {% elif feature.icon_type == 'document' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                    <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                                </svg>
+                                {% elif feature.icon_type == 'users' %}
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                                </svg>
+                                {% endif %}
+                            </div>
+                            <div class="ml-4">
+                                <h4 class="text-lg font-medium text-gray-800">{{ feature.title }}</h4>
+                                <p class="text-sm text-gray-600">{{ feature.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                        <a href="https://u1.isnord.ca/auth" target="_blank" rel="noopener noreferrer" class="inline-block bg-[{{ primary_color }}] hover:bg-[{{ hover_color }}] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
+                            Start Using {{ nucp_name }} Today
+                        </a>
+                        <a href="#" class="inline-block bg-white border-2 border-[{{ primary_color }}] text-[{{ primary_color }}] font-bold py-3 px-6 rounded-lg hover:bg-[{{ light_bg }}] transition duration-300 text-center">
+                            Watch Demo
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- Right column: Dashboard Preview -->
+                <div class="md:w-1/2">
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
+                        <div class="relative rounded-lg overflow-hidden shadow-xl border border-gray-200">
+                            <!-- Dashboard mockup--> 
+                            <div class="bg-white p-4">
+                                <img src="{% static 'images/mockup_1.png' %}" alt="Mockup Preview">
+                                <div class="text-center mt-4 text-gray-600 text-sm">
+                                    Designed by physicians for optimal clinical workflow
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Trusted Partners Section -->
+    <div class="bg-gray-50 py-8">
+        <div class="container mx-auto px-4">
+            <h3 class="text-xl font-semibold text-gray-800 mb-6 text-center">Trusted by Healthcare Providers Across Canada</h3>
+            <div class="flex justify-around items-center flex-wrap">
+                {% for partner in partners %}
+                <div class="w-32 h-12 bg-gray-200 rounded m-4 flex items-center justify-center text-gray-500">{{ partner.name }}</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- NUCP Features Section -->
+    <section class="py-16 bg-gray-50">
+        <div class="container mx-auto px-4">
+            <div class="text-center mb-12">
+                <h2 class="text-3xl font-bold text-[{{ primary_color }}] mb-4">Why Healthcare Providers Choose {{ nucp_name }}</h2>
+                <p class="text-gray-600 max-w-3xl mx-auto">Our comprehensive platform combines cutting-edge AI with physician-designed workflows to transform healthcare delivery and documentation.</p>
             </div>
             
-            <div class="flex items-start">
-              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#edf7f5] flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                  <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-4">
-                <h4 class="text-lg font-medium text-gray-800">PHIPA Compliant</h4>
-                <p class="text-sm text-gray-600">Secure messaging & video</p>
-              </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                {% for feature in provider_features %}
+                <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
+                    <div class="h-14 w-14 bg-[{{ light_bg }}] rounded-lg flex items-center justify-center mb-4">
+                        {% if feature.icon_type == 'microphone' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
+                        </svg>
+                        {% elif feature.icon_type == 'document' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                            <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                        </svg>
+                        {% elif feature.icon_type == 'lock' %}
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+                        </svg>
+                        {% endif %}
+                    </div>
+                    <h3 class="text-xl font-semibold text-gray-800 mb-2">{{ feature.title }}</h3>
+                    <p class="text-gray-600 mb-4">{{ feature.description }}</p>
+                    <ul class="text-gray-600 space-y-2">
+                        {% for benefit in feature.benefits %}
+                        <li class="flex items-start">
+                            <svg class="h-5 w-5 text-[{{ primary_color }}] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            {{ benefit }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
+
+    <!-- Patient Portal Showcase Section -->
+    <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+            <div class="flex flex-col md:flex-row items-center">
+                <!-- Left side - Screenshot/UI -->
+                <div class="md:w-1/2 mt-8 md:mt-0 md:pr-8">
+                    <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
+                        <div class="relative rounded-lg overflow-hidden shadow-xl border border-gray-200">
+                            <!-- Dashboard mockup-->
+                            <div class="bg-white p-4">
+                                <img src="{% static 'images/mockup_2.png' %}" alt="Mockup Preview">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right side - Content -->
+                <div class="md:w-1/2">
+                    <div class="flex items-center mb-4">
+                        <div class="h-8 w-8 rounded-full bg-[{{ light_bg }}] flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                            </svg>
+                        </div>
+                        <div class="ml-3 text-[{{ primary_color }}] text-sm font-bold">FOR PATIENTS</div>
+                    </div>
+                    
+                    <h2 class="text-3xl font-bold text-gray-800 mb-4">Take Control of Your Healthcare Journey</h2>
+                    
+                    <p class="text-gray-600 mb-6">{{ nucp_name }}'s patient portal puts you at the center of your care with intuitive tools to manage appointments, prescriptions, and communications with your healthcare team.</p>
+                    
+                    <div class="space-y-4 mb-8">
+                        {% for feature in patient_features %}
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-[{{ light_bg }}] flex items-center justify-center mt-1">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[{{ primary_color }}]" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-lg font-medium text-gray-800">{{ feature.title }}</h4>
+                                <p class="text-gray-600">{{ feature.description }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                        <a href="{% url 'registration' %}" class="inline-block bg-[{{ primary_color }}] hover:bg-[{{ hover_color }}] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
+                            Create Patient Account
+                        </a>
+                        <a href="#" class="inline-block bg-white border-2 border-[{{ primary_color }}] text-[{{ primary_color }}] font-bold py-3 px-6 rounded-lg hover:bg-[{{ light_bg }}] transition duration-300 text-center">
+                            Learn More
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Final CTA Section -->
+    <section style="background: {{ gradient }}; color: white; padding-top: 4rem; padding-bottom: 4rem;">
+        <div class="container mx-auto px-4 text-center">
+            <h2 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 1.5rem; color: white;">Discover the {{ nucp_name }} Difference</h2>
+            <p style="font-size: 1.25rem; margin-bottom: 2rem; max-width: 48rem; margin-left: auto; margin-right: auto; color: white;">Join healthcare providers and patients who are experiencing the future of connected healthcare.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                <!-- Patient Card -->
+                <div style="background-color: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="height: 4rem; width: 4rem; background-color: white; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="height: 2rem; width: 2rem; color: {{ primary_color }};" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                        </svg>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: white;">For Patients</h3>
+                    <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.8);">Take an active role in your healthcare journey with intuitive tools designed around your needs.</p>
+                    <a href="{% url 'patient_registration' %}" style="display: inline-block; background-color: white; color: {{ primary_color }}; font-weight: bold; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: all 0.3s ease;">
+                        Join as Patient
+                    </a>
+                </div>
+                
+                <!-- Provider Card -->
+                <div style="background-color: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2);">
+                    <div style="height: 4rem; width: 4rem; background-color: white; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+                        <svg xmlns="http://www.w3.org/2000/svg" style="height: 2rem; width: 2rem; color: {{ primary_color }};" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
+                            <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
+                        </svg>
+                    </div>
+                    <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: white;">For Providers</h3>
+                    <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.8);">Streamline your practice with powerful AI tools designed by physicians for physicians.</p>
+                    <a href="{% url 'provider_registration' %}" style="display: inline-block; background-color: white; color: {{ primary_color }}; font-weight: bold; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: all 0.3s ease;">
+                        Join as Provider
+                    </a>
+                </div>
             </div>
             
-            <div class="flex items-start">
-              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#edf7f5] flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-                  <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              <div class="ml-4">
-                <h4 class="text-lg font-medium text-gray-800">Smart Forms</h4>
-                <p class="text-sm text-gray-600">Automated medical documentation</p>
-              </div>
+            <div style="margin-top: 3rem;">
+                <a href="#" style="font-size: 1.125rem; text-decoration: underline; color: white; transition: all 0.3s ease; display: inline-block;">
+                    Schedule a Personalized Demo →
+                </a>
             </div>
-            
-            <div class="flex items-start">
-              <div class="flex-shrink-0 h-10 w-10 rounded-full bg-[#edf7f5] flex items-center justify-center">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                </svg>
-              </div>
-              <div class="ml-4">
-                <h4 class="text-lg font-medium text-gray-800">Seamless Care</h4>
-                <p class="text-sm text-gray-600">Interoperable health records</p>
-              </div>
-            </div>
-          </div>
-          
-          <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-            <a href="https://u1.isnord.ca/auth" target="_blank" rel="noopener noreferrer" class="inline-block bg-[#004d40] hover:bg-[#00332e] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
-              Start Using NUCP Today
-            </a>
-            <a href="#" class="inline-block bg-white border-2 border-[#004d40] text-[#004d40] font-bold py-3 px-6 rounded-lg hover:bg-[#edf7f5] transition duration-300 text-center">
-              Watch Demo
-            </a>
-          </div>
         </div>
-        
-        <!-- Right column: Dashboard Preview -->
-        <div class="md:w-1/2">
-          <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
-            <div class="relative rounded-lg overflow-hidden shadow-xl border border-gray-200">
-              <!-- Dashboard mockup--> 
-              <div class="bg-white p-4">
-              <img src="{% static 'images/mockup_1.png' %}" alt="Mockup Preview">
-
-
-            <div class="text-center mt-4 text-gray-600 text-sm">
-              Designed by physicians for optimal clinical workflow
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-  
-  <!-- Add a trusted by section -->
-  <div class="bg-gray-50 py-8">
-    <div class="container mx-auto px-4">
-      <h3 class="text-xl font-semibold text-gray-800 mb-6 text-center">Trusted by Healthcare Providers Across Canada</h3>
-      <div class="flex justify-around items-center flex-wrap">
-        <div class="w-32 h-12 bg-gray-200 rounded m-4 flex items-center justify-center text-gray-500">Partner 1</div>
-        <div class="w-32 h-12 bg-gray-200 rounded m-4 flex items-center justify-center text-gray-500">Partner 2</div>
-        <div class="w-32 h-12 bg-gray-200 rounded m-4 flex items-center justify-center text-gray-500">Partner 3</div>
-        <div class="w-32 h-12 bg-gray-200 rounded m-4 flex items-center justify-center text-gray-500">Partner 4</div>
-      </div>
-    </div>
-  </div>
-
-<!-- NUCP Features Section -->
-<section class="py-16 bg-gray-50">
-    <div class="container mx-auto px-4">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-[#004d40] mb-4">Why Healthcare Providers Choose NUCP</h2>
-        <p class="text-gray-600 max-w-3xl mx-auto">Our comprehensive platform combines cutting-edge AI with physician-designed workflows to transform healthcare delivery and documentation.</p>
-      </div>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Feature 1 -->
-        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
-          <div class="h-14 w-14 bg-[#edf7f5] rounded-lg flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">AI-Powered Scribe</h3>
-          <p class="text-gray-600 mb-4">Transform your clinical documentation with voice-to-text LLM technology that captures patient encounters with unprecedented accuracy and efficiency.</p>
-          <ul class="text-gray-600 space-y-2">
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Automatic transcription of patient visits
-            </li>
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Smart formatting into SOAP notes
-            </li>
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              AI-suggested follow-up questions
-            </li>
-          </ul>
-        </div>
-        
-        <!-- Feature 2 -->
-        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
-          <div class="h-14 w-14 bg-[#edf7f5] rounded-lg flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
-              <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Automated Documentation</h3>
-          <p class="text-gray-600 mb-4">Generate professional medical forms in seconds with intelligent templates that adapt to your specific needs and integrate with your workflow.</p>
-          <ul class="text-gray-600 space-y-2">
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Lab requisitions with one click
-            </li>
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Smart sick notes and referrals
-            </li>
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Insurance forms pre-populated
-            </li>
-          </ul>
-        </div>
-        
-        <!-- Feature 3 -->
-        <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition duration-300">
-          <div class="h-14 w-14 bg-[#edf7f5] rounded-lg flex items-center justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
-            </svg>
-          </div>
-          <h3 class="text-xl font-semibold text-gray-800 mb-2">Secure Communication</h3>
-          <p class="text-gray-600 mb-4">Connect with patients and colleagues through PHIPA-compliant messaging, video conferencing, and seamless information sharing.</p>
-          <ul class="text-gray-600 space-y-2">
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              End-to-end encrypted messaging
-            </li>
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              HD video consultations
-            </li>
-            <li class="flex items-start">
-              <svg class="h-5 w-5 text-[#004d40] mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-              </svg>
-              Secure document sharing
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  </section>
-
- <!-- Patient Portal Showcase Section -->
-<section class="py-16 bg-white">
-  <div class="container mx-auto px-4">
-    <div class="flex flex-col md:flex-row items-center">
-      <!-- Left side - Screenshot/UI -->
-      <div class="md:w-1/2 mt-8 md:mt-0 md:pr-8">
-        <div class="bg-gray-50 rounded-xl p-6 shadow-lg">
-          <div class="relative rounded-lg overflow-hidden shadow-xl border border-gray-200">
-            <!-- Dashboard mockup-->
-            <div class="bg-white p-4">
-              <img src="{% static 'images/mockup_2.png' %}" alt="Mockup Preview">
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Right side - Content -->
-      <div class="md:w-1/2">
-        <div class="flex items-center mb-4">
-          <div class="h-8 w-8 rounded-full bg-[#edf7f5] flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-            </svg>
-          </div>
-          <div class="ml-3 text-[#004d40] text-sm font-bold">FOR PATIENTS</div>
-        </div>
-        
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">Take Control of Your Healthcare Journey</h2>
-        
-        <p class="text-gray-600 mb-6">NUCP's patient portal puts you at the center of your care with intuitive tools to manage appointments, prescriptions, and communications with your healthcare team.</p>
-        
-        <div class="space-y-4 mb-8">
-          <div class="flex items-start">
-            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-[#edf7f5] flex items-center justify-center mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <h4 class="text-lg font-medium text-gray-800">Secure Messaging</h4>
-              <p class="text-gray-600">Communicate directly with your healthcare providers through encrypted messaging.</p>
-            </div>
-          </div>
-          
-          <div class="flex items-start">
-            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-[#edf7f5] flex items-center justify-center mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <h4 class="text-lg font-medium text-gray-800">Virtual Consultations</h4>
-              <p class="text-gray-600">Connect with your doctor from anywhere through high-quality video calls.</p>
-            </div>
-          </div>
-          
-          <div class="flex items-start">
-            <div class="flex-shrink-0 h-6 w-6 rounded-full bg-[#edf7f5] flex items-center justify-center mt-1">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-[#004d40]" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-              </svg>
-            </div>
-            <div class="ml-3">
-              <h4 class="text-lg font-medium text-gray-800">Prescription Management</h4>
-              <p class="text-gray-600">Request refills, view medication details, and get timely reminders.</p>
-            </div>
-          </div>
-        </div>
-        
-        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-          <a href="{% url 'registration' %}" class="inline-block bg-[#004d40] hover:bg-[#00332e] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
-            Create Patient Account
-          </a>
-          <a href="#" class="inline-block bg-white border-2 border-[#004d40] text-[#004d40] font-bold py-3 px-6 rounded-lg hover:bg-[#edf7f5] transition duration-300 text-center">
-            Learn More
-          </a>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-<!-- Final CTA Section with inline styles -->
-<section style="background: linear-gradient(to right, #004d40, #00695c); color: white; padding-top: 4rem; padding-bottom: 4rem;">
-    <div class="container mx-auto px-4 text-center">
-      <h2 style="font-size: 1.875rem; font-weight: 700; margin-bottom: 1.5rem; color: white;">Discover the NUCP Difference</h2>
-      <p style="font-size: 1.25rem; margin-bottom: 2rem; max-width: 48rem; margin-left: auto; margin-right: auto; color: white;">Join healthcare providers and patients who are experiencing the future of connected healthcare.</p>
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-        <!-- Patient Card -->
-        <div style="background-color: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2);">
-          <div style="height: 4rem; width: 4rem; background-color: white; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
-            <svg xmlns="http://www.w3.org/2000/svg" style="height: 2rem; width: 2rem; color: #004d40;" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-            </svg>
-          </div>
-          <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: white;">For Patients</h3>
-          <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.8);">Take an active role in your healthcare journey with intuitive tools designed around your needs.</p>
-          <a href="{% url 'registration' %}" style="display: inline-block; background-color: white; color: #004d40; font-weight: bold; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: all 0.3s ease;">
-            Join as Patient
-          </a>
-        </div>
-        
-        <!-- Provider Card -->
-        <div style="background-color: rgba(255, 255, 255, 0.1); padding: 1.5rem; border-radius: 0.75rem; border: 1px solid rgba(255, 255, 255, 0.2);">
-          <div style="height: 4rem; width: 4rem; background-color: white; border-radius: 9999px; display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
-            <svg xmlns="http://www.w3.org/2000/svg" style="height: 2rem; width: 2rem; color: #004d40;" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M6 6V5a3 3 0 013-3h2a3 3 0 013 3v1h2a2 2 0 012 2v3.57A22.952 22.952 0 0110 13a22.95 22.95 0 01-8-1.43V8a2 2 0 012-2h2zm2-1a1 1 0 011-1h2a1 1 0 011 1v1H8V5zm1 5a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1z" clip-rule="evenodd" />
-              <path d="M2 13.692V16a2 2 0 002 2h12a2 2 0 002-2v-2.308A24.974 24.974 0 0110 15c-2.796 0-5.487-.46-8-1.308z" />
-            </svg>
-          </div>
-          <h3 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.75rem; color: white;">For Providers</h3>
-          <p style="margin-bottom: 1rem; color: rgba(255, 255, 255, 0.8);">Streamline your practice with powerful AI tools designed by physicians for physicians.</p>
-          <a href="#" style="display: inline-block; background-color: white; color: #004d40; font-weight: bold; padding: 0.5rem 1.5rem; border-radius: 0.5rem; transition: all 0.3s ease;">
-            Join as Provider
-          </a>
-        </div>
-      </div>
-      
-      <div style="margin-top: 3rem;">
-        <a href="#" style="font-size: 1.125rem; text-decoration: underline; color: white; transition: all 0.3s ease; display: inline-block;">
-          Schedule a Personalized Demo →
-        </a>
-      </div>
-    </div>
-  </section>
-
-<!-------------------------------------------------------------------------------------------------------------------------------------------------------------->
-
-
-    <!-- Mission Section -->
-
-<!--</div>-->
-
-<script>
-function showChoices() {
-    document.getElementById('startJourney').classList.add('hidden');
-    document.getElementById('choicesSection').classList.remove('hidden');
-}
-// Enable continue button when a choice is made
-document.querySelectorAll('input[name="userType"]').forEach(radio => {
-    radio.addEventListener('change', function() {
-        document.getElementById('continueButton').disabled = false;
-    });
-});
-function proceedToRegistration() {
-    const selectedType = document.querySelector('input[name="userType"]:checked').value;
-    // Hide only the continue button
-    document.getElementById('continueButton').classList.add('hidden');
-    // Show the appropriate options
-    document.getElementById(selectedType + 'Options').classList.remove('hidden');
-}
-</script>
+    </section>
 {% endblock %}
