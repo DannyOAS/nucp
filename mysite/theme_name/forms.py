@@ -1,5 +1,6 @@
 from django import forms
-from .models import ContactMessage, PatientRegistration, PrescriptionRequest, Appointment, Message
+from .models import ContactMessage, PatientRegistration, PrescriptionRequest, Appointment, Message, DemoRequest
+from datetime import date, timedelta
 
 class ContactForm(forms.ModelForm):
     class Meta:
@@ -40,6 +41,26 @@ class PatientRegistrationForm(forms.ModelForm):
             "virtual_care_consent": forms.CheckboxInput(attrs={"class": "h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]"}),
             "ehr_consent": forms.CheckboxInput(attrs={"class": "h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]"})
         }
+
+
+class DemoRequestForm(forms.ModelForm):
+    class Meta:
+        model = DemoRequest
+        exclude = ['created_at']
+        widgets = {
+            'name': forms.TextInput(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "placeholder": "Your Name"}),
+            'email': forms.EmailInput(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "placeholder": "Your Email"}),
+            'organization': forms.TextInput(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "placeholder": "Organization Name"}),
+            'phone': forms.TextInput(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "placeholder": "Phone Number (Optional)"}),
+            'message': forms.Textarea(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "placeholder": "What would you like to see in the demo?", "rows": 3}),
+            'preferred_date': forms.DateInput(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "type": "date"}),
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Set minimum date to tomorrow
+        tomorrow = date.today() + timedelta(days=1)
+        self.fields['preferred_date'].widget.attrs['min'] = tomorrow.strftime('%Y-%m-%d')
 
 
 class ProviderRegistrationForm(forms.Form):

@@ -40,6 +40,30 @@ class PatientRegistration(models.Model):
     class Meta:
         ordering = ['-created_at']
 
+
+class DemoRequest(models.Model):
+    name = models.CharField(max_length=100)
+    email = models.EmailField()
+    organization = models.CharField(max_length=150)
+    phone = models.CharField(max_length=20, blank=True)
+    user_type = models.CharField(max_length=20, choices=[
+        ('provider', 'Healthcare Provider'),
+        ('patient', 'Patient'),
+        ('admin', 'Healthcare Administrator'),
+        ('other', 'Other')
+    ])
+    message = models.TextField(blank=True)
+    preferred_date = models.DateField()
+    preferred_time = models.CharField(max_length=20, choices=[
+        ('morning', 'Morning (9am-12pm)'),
+        ('afternoon', 'Afternoon (1pm-5pm)'),
+        ('evening', 'Evening (5pm-7pm)')
+    ])
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"Demo Request from {self.name} ({self.email})"
+
 class PrescriptionRequest(models.Model):
     # Patient Information
     first_name = models.CharField(max_length=100)

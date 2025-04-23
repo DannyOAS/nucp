@@ -1,12 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import logout
+from django.template.loader import render_to_string
 from django.contrib import messages
 from django.http import HttpResponse, Http404, JsonResponse
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.core.mail import send_mail
 from .forms import (
     ContactForm, PatientRegistrationForm, ProviderRegistrationForm, PrescriptionRequestForm, 
     PatientForm, PatientProfileEditForm, ProviderProfileEditForm, PatientMessageForm, 
-    ProviderMessageForm
+    ProviderMessageForm, DemoRequestForm
 )
 from .models import PatientRegistration, ContactMessage, BlogPost, Message
 from .repositories import (
@@ -163,6 +165,78 @@ def provider_registration(request):
 def registration_success(request):
     """View for registration success page"""
     return render(request, 'registration_success.html')
+
+
+#def schedule_demo(request):
+#    if request.method == "POST":
+#        form = DemoRequestForm(request.POST)
+#        if form.is_valid():
+#            demo_request = form.save()
+            
+            # Send email notification
+#            send_mail(
+#                subject=f"New Demo Request from {demo_request.name}",
+#                message=f"Name: {demo_request.name}\nEmail: {demo_request.email}\nOrganization: {demo_request.organization}\nPhone: {demo_request.phone}\nUser Type: {demo_request.user_type}\nMessage: {demo_request.message}\nPreferred Date: {demo_request.preferred_date}\nPreferred Time: {demo_request.preferred_time}",
+#                from_email="notifications@northernhealth.example.com",
+#                recipient_list=["sales@northernhealth.example.com"],
+#                fail_silently=False,
+#            )
+            
+            # Also send confirmation email to user
+#            send_mail(
+#                subject="Your Demo Request Confirmation - Northern Health Innovations",
+#                message=f"Hello {demo_request.name},\n\nThank you for your interest in NUCP™. We've received your demo request for {demo_request.preferred_date}.\n\nOur team will contact you shortly to confirm the details.\n\nBest regards,\nThe Northern Health Innovations Team",
+#                from_email="support@northernhealth.example.com",
+#                recipient_list=[demo_request.email],
+#                fail_silently=False,
+#            )
+            
+#            return JsonResponse({
+#                'success': True,
+#                'message': 'Your demo request has been submitted successfully! We will contact you shortly to confirm.'
+#            })
+#        else:
+#            return JsonResponse({
+#                'success': False,
+#                'errors': form.errors
+#            })
+#    else:
+#        form = DemoRequestForm()
+    
+#    form_html = render_to_string('partials/demo_form.html', {'form': form})
+#    return JsonResponse({'form_html': form_html})
+
+def schedule_demo(request):
+    if request.method == "POST":
+        form = DemoRequestForm(request.POST)
+        if form.is_valid():
+            try:
+                demo_request = form.save()
+                
+                # Send email notification (commented out for debugging)
+                # send_mail(...)
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Your demo request has been submitted successfully! We will contact you shortly to confirm.'
+                })
+            except Exception as e:
+                print(f"Error saving form: {e}")  # Log the error
+                return JsonResponse({
+                    'success': False,
+                    'errors': {'__all__': [f"Server error: {str(e)}"]}
+                }, status=500)
+        else:
+            print(f"Form validation errors: {form.errors}")  # Log validation errors
+            return JsonResponse({
+                'success': False,
+                'errors': form.errors
+            })
+    else:
+        form = DemoRequestForm()
+    
+    form_html = render_to_string('partials/demo_form.html', {'form': form})
+    return JsonResponse({'form_html': form_html})
 #########################################################################
 
 def prescription_view(request):

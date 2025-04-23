@@ -21,6 +21,7 @@ website_urls = [
     path('register/patient/', views.patient_registration, name='patient_registration'),
     path('register/provider/', views.provider_registration, name='provider_registration'),
     path('registration/success/', views.registration_success, name='registration_success'),
+    path('schedule-demo/', views.schedule_demo, name='schedule_demo'),
 ]
 
 # Provider dashboard URLs

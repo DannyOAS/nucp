@@ -245,10 +245,195 @@
             </div>
             
             <div style="margin-top: 3rem;">
-                <a href="#" style="font-size: 1.125rem; text-decoration: underline; color: white; transition: all 0.3s ease; display: inline-block;">
-                    Schedule a Personalized Demo →
+               <!-- <a href="#" style="font-size: 1.125rem; text-decoration: underline; color: white; transition: all 0.3s ease; display: inline-block;">-->
+                <a href="#" data-demo-link style="font-size: 1.125rem; text-decoration: underline; color: white; transition: all 0.3s ease; display: inline-block;">   
+                 Schedule a Personalized Demo →
                 </a>
             </div>
         </div>
     </section>
+
+<!-- Add to base.html before closing body tag -->
+<div id="demoModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg max-w-xl w-full mx-4 max-h-90vh overflow-y-auto">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-[{{ primary_color }}]">Schedule a Personalized Demo</h3>
+                <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div id="demoFormContainer">
+                <!-- Form will be loaded here via AJAX -->
+                <div class="text-center py-8">
+                    <svg class="animate-spin h-8 w-8 text-[{{ primary_color }}] mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <p class="mt-2 text-gray-600">Loading form...</p>
+                </div>
+            </div>
+            <div id="formSuccessMessage" class="hidden">
+                <div class="text-center py-8">
+                    <div class="bg-green-100 text-green-800 rounded-full h-16 w-16 flex items-center justify-center mx-auto mb-4">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <h4 class="text-xl font-bold text-gray-800 mb-2">Thank You!</h4>
+                    <p class="text-gray-600">Your demo request has been submitted successfully. We'll contact you shortly to confirm the details.</p>
+                    <button id="closeSuccessBtn" class="mt-6 bg-[{{ primary_color }}] hover:bg-[{{ hover_color }}] text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add to base.html before closing body tag, after the modal HTML -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Get modal elements
+    const demoModal = document.getElementById('demoModal');
+    const demoFormContainer = document.getElementById('demoFormContainer');
+    const formSuccessMessage = document.getElementById('formSuccessMessage');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+    
+    // Get all demo links
+    const demoLinks = document.querySelectorAll('[data-demo-link]');
+    
+    // Open modal when demo links are clicked
+    demoLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            openModal();
+        });
+    });
+    
+    // Close modal functions
+    if(closeModalBtn) {
+        closeModalBtn.addEventListener('click', closeModal);
+    }
+    
+    if(closeSuccessBtn) {
+        closeSuccessBtn.addEventListener('click', closeModal);
+    }
+    
+    // Close when clicking outside modal content
+    demoModal.addEventListener('click', function(e) {
+        if(e.target === demoModal) {
+            closeModal();
+        }
+    });
+    
+    // Handle ESC key
+    document.addEventListener('keydown', function(e) {
+        if(e.key === 'Escape' && !demoModal.classList.contains('hidden')) {
+            closeModal();
+        }
+    });
+    
+    // Modal functions
+    function openModal() {
+        // Reset modal state
+        demoFormContainer.classList.remove('hidden');
+        formSuccessMessage.classList.add('hidden');
+        
+        // Show modal
+        demoModal.classList.remove('hidden');
+        
+        // Load the form via AJAX
+        fetch("{% url 'schedule_demo' %}")
+            .then(response => response.json())
+            .then(data => {
+                demoFormContainer.innerHTML = data.form_html;
+                
+                // Set up form submission
+                const form = document.getElementById('demoRequestForm');
+                if(form) {
+                    form.addEventListener('submit', handleFormSubmit);
+                }
+            })
+            .catch(error => {
+                console.error('Error loading form:', error);
+                demoFormContainer.innerHTML = '<p class="text-red-500">Error loading form. Please try again later.</p>';
+            });
+    }
+    
+    function closeModal() {
+        demoModal.classList.add('hidden');
+    }
+    
+    function handleFormSubmit(e) {
+    e.preventDefault();
+    
+    // Clear previous errors
+    document.querySelectorAll('.error-message').forEach(el => {
+        el.textContent = '';
+    });
+
+    // Get CSRF token from the cookie
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    const csrftoken = getCookie('csrftoken');
+    
+    // Submit form via AJAX
+    const form = e.target;
+    const formData = new FormData(form);
+    
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if(data.success) {
+            // Show success message
+            demoFormContainer.classList.add('hidden');
+            formSuccessMessage.classList.remove('hidden');
+        } else {
+            // Show errors
+            console.log("Form validation errors:", data.errors);
+            for(const field in data.errors) {
+                const fieldElement = form.querySelector(`[name="${field}"]`);
+                if(fieldElement) {
+                    const errorEl = fieldElement.nextElementSibling;
+                    if(errorEl) {
+                        errorEl.textContent = data.errors[field][0];
+                    }
+                }
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting form:', error);
+        alert('An error occurred: ' + error.message);
+    });
+}
+});
+</script>
 {% endblock %}
