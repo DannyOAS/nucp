@@ -63,10 +63,10 @@
                     </div>
                     
                     <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
-                        <a href="https://u1.isnord.ca/auth" target="_blank" rel="noopener noreferrer" class="inline-block bg-[{{ primary_color }}] hover:bg-[{{ hover_color }}] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
+                        <a href="{% url 'register_selection' %}"  target="_blank" rel="noopener noreferrer" class="inline-block bg-[{{ primary_color }}] hover:bg-[{{ hover_color }}] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
                             Start Using {{ nucp_name }} Today
                         </a>
-                        <a href="#" class="inline-block bg-white border-2 border-[{{ primary_color }}] text-[{{ primary_color }}] font-bold py-3 px-6 rounded-lg hover:bg-[{{ light_bg }}] transition duration-300 text-center">
+                        <a href="#" data-watch-demo-btn class="inline-block bg-white border-2 border-[{{ primary_color }}] text-[{{ primary_color }}] font-bold py-3 px-6 rounded-lg hover:bg-[{{ light_bg }}] transition duration-300 text-center">
                             Watch Demo
                         </a>
                     </div>
@@ -198,8 +198,8 @@
                         <a href="{% url 'registration' %}" class="inline-block bg-[{{ primary_color }}] hover:bg-[{{ hover_color }}] text-white font-bold py-3 px-6 rounded-lg transition duration-300 text-center">
                             Create Patient Account
                         </a>
-                        <a href="#" class="inline-block bg-white border-2 border-[{{ primary_color }}] text-[{{ primary_color }}] font-bold py-3 px-6 rounded-lg hover:bg-[{{ light_bg }}] transition duration-300 text-center">
-                            Learn More
+                        <a href="#" data-learn-more-btn class="inline-block bg-white border-2 border-[{{ primary_color }}] text-[{{ primary_color }}] font-bold py-3 px-6 rounded-lg hover:bg-[{{ light_bg }}] transition duration-300 text-center">   
+                         Learn More
                         </a>
                     </div>
                 </div>
@@ -293,147 +293,414 @@
     </div>
 </div>
 
-<!-- Add to base.html before closing body tag, after the modal HTML -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Get modal elements
-    const demoModal = document.getElementById('demoModal');
-    const demoFormContainer = document.getElementById('demoFormContainer');
-    const formSuccessMessage = document.getElementById('formSuccessMessage');
-    const closeModalBtn = document.getElementById('closeModalBtn');
-    const closeSuccessBtn = document.getElementById('closeSuccessBtn');
-    
-    // Get all demo links
-    const demoLinks = document.querySelectorAll('[data-demo-link]');
-    
-    // Open modal when demo links are clicked
-    demoLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            openModal();
-        });
-    });
-    
-    // Close modal functions
-    if(closeModalBtn) {
-        closeModalBtn.addEventListener('click', closeModal);
-    }
-    
-    if(closeSuccessBtn) {
-        closeSuccessBtn.addEventListener('click', closeModal);
-    }
-    
-    // Close when clicking outside modal content
-    demoModal.addEventListener('click', function(e) {
-        if(e.target === demoModal) {
-            closeModal();
-        }
-    });
-    
-    // Handle ESC key
-    document.addEventListener('keydown', function(e) {
-        if(e.key === 'Escape' && !demoModal.classList.contains('hidden')) {
-            closeModal();
-        }
-    });
-    
-    // Modal functions
-    function openModal() {
-        // Reset modal state
-        demoFormContainer.classList.remove('hidden');
-        formSuccessMessage.classList.add('hidden');
-        
-        // Show modal
-        demoModal.classList.remove('hidden');
-        
-        // Load the form via AJAX
-        fetch("{% url 'schedule_demo' %}")
-            .then(response => response.json())
-            .then(data => {
-                demoFormContainer.innerHTML = data.form_html;
-                
-                // Set up form submission
-                const form = document.getElementById('demoRequestForm');
-                if(form) {
-                    form.addEventListener('submit', handleFormSubmit);
-                }
-            })
-            .catch(error => {
-                console.error('Error loading form:', error);
-                demoFormContainer.innerHTML = '<p class="text-red-500">Error loading form. Please try again later.</p>';
-            });
-    }
-    
-    function closeModal() {
-        demoModal.classList.add('hidden');
-    }
-    
-    function handleFormSubmit(e) {
-    e.preventDefault();
-    
-    // Clear previous errors
-    document.querySelectorAll('.error-message').forEach(el => {
-        el.textContent = '';
-    });
+<!-- Add this modal HTML before the closing body tag, after the existing demoModal -->
+<!--<div id="learnMoreModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg max-w-4xl w-full mx-4 max-h-90vh overflow-y-auto">-->
+<div id="learnMoreModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg w-full mx-4 my-8 max-w-4xl" style="max-height: 70vh; overflow-y: auto;">
 
-    // Get CSRF token from the cookie
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
-    }
-    const csrftoken = getCookie('csrftoken');
-    
-    // Submit form via AJAX
-    const form = e.target;
-    const formData = new FormData(form);
-    
-    fetch(form.action, {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-        return response.json();
-    })
-    .then(data => {
-        if(data.success) {
-            // Show success message
-            demoFormContainer.classList.add('hidden');
-            formSuccessMessage.classList.remove('hidden');
-        } else {
-            // Show errors
-            console.log("Form validation errors:", data.errors);
-            for(const field in data.errors) {
-                const fieldElement = form.querySelector(`[name="${field}"]`);
-                if(fieldElement) {
-                    const errorEl = fieldElement.nextElementSibling;
-                    if(errorEl) {
-                        errorEl.textContent = data.errors[field][0];
-                    }
-                }
-            }
-        }
-    })
-    .catch(error => {
-        console.error('Error submitting form:', error);
-        alert('An error occurred: ' + error.message);
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-[#004d40]">Patient Portal Features</h3>
+                <button id="closeLearnMoreBtn" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-6">
+                <!-- Feature 1 -->
+                <div class="border-b border-gray-200 pb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Appointment Management</h4>
+                            <p class="mt-2 text-gray-600">Schedule, reschedule, or cancel appointments with ease. Our intuitive calendar interface shows all your upcoming appointments at a glance and sends timely reminders so you never miss an important visit.</p>
+                            <ul class="mt-3 space-y-1 text-gray-600 list-disc pl-5">
+                                <li>View your complete appointment history</li>
+                                <li>Choose between in-person or virtual appointments</li>
+                                <li>Receive automated reminders via email or SMS</li>
+                                <li>Submit pre-appointment questionnaires online</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 2 -->
+                <div class="border-b border-gray-200 pb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
+                                <path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Prescription Management</h4>
+                            <p class="mt-2 text-gray-600">Manage all your medications in one place. Request prescription refills with a few clicks and receive notifications when they're ready for pickup or delivery.</p>
+                            <ul class="mt-3 space-y-1 text-gray-600 list-disc pl-5">
+                                <li>View all current and past medications</li>
+                                <li>Request prescription renewals online</li>
+                                <li>Receive dosage and medication reminders</li>
+                                <li>Access educational materials about your medications</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 3 -->
+                <div class="border-b border-gray-200 pb-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-purple-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                                <path d="M15 7v2a4 4 0 01-4 4H9.828l-1.766 1.767c.28.149.599.233.938.233h2l3 3v-3h2a2 2 0 002-2V9a2 2 0 00-2-2h-1z" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Secure Messaging</h4>
+                            <p class="mt-2 text-gray-600">Communicate directly with your healthcare team through our secure messaging system. Ask questions, discuss symptoms, or follow up on treatment plans without waiting on hold on the phone.</p>
+                            <ul class="mt-3 space-y-1 text-gray-600 list-disc pl-5">
+                                <li>PHIPA-compliant encrypted communications</li>
+                                <li>Message your entire care team in one place</li>
+                                <li>Attach photos or documents when needed</li>
+                                <li>Receive notifications for new messages</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Feature 4 -->
+                <div>
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-600" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-14a3 3 0 11-6 0 3 3 0 016 0zm-1 9a1 1 0 11-2 0 1 1 0 012 0zm-1-3a1 1 0 00-1 1v4a1 1 0 102 0v-4a1 1 0 00-1-1z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <h4 class="text-lg font-semibold text-gray-800">Health Records Access</h4>
+                            <p class="mt-2 text-gray-600">Access your complete health records anytime, anywhere. View lab results, immunization records, visit summaries, and more in an easy-to-understand format.</p>
+                            <ul class="mt-3 space-y-1 text-gray-600 list-disc pl-5">
+                                <li>Review test results as soon as they're available</li>
+                                <li>Track health metrics over time with interactive charts</li>
+                                <li>Download and share your records with other providers</li>
+                                <li>Receive alerts about important health updates</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <button id="learnMoreCloseBtn" class="bg-[#004d40] hover:bg-[#00332e] text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Video Demo Modal -->
+<div id="videoModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center hidden">
+    <div class="bg-white rounded-lg w-full mx-4 my-8 max-w-4xl" style="max-height: 90vh; overflow-y: auto;">
+        <div class="p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-2xl font-bold text-[#004d40]">Product Demo</h3>
+                <button id="closeVideoBtn" class="text-gray-500 hover:text-gray-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+            <div class="aspect-w-16 aspect-h-9 bg-gray-100 rounded-lg overflow-hidden">
+                <!-- Replace the src with your actual video URL -->
+                <iframe id="demoVideo" class="w-full h-full" src="https://www.youtube.com/embed/C0DPdy98e4c?si=2QWCA1YdsYIc-jsP" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+<!--<iframe id="demoVideo" class="w-full h-full"  width="560" height="315" src="https://www.youtube.com/embed/C0DPdy98e4c?si=UVHB5BJIAk9JhBpH" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>-->
+            </div>
+            <div class="mt-4 text-center">
+                <button id="videoCloseBtn" class="bg-[#004d40] hover:bg-[#00332e] text-white font-bold py-2 px-6 rounded-lg transition duration-300">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', function() {
+  // Get modal elements
+  const demoModal = document.getElementById('demoModal');
+  const demoFormContainer = document.getElementById('demoFormContainer');
+  const formSuccessMessage = document.getElementById('formSuccessMessage');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const closeSuccessBtn = document.getElementById('closeSuccessBtn');
+  
+  // Get learn more modal elements
+  const learnMoreModal = document.getElementById('learnMoreModal');
+  const closeLearnMoreBtn = document.getElementById('closeLearnMoreBtn');
+  const learnMoreCloseBtn = document.getElementById('learnMoreCloseBtn');
+
+  // Get video modal elements
+  const videoModal = document.getElementById('videoModal');
+  const closeVideoBtn = document.getElementById('closeVideoBtn');
+  const videoCloseBtn = document.getElementById('videoCloseBtn');
+  const demoVideo = document.getElementById('demoVideo');
+
+  // Get the Watch Demo button
+  const watchDemoBtn = document.querySelector('[data-watch-demo-btn]');
+  
+  // Get all demo links
+  const demoLinks = document.querySelectorAll('[data-demo-link]');
+
+  // Get the Learn More button using the data attribute
+  const learnMoreBtn = document.querySelector('[data-learn-more-btn]');
+  
+  // Open modal when demo links are clicked
+  demoLinks.forEach(link => {
+      link.addEventListener('click', function(e) {
+          e.preventDefault();
+          openModal();
+      });
+  });
+  
+  // Open modal when Learn More button is clicked
+  if(learnMoreBtn) {
+      learnMoreBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          openLearnMoreModal();
+      });
+  }
+  
+  // Close modal functions
+  if(closeModalBtn) {
+      closeModalBtn.addEventListener('click', closeModal);
+  }
+  
+  if(closeSuccessBtn) {
+      closeSuccessBtn.addEventListener('click', closeModal);
+  }
+  
+  // Close learn more modal functions
+  if(closeLearnMoreBtn) {
+      closeLearnMoreBtn.addEventListener('click', closeLearnMoreModal);
+  }
+  
+  if(learnMoreCloseBtn) {
+      learnMoreCloseBtn.addEventListener('click', closeLearnMoreModal);
+  }
+  
+  // Close when clicking outside modal content
+  if(demoModal) {
+      demoModal.addEventListener('click', function(e) {
+          if(e.target === demoModal) {
+              closeModal();
+          }
+      });
+  }
+  
+  // Close when clicking outside learn more modal
+  if(learnMoreModal) {
+      learnMoreModal.addEventListener('click', function(e) {
+          if(e.target === learnMoreModal) {
+              closeLearnMoreModal();
+          }
+      });
+  }
+  
+  // Handle ESC key for both modals
+  document.addEventListener('keydown', function(e) {
+      if(e.key === 'Escape') {
+          if(demoModal && !demoModal.classList.contains('hidden')) {
+              closeModal();
+          }
+          if(learnMoreModal && !learnMoreModal.classList.contains('hidden')) {
+              closeLearnMoreModal();
+          }
+      }
+  });
+  
+  // Modal functions
+  function openModal() {
+      // Reset modal state
+      demoFormContainer.classList.remove('hidden');
+      formSuccessMessage.classList.add('hidden');
+      
+      // Show modal
+      demoModal.classList.remove('hidden');
+      
+      // Load the form via AJAX
+      fetch("{% url 'schedule_demo' %}")
+          .then(response => response.json())
+          .then(data => {
+              demoFormContainer.innerHTML = data.form_html;
+              
+              // Set up form submission
+              const form = document.getElementById('demoRequestForm');
+              if(form) {
+                  form.addEventListener('submit', handleFormSubmit);
+              }
+          })
+          .catch(error => {
+              console.error('Error loading form:', error);
+              demoFormContainer.innerHTML = '<p class="text-red-500">Error loading form. Please try again later.</p>';
+          });
+  }
+  
+  function closeModal() {
+      if(demoModal) {
+          demoModal.classList.add('hidden');
+      }
+  }
+  
+  // Learn More Modal functions
+  function openLearnMoreModal() {
+      // Show modal
+      if(learnMoreModal) {
+          learnMoreModal.classList.remove('hidden');
+      }
+  }
+  
+  function closeLearnMoreModal() {
+      if(learnMoreModal) {
+          learnMoreModal.classList.add('hidden');
+      }
+  }
+  
+  function handleFormSubmit(e) {
+      e.preventDefault();
+      
+      // Clear previous errors
+      document.querySelectorAll('.error-message').forEach(el => {
+          el.textContent = '';
+      });
+
+      // Get CSRF token from the cookie
+      function getCookie(name) {
+          let cookieValue = null;
+          if (document.cookie && document.cookie !== '') {
+              const cookies = document.cookie.split(';');
+              for (let i = 0; i < cookies.length; i++) {
+                  const cookie = cookies[i].trim();
+                  if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                      cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                      break;
+                  }
+              }
+          }
+          return cookieValue;
+      }
+      const csrftoken = getCookie('csrftoken');
+      
+      // Submit form via AJAX
+      const form = e.target;
+      const formData = new FormData(form);
+      
+      fetch(form.action, {
+          method: 'POST',
+          body: formData,
+          headers: {
+              'X-Requested-With': 'XMLHttpRequest'
+          }
+      })
+      .then(response => {
+          if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+          }
+          return response.json();
+      })
+      .then(data => {
+          if(data.success) {
+              // Show success message
+              demoFormContainer.classList.add('hidden');
+              formSuccessMessage.classList.remove('hidden');
+          } else {
+              // Show errors
+              console.log("Form validation errors:", data.errors);
+              for(const field in data.errors) {
+                  const fieldElement = form.querySelector(`[name="${field}"]`);
+                  if(fieldElement) {
+                      const errorEl = fieldElement.nextElementSibling;
+                      if(errorEl) {
+                          errorEl.textContent = data.errors[field][0];
+                      }
+                  }
+              }
+          }
+      })
+      .catch(error => {
+          console.error('Error submitting form:', error);
+          alert('An error occurred: ' + error.message);
+      });
+  }
+
+// Open modal when Watch Demo button is clicked
+if(watchDemoBtn) {
+    watchDemoBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openVideoModal();
     });
 }
+
+// Close video modal functions
+if(closeVideoBtn) {
+    closeVideoBtn.addEventListener('click', closeVideoModal);
+}
+
+if(videoCloseBtn) {
+    videoCloseBtn.addEventListener('click', closeVideoModal);
+}
+
+// Close when clicking outside video modal
+if(videoModal) {
+    videoModal.addEventListener('click', function(e) {
+        if(e.target === videoModal) {
+            closeVideoModal();
+        }
+    });
+}
+
+// Video Modal functions
+function openVideoModal() {
+    // Set the video URL (replace with your actual video URL)
+    demoVideo.src = "https://www.youtube.com/embed/C0DPdy98e4c?si=UVHB5BJIAk9JhBpH";
+    
+    // Show modal
+    if(videoModal) {
+        videoModal.classList.remove('hidden');
+    }
+}
+
+function closeVideoModal() {
+    if(videoModal) {
+        videoModal.classList.add('hidden');
+        
+        // Important: Stop the video when closing the modal
+        if(demoVideo) {
+            demoVideo.src = "";
+        }
+    }
+}
+
+// Update the ESC key handler to include the video modal
+document.addEventListener('keydown', function(e) {
+    if(e.key === 'Escape') {
+        if(demoModal && !demoModal.classList.contains('hidden')) {
+            closeModal();
+        }
+        if(learnMoreModal && !learnMoreModal.classList.contains('hidden')) {
+            closeLearnMoreModal();
+        }
+        if(videoModal && !videoModal.classList.contains('hidden')) {
+            closeVideoModal();
+        }
+    }
+});
 });
 </script>
 {% endblock %}
