@@ -37,7 +37,13 @@ provider_urls = [
     path('provider-dashboard/patients/<int:patient_id>/', views.view_patient, name='view_patient'),
     path('provider-dashboard/prescriptions/', views.provider_prescriptions, name='provider_prescriptions'),
     path('provider-dashboard/video-consultation/', views.provider_video_consultation, name='provider_video_consultation'),
+
+    # Provider appointment URLs
     path('provider-dashboard/appointments/', views.provider_appointments, name='provider_appointments'),
+    path('provider-dashboard/appointments/schedule/', views.schedule_appointment, name='provider_schedule_appointment'),
+    path('provider-dashboard/appointments/view/<int:appointment_id>/', views.view_appointment, name='view_appointment'),
+    path('provider-dashboard/appointments/reschedule/<int:appointment_id>/', views.reschedule_appointment, name='provider_reschedule_appointment'),
+    path('provider-dashboard/appointments/status/<int:appointment_id>/', views.update_appointment_status, name='update_appointment_status'),
 
     # Provider messaging URLs
     path('provider-dashboard/messages/', views.provider_messages, name='provider_messages'),
@@ -70,9 +76,14 @@ patient_urls = [
     path('patient-dashboard/medical-history/', views.patient_medical_history, name='patient_medical_history'),
     path('patient-dashboard/help-center/', views.patient_help_center, name='patient_help_center'),
     path('logout/', views.logout_view, name='logout'),
-
     path('patient-dashboard/search/', views.patient_search, name='patient_search'),
+
+    # Patient appointment URLs  
     path('patient-dashboard/appointments/', views.appointments_view, name='patient_appointments'),
+    path('patient-dashboard/appointments/schedule/', views.schedule_appointment, name='schedule_appointment'),
+    path('patient-dashboard/appointments/reschedule/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
+    path('patient-dashboard/appointments/cancel/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
+
     path('patient-dashboard/email/', views.email_view, name='patient_email'),
 #    path('patient-dashboard/messages/', views.messages_view, name='patient_messages'),
     # Patient messaging URLs

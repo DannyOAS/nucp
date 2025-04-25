@@ -12,7 +12,11 @@ from .registration_views import (
 
 # Patient views
 from .patient_views.dashboard import patient_dashboard
-from .patient_views.appointments import appointments_view
+#from .patient_views.appointments import appointments_view
+from .patient_views.appointments import (
+    appointments_view, schedule_appointment, 
+    reschedule_appointment, cancel_appointment
+)
 from .patient_views.prescriptions import (
     patient_prescriptions, request_prescription, request_refill, 
     prescription_detail
@@ -40,8 +44,10 @@ from .provider_views.messages import (
     provider_compose_message, provider_message_action
 )
 from .provider_views.video import provider_video_consultation
-from .provider_views.appointments import provider_appointments
-
+from .provider_views.appointments import (
+    provider_appointments, schedule_appointment as provider_schedule_appointment,
+    view_appointment, update_appointment_status, reschedule_appointment as provider_reschedule_appointment
+)
 # Admin views
 from .admin_views.dashboard import admin_dashboard
 from .admin_views.patients import admin_patients

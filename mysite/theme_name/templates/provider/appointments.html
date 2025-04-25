@@ -1,462 +1,202 @@
 {% extends "provider/base.html" %}
 {% block title %}Appointments - Northern Health Innovations{% endblock %}
 {% block content %}
-<div class="flex justify-between items-center mb-6">
-  <h2 class="text-xl font-bold text-gray-800">Appointments</h2>
-  <div class="flex space-x-2">
-    <div class="relative">
-      <input 
-        type="text" 
-        placeholder="Search appointments..." 
-        class="border border-gray-300 rounded-lg py-2 pl-10 pr-4"
-      >
-      <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-      </div>
-    </div>
-    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
-      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-      </svg>
-      Schedule Appointment
-    </a>
-  </div>
-</div>
-
-<!-- Appointment stats -->
-<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-  <div class="bg-white p-4 rounded-xl shadow">
-    <div class="flex items-center">
-      <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      </div>
-      <div class="ml-4">
-        <h3 class="text-sm text-gray-500">Today's Appointments</h3>
-        <p class="text-2xl font-semibold text-gray-800">6</p>
-      </div>
-    </div>
-  </div>
-  
-  <div class="bg-white p-4 rounded-xl shadow">
-    <div class="flex items-center">
-      <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <div class="ml-4">
-        <h3 class="text-sm text-gray-500">Completed</h3>
-        <p class="text-2xl font-semibold text-gray-800">4</p>
-      </div>
-    </div>
-  </div>
-  
-  <div class="bg-white p-4 rounded-xl shadow">
-    <div class="flex items-center">
-      <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <div class="ml-4">
-        <h3 class="text-sm text-gray-500">Upcoming</h3>
-        <p class="text-2xl font-semibold text-gray-800">2</p>
-      </div>
-    </div>
-  </div>
-  
-  <div class="bg-white p-4 rounded-xl shadow">
-    <div class="flex items-center">
-      <div class="p-3 rounded-full bg-red-200 bg-opacity-75">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      </div>
-      <div class="ml-4">
-        <h3 class="text-sm text-gray-500">Cancelled</h3>
-        <p class="text-2xl font-semibold text-gray-800">0</p>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- Calendar -->
-<div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
-  <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-    <h3 class="text-lg font-semibold text-[#004d40]">Appointment Calendar</h3>
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Appointments</h2>
     <div class="flex space-x-2">
-      <button class="bg-white border border-gray-300 rounded-md px-3 py-1 text-sm text-gray-700">Today</button>
-      <div class="flex">
-        <button class="bg-white border border-gray-300 rounded-l-md px-2 py-1">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      <div class="relative">
+        <input 
+          type="text" 
+          placeholder="Search appointments..." 
+          class="border border-gray-300 rounded-lg py-2 pl-10 pr-4"
+        >
+        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-        </button>
-        <button class="bg-white border-t border-b border-gray-300 px-2 py-1">
-          <span class="text-sm font-medium">April 2025</span>
-        </button>
-        <button class="bg-white border border-gray-300 rounded-r-md px-2 py-1">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </div>
+      </div>
+      <a href="{% url 'provider_schedule_appointment' %}" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Schedule Appointment
+      </a>
+    </div>
+  </div>
+
+  <!-- Appointment stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
-        </button>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Today's Appointments</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.today_count|default:"0" }}</p>
+        </div>
       </div>
-      <div class="flex">
-        <button class="bg-white border border-gray-300 rounded-l-md px-3 py-1 text-sm text-gray-700">Day</button>
-        <button class="bg-[#004d40] border border-[#004d40] px-3 py-1 text-sm text-white">Week</button>
-        <button class="bg-white border border-gray-300 rounded-r-md px-3 py-1 text-sm text-gray-700">Month</button>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Completed</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.completed_count|default:"0" }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Upcoming</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.upcoming_count|default:"0" }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-red-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Cancelled</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.cancelled_count|default:"0" }}</p>
+        </div>
       </div>
     </div>
   </div>
-  
-  <!-- Week view calendar -->
-  <div class="p-6">
-    <!-- Days header -->
-    <div class="grid grid-cols-8 gap-4 mb-2">
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Time</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Mon, Apr 1</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Tue, Apr 2</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Wed, Apr 3</div>
-        <div class="text-xs text-[#004d40] font-medium">Today</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Thu, Apr 4</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Fri, Apr 5</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Sat, Apr 6</div>
-      </div>
-      <div class="text-center">
-        <div class="text-xs font-medium text-gray-500 uppercase">Sun, Apr 7</div>
-      </div>
+
+  <!-- Calendar--> 
+  <div class="bg-white rounded-xl shadow mb-6 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+      <h3 class="text-lg font-semibold text-[#004d40]">Appointment Calendar</h3>
+      {% include "provider/calendar_controls.html" %}
     </div>
-    
-    <!-- Calendar grid -->
-    <div class="border-t border-gray-200">
-      <!-- 9AM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">9:00 AM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-blue-100 border-l-4 border-blue-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">Jane Doe</p>
-            <p>Annual Checkup</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 10AM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">10:00 AM</div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-green-100 border-l-4 border-green-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">Video: John Smith</p>
-            <p>Follow-up</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-green-100 border-l-4 border-green-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">Video: Emily Williams</p>
-            <p>Prescription Review</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 11AM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">11:00 AM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-blue-100 border-l-4 border-blue-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">Robert Johnson</p>
-            <p>Blood Work Results</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 12PM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">12:00 PM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 1PM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">1:00 PM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-purple-100 border-l-4 border-purple-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">Team Meeting</p>
-            <p>Conference Room A</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 2PM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">2:00 PM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-blue-100 border-l-4 border-blue-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">New Patient</p>
-            <p>Initial Consultation</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 3PM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">3:00 PM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t">
-          <div class="bg-green-100 border-l-4 border-green-500 p-2 h-full rounded-r text-xs">
-            <p class="font-medium">Video: Jane Doe</p>
-            <p>Follow-up</p>
-          </div>
-        </div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 4PM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">4:00 PM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-      </div>
-      
-      <!-- 5PM Row -->
-      <div class="grid grid-cols-8 gap-4">
-        <div class="py-4 text-right pr-2 text-sm text-gray-500">5:00 PM</div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
-        <div class="py-2 h-16 border-t"></div>
+    <div class="p-6">
+      <div class="text-center text-gray-500 p-8">
+        <p>Calendar view will be displayed here based on the selected view type.</p>
+        <p>The full calendar functionality will be implemented using the CalDAV service.</p>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Upcoming Appointments List -->
-<div class="bg-white rounded-xl shadow mb-6">
-  <div class="px-6 py-4 border-b border-gray-200">
-    <h3 class="text-lg font-semibold text-[#004d40]">Today's Appointments</h3>
+
+  <!-- Today's Appointments List -->
+  <div class="bg-white rounded-xl shadow mb-6">
+    <div class="px-6 py-4 border-b border-gray-200">
+      <h3 class="text-lg font-semibold text-[#004d40]">Today's Appointments</h3>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">
+          {% for appointment in appointments %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">
+                  {% if appointment.time %}
+                    {% if '-' in appointment.time %}
+                      {% with time_str=appointment.time %}
+                        {{ time_str|slice:"12:" }}
+                      {% endwith %}
+                    {% else %}
+                      {{ appointment.time }}
+                    {% endif %}
+                  {% else %}
+                    N/A
+                  {% endif %}
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                  <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
+                    {% if appointment.patient_name %}
+                      {{ appointment.patient_name|slice:":1" }}
+                    {% else %}
+                      P
+                    {% endif %}
+                  </div>
+                  <div class="ml-3">
+                    <div class="text-sm font-medium text-gray-900">{{ appointment.patient_name|default:"Patient" }}</div>
+                    <div class="text-xs text-gray-500">Patient</div>
+                  </div>
+                </div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if appointment.type == 'Virtual' %}
+                    bg-green-100 text-green-800
+                  {% else %}
+                    bg-blue-100 text-blue-800
+                  {% endif %}">
+                  {{ appointment.type|default:"In-Person" }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ appointment.reason|default:"Consultation" }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  {% if appointment.status == 'Completed' %}
+                    bg-green-100 text-green-800
+                  {% elif appointment.status == 'Checked In' %}
+                    bg-blue-100 text-blue-800
+                  {% elif appointment.status == 'In Progress' %}
+                    bg-purple-100 text-purple-800
+                  {% elif appointment.status == 'Cancelled' %}
+                    bg-red-100 text-red-800
+                  {% elif appointment.status == 'No Show' %}
+                    bg-gray-100 text-gray-800
+                  {% else %}
+                    bg-yellow-100 text-yellow-800
+                  {% endif %}">
+                  {{ appointment.status|default:"Scheduled" }}
+                </span>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                {% if appointment.type == 'Virtual' and appointment.status != 'Completed' and appointment.status != 'Cancelled' %}
+                  <a href="#" class="text-[#004d40] hover:text-[#00332e] font-medium mr-2">Join Video</a>
+                {% endif %}
+                <a href="{% url 'view_appointment' appointment.id %}" class="text-[#004d40] hover:text-[#00332e] font-medium">View</a>
+              </td>
+            </tr>
+          {% empty %}
+            <tr>
+              <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                No appointments scheduled for today.
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   </div>
-  
-  <div class="overflow-x-auto">
-    <table class="min-w-full divide-y divide-gray-200">
-      <thead class="bg-gray-50">
-        <tr>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Purpose</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-          <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white divide-y divide-gray-200">
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">9:00 AM</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
-                JD
-              </div>
-              <div class="ml-3">
-                <div class="text-sm font-medium text-gray-900">Jane Doe</div>
-                <div class="text-xs text-gray-500">38 years, Female</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-              In-Person
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Annual Checkup</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-              Checked In
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-[#004d40] hover:text-[#00332e] font-medium">Start</button>
-          </td>
-        </tr>
-        
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">10:00 AM</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 font-medium text-sm">
-                JS
-              </div>
-              <div class="ml-3">
-                <div class="text-sm font-medium text-gray-900">John Smith</div>
-                <div class="text-xs text-gray-500">45 years, Male</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-              Virtual
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Follow-up</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-              Scheduled
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-[#004d40] hover:text-[#00332e] font-medium mr-2">Join Video</button>
-          </td>
-        </tr>
-        
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">1:00 PM</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center text-purple-600 font-medium text-sm">
-                TM
-              </div>
-              <div class="ml-3">
-                <div class="text-sm font-medium text-gray-900">Team Meeting</div>
-                <div class="text-xs text-gray-500">Staff</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-              Meeting
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Weekly Staff Meeting</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-              Scheduled
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-[#004d40] hover:text-[#00332e] font-medium">View Details</button>
-          </td>
-        </tr>
-        
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">2:00 PM</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="flex items-center">
-              <div class="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-medium text-sm">
-                NP
-              </div>
-              <div class="ml-3">
-                <div class="text-sm font-medium text-gray-900">New Patient</div>
-                <div class="text-xs text-gray-500">Initial Visit</div>
-              </div>
-            </div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-              In-Person
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Initial Consultation</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-              Scheduled
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <button class="text-[#004d40] hover:text-[#00332e] font-medium">View Details</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
-
-<!-- Optional: Add JS or Django hooks for interactivity later -->
-<script>
-  document.addEventListener('DOMContentLoaded', function () {
-    // Example: Hook for a schedule button
-    const scheduleBtn = document.querySelector('.text-[#004d40].font-medium');
-
-    if (scheduleBtn) {
-      scheduleBtn.addEventListener('click', function () {
-        alert('Start appointment or join meeting functionality goes here.');
-      });
-    }
-  });
-</script>
 {% endblock %}

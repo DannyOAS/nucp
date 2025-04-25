@@ -1,0 +1,82 @@
+{% extends "patient/base.html" %}
+{% block title %}Reschedule Appointment{% endblock %}
+{% block content %}
+<main class="p-4">
+  <!-- Page header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Reschedule Appointment</h1>
+      <p class="text-gray-600">Choose a new date and time for your appointment with {{ appointment.doctor }}</p>
+    </div>
+    <a href="{% url 'patient_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+      </svg>
+      Back to Appointments
+    </a>
+  </div>
+
+  <div class="bg-white p-6 rounded-xl shadow mb-8">
+    <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+      <h3 class="font-semibold text-gray-800 mb-2">Current Appointment Details</h3>
+      <p class="text-gray-700"><span class="font-medium">Provider:</span> {{ appointment.doctor }}</p>
+      <p class="text-gray-700"><span class="font-medium">Date & Time:</span> {{ appointment.time }}</p>
+      <p class="text-gray-700"><span class="font-medium">Type:</span> {{ appointment.type }}</p>
+      <p class="text-gray-700"><span class="font-medium">Reason:</span> {{ appointment.reason }}</p>
+    </div>
+
+    <form method="post" action="{% url 'reschedule_appointment' appointment.id %}">
+      {% csrf_token %}
+
+      <!-- Appointment Date and Time -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="appointment_date" class="block text-gray-700 font-medium mb-2">New Date</label>
+          <select id="appointment_date" name="appointment_date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+            <option value="" disabled selected>Select a date</option>
+            {% for date in available_dates %}
+              <option value="{{ date }}">{{ date }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="appointment_time" class="block text-gray-700 font-medium mb-2">New Time</label>
+          <select id="appointment_time" name="appointment_time" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+            <option value="" disabled selected>Select a time</option>
+            {% for time in available_times %}
+              <option value="{{ time }}">{{ time }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Reason for Rescheduling -->
+      <div class="mb-6">
+        <label for="reschedule_reason" class="block text-gray-700 font-medium mb-2">Reason for Rescheduling (Optional)</label>
+        <textarea id="reschedule_reason" name="reschedule_reason" rows="3" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" placeholder="Please let your provider know why you're rescheduling this appointment."></textarea>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-end gap-4">
+        <a href="{% url 'patient_appointments' %}" class="border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-4 rounded-lg">
+          Cancel
+        </a>
+        <button type="submit" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+          Reschedule Appointment
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Rescheduling Policy -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h2 class="text-xl font-semibold text-[#004d40] mb-4">Rescheduling Policy</h2>
+    <ul class="space-y-2 text-gray-700 list-disc list-inside">
+      <li>Appointments may be rescheduled up to 24 hours before the scheduled time without any penalty.</li>
+      <li>Late rescheduling (less than 24 hours before) may be subject to a fee depending on your provider's policy.</li>
+      <li>If you need to reschedule due to an emergency, please call our office directly.</li>
+      <li>Repeated cancellations or no-shows may affect future appointment scheduling.</li>
+    </ul>
+  </div>
+</main>
+{% endblock %}

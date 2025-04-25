@@ -1,0 +1,107 @@
+{% extends "provider/base.html" %}
+{% block title %}Reschedule Appointment - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Reschedule Appointment</h2>
+  <a href="{% url 'provider_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+    </svg>
+    Back to Appointments
+  </a>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow mb-8">
+  <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+    <h3 class="font-semibold text-gray-800 mb-2">Current Appointment Details</h3>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <p class="text-gray-700"><span class="font-medium">Patient:</span> {{ appointment.patient_name }}</p>
+        <p class="text-gray-700"><span class="font-medium">Date & Time:</span> {{ appointment.time }}</p>
+        <p class="text-gray-700"><span class="font-medium">Type:</span> {{ appointment.type }}</p>
+      </div>
+      <div>
+        <p class="text-gray-700"><span class="font-medium">Reason:</span> {{ appointment.reason }}</p>
+        <p class="text-gray-700"><span class="font-medium">Location:</span> {{ appointment.location }}</p>
+        <p class="text-gray-700"><span class="font-medium">Status:</span> {{ appointment.status|default:"Scheduled" }}</p>
+      </div>
+    </div>
+  </div>
+
+  <form method="post" action="{% url 'provider_reschedule_appointment' appointment.id %}">
+    {% csrf_token %}
+
+    <!-- Appointment Date and Time -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div>
+        <label for="appointment_date" class="block text-gray-700 font-medium mb-2">New Date</label>
+        <select id="appointment_date" name="appointment_date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+          <option value="" disabled selected>Select a date</option>
+          {% for date in available_dates %}
+            <option value="{{ date }}">{{ date }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="appointment_time" class="block text-gray-700 font-medium mb-2">New Time</label>
+        <select id="appointment_time" name="appointment_time" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+          <option value="" disabled selected>Select a time</option>
+          {% for time in available_times %}
+            <option value="{{ time }}">{{ time }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Reason for Rescheduling -->
+    <div class="mb-6">
+      <label for="reschedule_reason" class="block text-gray-700 font-medium mb-2">Reason for Rescheduling</label>
+      <textarea id="reschedule_reason" name="reschedule_reason" rows="3" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" placeholder="Please provide a reason for rescheduling this appointment."></textarea>
+    </div>
+
+    <!-- Notification Option -->
+    <div class="mb-6">
+      <div class="flex items-center">
+        <input type="checkbox" id="notify_patient" name="notify_patient" class="w-4 h-4 text-[#004d40]" checked>
+        <label for="notify_patient" class="ml-2 text-gray-700">Send notification to patient</label>
+      </div>
+      <p class="text-sm text-gray-500 mt-1">An email will be sent to the patient with the updated appointment details.</p>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex justify-end gap-4">
+      <a href="{% url 'provider_appointments' %}" class="border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-4 rounded-lg">
+        Cancel
+      </a>
+      <button type="submit" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+        Reschedule Appointment
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Provider Notes -->
+<div class="bg-white p-6 rounded-xl shadow">
+  <h2 class="text-xl font-semibold text-[#004d40] mb-4">Patient Information</h2>
+
+  {% if patient %}
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div>
+        <h3 class="font-medium text-gray-700 mb-2">Contact Information</h3>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Name:</span> {{ patient.first_name }} {{ patient.last_name }}</p>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Email:</span> {{ patient.email }}</p>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Phone:</span> {{ patient.primary_phone }}</p>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Date of Birth:</span> {{ patient.date_of_birth }}</p>
+      </div>
+      <div>
+        <h3 class="font-medium text-gray-700 mb-2">Appointment History</h3>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Last Visit:</span> {{ patient.last_visit|default:"N/A" }}</p>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Last Visit Reason:</span> {{ patient.last_visit_reason|default:"N/A" }}</p>
+        <p class="text-gray-600 mb-1"><span class="font-medium">Status:</span> {{ patient.status|default:"Active" }}</p>
+      </div>
+    </div>
+  {% else %}
+    <p class="text-gray-500">Patient information not available.</p>
+  {% endif %}
+</div>
+{% endblock %}

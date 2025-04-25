@@ -1,0 +1,113 @@
+{% extends "patient/base.html" %}
+{% block title %}Schedule Appointment{% endblock %}
+{% block content %}
+<main class="p-4">
+  <!-- Page header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Schedule New Appointment</h1>
+      <p class="text-gray-600">Complete the form to schedule an appointment with your healthcare provider</p>
+    </div>
+    <a href="{% url 'patient_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+      </svg>
+      Back to Appointments
+    </a>
+  </div>
+
+  <div class="bg-white p-6 rounded-xl shadow mb-8">
+    <form method="post" action="{% url 'schedule_appointment' %}">
+      {% csrf_token %}
+
+      <!-- Provider Selection -->
+      <div class="mb-6">
+        <label for="doctor" class="block text-gray-700 font-medium mb-2">Healthcare Provider</label>
+        <select id="doctor" name="doctor" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+          <option value="" disabled selected>Select a provider</option>
+          {% for provider in available_providers %}
+            <option value="Dr. {{ provider.name }}">Dr. {{ provider.name }} ({{ provider.speciality }})</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <!-- Appointment Type -->
+      <div class="mb-6">
+        <label class="block text-gray-700 font-medium mb-2">Appointment Type</label>
+        <div class="flex gap-4">
+          <div class="flex items-center">
+            <input type="radio" id="in-person" name="appointment_type" value="In-Person" class="w-4 h-4 text-[#004d40]" checked>
+            <label for="in-person" class="ml-2 text-gray-700">In-Person</label>
+          </div>
+          <div class="flex items-center">
+            <input type="radio" id="virtual" name="appointment_type" value="Virtual" class="w-4 h-4 text-[#004d40]">
+            <label for="virtual" class="ml-2 text-gray-700">Virtual</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Appointment Date and Time -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <label for="appointment_date" class="block text-gray-700 font-medium mb-2">Date</label>
+          <select id="appointment_date" name="appointment_date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+            <option value="" disabled selected>Select a date</option>
+            {% for date in available_dates %}
+              <option value="{{ date }}">{{ date }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="appointment_time" class="block text-gray-700 font-medium mb-2">Time</label>
+          <select id="appointment_time" name="appointment_time" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+            <option value="" disabled selected>Select a time</option>
+            {% for time in available_times %}
+              <option value="{{ time }}">{{ time }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- Reason for Visit -->
+      <div class="mb-6">
+        <label for="reason" class="block text-gray-700 font-medium mb-2">Reason for Visit</label>
+        <select id="reason" name="reason" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+          <option value="" disabled selected>Select a reason</option>
+          <option value="Annual Checkup">Annual Checkup</option>
+          <option value="Follow-up">Follow-up</option>
+          <option value="Prescription Review">Prescription Review</option>
+          <option value="Blood Work Results">Blood Work Results</option>
+          <option value="Specialist Consultation">Specialist Consultation</option>
+          <option value="Urgent Care">Urgent Care</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+
+      <!-- Additional Notes -->
+      <div class="mb-6">
+        <label for="notes" class="block text-gray-700 font-medium mb-2">Additional Notes (Optional)</label>
+        <textarea id="notes" name="notes" rows="3" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" placeholder="Please provide any additional information that might be helpful for your provider."></textarea>
+      </div>
+
+      <!-- Submit Button -->
+      <div class="flex justify-end">
+        <button type="submit" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+          Schedule Appointment
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Appointment Guidelines -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h2 class="text-xl font-semibold text-[#004d40] mb-4">Appointment Guidelines</h2>
+    <ul class="space-y-2 text-gray-700 list-disc list-inside">
+      <li>Please arrive 15 minutes before your scheduled in-person appointment time.</li>
+      <li>For virtual appointments, you'll receive a link to join the video call 10 minutes before your appointment.</li>
+      <li>If you need to cancel or reschedule, please do so at least 24 hours in advance.</li>
+      <li>Bring a list of your current medications to your appointment.</li>
+      <li>If you're experiencing emergency symptoms, please call 911 or go to the nearest emergency room.</li>
+    </ul>
+  </div>
+</main>
+{% endblock %}

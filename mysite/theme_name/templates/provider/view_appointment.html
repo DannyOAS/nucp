@@ -1,0 +1,204 @@
+{% extends "provider/base.html" %}
+{% block title %}View Appointment - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Appointment Details</h2>
+  <a href="{% url 'provider_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+    </svg>
+    Back to Appointments
+  </a>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow mb-8">
+  <div class="flex justify-between items-start mb-6">
+    <div>
+      <h3 class="text-lg font-semibold text-[#004d40]">{{ appointment.patient_name }}</h3>
+      <p class="text-gray-600">{{ appointment.time }} - {{ appointment.type }}</p>
+    </div>
+    <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+      {% if appointment.status == 'Completed' %}
+        bg-green-100 text-green-800
+      {% elif appointment.status == 'Checked In' %}
+        bg-blue-100 text-blue-800
+      {% elif appointment.status == 'In Progress' %}
+        bg-purple-100 text-purple-800
+      {% elif appointment.status == 'Cancelled' %}
+        bg-red-100 text-red-800
+      {% elif appointment.status == 'No Show' %}
+        bg-gray-100 text-gray-800
+      {% else %}
+        bg-yellow-100 text-yellow-800
+      {% endif %}">
+      {{ appointment.status|default:"Scheduled" }}
+    </span>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+    <div>
+      <h4 class="font-medium text-gray-700 mb-2">Appointment Details</h4>
+      <dl class="space-y-1">
+        <div class="grid grid-cols-3">
+          <dt class="text-sm font-medium text-gray-500">Provider:</dt>
+          <dd class="text-sm text-gray-900 col-span-2">{{ appointment.doctor }}</dd>
+        </div>
+        <div class="grid grid-cols-3">
+          <dt class="text-sm font-medium text-gray-500">Date & Time:</dt>
+          <dd class="text-sm text-gray-900 col-span-2">{{ appointment.time }}</dd>
+        </div>
+        <div class="grid grid-cols-3">
+          <dt class="text-sm font-medium text-gray-500">Appointment Type:</dt>
+          <dd class="text-sm text-gray-900 col-span-2">{{ appointment.type }}</dd>
+        </div>
+        <div class="grid grid-cols-3">
+          <dt class="text-sm font-medium text-gray-500">Location:</dt>
+          <dd class="text-sm text-gray-900 col-span-2">{{ appointment.location }}</dd>
+        </div>
+        <div class="grid grid-cols-3">
+          <dt class="text-sm font-medium text-gray-500">Reason:</dt>
+          <dd class="text-sm text-gray-900 col-span-2">{{ appointment.reason }}</dd>
+        </div>
+      </dl>
+    </div>
+
+    <div>
+      <h4 class="font-medium text-gray-700 mb-2">Notes</h4>
+      <div class="bg-gray-50 p-3 rounded-lg min-h-[100px]">
+        {% if appointment.notes %}
+          <p class="text-sm text-gray-600">{{ appointment.notes }}</p>
+        {% else %}
+          <p class="text-sm text-gray-400 italic">No notes available for this appointment.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Action buttons -->
+  <div class="flex flex-wrap gap-3 justify-end">
+    {% if appointment.status != 'Completed' and appointment.status != 'Cancelled' %}
+      {% if appointment.type == 'Virtual' %}
+        <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+          Join Video Call
+        </a>
+      {% endif %}
+
+      <a href="{% url 'provider_reschedule_appointment' appointment.id %}" class="border border-[#004d40] text-[#004d40] hover:bg-[#f5faf9] py-2 px-4 rounded-lg">
+        Reschedule
+      </a>
+
+      <form method="post" action="{% url 'update_appointment_status' appointment.id %}" class="inline-block">
+        {% csrf_token %}
+        <select name="status" onchange="this.form.submit()" class="border border-gray-300 text-gray-700 py-2 px-4 rounded-lg">
+          <option value="" disabled selected>Update Status</option>
+          <option value="Checked In">Checked In</option>
+          <option value="In Progress">In Progress</option>
+          <option value="Completed">Completed</option>
+          <option value="Cancelled">Cancelled</option>
+          <option value="No Show">No Show</option>
+        </select>
+      </form>
+    {% else %}
+      <a href="#" class="border border-gray-300 text-gray-700 hover:bg-gray-50 py-2 px-4 rounded-lg">
+        View Clinical Notes
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Patient Information Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h3 class="text-lg font-semibold text-[#004d40] mb-4">Patient Information</h3>
+
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <p class="text-sm text-gray-500">Name</p>
+        <p class="font-medium">{{ appointment.patient_name }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Date of Birth</p>
+        <p class="font-medium">{{ patient.date_of_birth|default:"Not available" }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Phone</p>
+        <p class="font-medium">{{ patient.primary_phone|default:"Not available" }}</p>
+      </div>
+      <div>
+        <p class="text-sm text-gray-500">Email</p>
+        <p class="font-medium">{{ patient.email|default:"Not available" }}</p>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <a href="#" class="text-[#004d40] hover:underline text-sm">View Full Patient Record →</a>
+    </div>
+  </div>
+
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h3 class="text-lg font-semibold text-[#004d40] mb-4">Medical Information</h3>
+
+    <div>
+      <p class="text-sm text-gray-500 mb-1">Allergies</p>
+      <p class="font-medium mb-3">{{ patient.allergies|default:"None reported" }}</p>
+
+      <p class="text-sm text-gray-500 mb-1">Current Medications</p>
+      <p class="font-medium mb-3">{{ patient.current_medications|default:"None reported" }}</p>
+
+      <p class="text-sm text-gray-500 mb-1">Last Visit</p>
+      <p class="font-medium">{{ patient.last_visit|default:"No recent visits" }} - {{ patient.last_visit_reason|default:"" }}</p>
+    </div>
+
+    <div class="mt-4">
+      <a href="#" class="text-[#004d40] hover:underline text-sm">View Medical History →</a>
+    </div>
+  </div>
+</div>
+
+<!-- Previous Appointments Section -->
+<div class="bg-white p-6 rounded-xl shadow mb-6">
+  <h3 class="text-lg font-semibold text-[#004d40] mb-4">Previous Appointments</h3>
+
+  <div class="overflow-x-auto">
+    <table class="min-w-full divide-y divide-gray-200">
+      <thead class="bg-gray-50">
+        <tr>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
+          <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+        </tr>
+      </thead>
+      <tbody class="bg-white divide-y divide-gray-200">
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Feb 28, 2025</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+              In-Person
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Johnson</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Blood Work Results</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <a href="#" class="text-[#004d40] hover:underline">View Notes</a>
+          </td>
+        </tr>
+        <tr class="hover:bg-gray-50">
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Jan 10, 2025</td>
+          <td class="px-6 py-4 whitespace-nowrap">
+            <span class="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+              Virtual
+            </span>
+          </td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Dr. Smith</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Follow-up</td>
+          <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+            <a href="#" class="text-[#004d40] hover:underline">View Notes</a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

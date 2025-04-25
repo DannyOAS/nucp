@@ -1,0 +1,146 @@
+{% extends "provider/base.html" %}
+{% block title %}Schedule Appointment - Northern Health Innovations{% endblock %}
+{% block content %}
+<div class="flex justify-between items-center mb-6">
+  <h2 class="text-xl font-bold text-gray-800">Schedule New Appointment</h2>
+  <a href="{% url 'provider_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+    </svg>
+    Back to Appointments
+  </a>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow mb-8">
+  <form method="post" action="{% url 'schedule_appointment' %}">
+    {% csrf_token %}
+
+    <!-- Patient Selection -->
+    <div class="mb-6">
+      <label for="patient_id" class="block text-gray-700 font-medium mb-2">Patient</label>
+      <select id="patient_id" name="patient_id" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+        <option value="" disabled selected>Select a patient</option>
+        {% for patient in patients %}
+          <option value="{{ patient.id }}" data-name="{{ patient.first_name }} {{ patient.last_name }}">
+            {{ patient.first_name }} {{ patient.last_name }} ({{ patient.date_of_birth }})
+          </option>
+        {% endfor %}
+      </select>
+      <input type="hidden" id="patient_name" name="patient_name" value="">
+    </div>
+
+    <!-- Appointment Type -->
+    <div class="mb-6">
+      <label class="block text-gray-700 font-medium mb-2">Appointment Type</label>
+      <div class="flex gap-4">
+        <div class="flex items-center">
+          <input type="radio" id="in-person" name="appointment_type" value="In-Person" class="w-4 h-4 text-[#004d40]" checked>
+          <label for="in-person" class="ml-2 text-gray-700">In-Person</label>
+        </div>
+        <div class="flex items-center">
+          <input type="radio" id="virtual" name="appointment_type" value="Virtual" class="w-4 h-4 text-[#004d40]">
+          <label for="virtual" class="ml-2 text-gray-700">Virtual</label>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appointment Date and Time -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+      <div>
+        <label for="appointment_date" class="block text-gray-700 font-medium mb-2">Date</label>
+        <select id="appointment_date" name="appointment_date" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+          <option value="" disabled selected>Select a date</option>
+          {% for date in available_dates %}
+            <option value="{{ date }}">{{ date }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="appointment_time" class="block text-gray-700 font-medium mb-2">Time</label>
+        <select id="appointment_time" name="appointment_time" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+          <option value="" disabled selected>Select a time</option>
+          {% for time in available_times %}
+            <option value="{{ time }}">{{ time }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <!-- Location -->
+    <div class="mb-6">
+      <label for="location" class="block text-gray-700 font-medium mb-2">Location</label>
+      <input type="text" id="location" name="location" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" value="Northern Health Clinic, Room 305" required>
+    </div>
+
+    <!-- Reason for Visit -->
+    <div class="mb-6">
+      <label for="reason" class="block text-gray-700 font-medium mb-2">Reason for Visit</label>
+      <select id="reason" name="reason" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" required>
+        <option value="" disabled selected>Select a reason</option>
+        <option value="Annual Checkup">Annual Checkup</option>
+        <option value="Follow-up">Follow-up</option>
+        <option value="Prescription Review">Prescription Review</option>
+        <option value="Blood Work Results">Blood Work Results</option>
+        <option value="Specialist Consultation">Specialist Consultation</option>
+        <option value="Urgent Care">Urgent Care</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+
+    <!-- Additional Notes -->
+    <div class="mb-6">
+      <label for="notes" class="block text-gray-700 font-medium mb-2">Additional Notes (Optional)</label>
+      <textarea id="notes" name="notes" rows="3" class="w-full bg-gray-50 border border-gray-300 text-gray-900 rounded-lg p-2.5" placeholder="Add any specific notes or instructions for this appointment."></textarea>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="flex justify-end">
+      <button type="submit" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg">
+        Schedule Appointment
+      </button>
+    </div>
+  </form>
+</div>
+
+<!-- Appointment Guidelines -->
+<div class="bg-white p-6 rounded-xl shadow">
+  <h2 class="text-xl font-semibold text-[#004d40] mb-4">Scheduling Guidelines</h2>
+  <ul class="space-y-2 text-gray-700 list-disc list-inside">
+    <li>Reserve 30-minute slots for standard appointments and 60-minute slots for new patients or complex cases.</li>
+    <li>For urgent appointments, please check the calendar for available same-day slots.</li>
+    <li>If scheduling a virtual appointment, ensure the patient has received instructions on how to join.</li>
+    <li>Remember to send appointment reminders 24 hours before the scheduled time.</li>
+    <li>Double-check for scheduling conflicts before confirming new appointments.</li>
+  </ul>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Update patient_name hidden field when patient is selected
+    const patientSelect = document.getElementById('patient_id');
+    const patientNameInput = document.getElementById('patient_name');
+
+    patientSelect.addEventListener('change', function() {
+      const selectedOption = patientSelect.options[patientSelect.selectedIndex];
+      patientNameInput.value = selectedOption.getAttribute('data-name');
+    });
+
+    // Toggle location field based on appointment type
+    const inPersonRadio = document.getElementById('in-person');
+    const virtualRadio = document.getElementById('virtual');
+    const locationInput = document.getElementById('location');
+
+    inPersonRadio.addEventListener('change', function() {
+      if (this.checked) {
+        locationInput.value = 'Northern Health Clinic, Room 305';
+      }
+    });
+
+    virtualRadio.addEventListener('change', function() {
+      if (this.checked) {
+        locationInput.value = 'Jitsi Video';
+      }
+    });
+  });
+</script>
+{% endblock %}
