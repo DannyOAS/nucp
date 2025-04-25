@@ -163,6 +163,36 @@ DEFAULT_FROM_EMAIL = 'postmaster@onmhiconnect.ca'
 CALDAV_URL = 'https://nh1.onmhiconnect.ca/SOGo/dav/postmaster@onmhiconnect.ca/Calendar/personal/'
 CALDAV_USERNAME = 'postmaster@onmhiconnect.ca'
 CALDAV_PASSWORD = 'g654D!'  # same as your mail password
+# Logging for CalDAV integration - Console Only
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'theme_name.services.calendarservice': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'theme_name.services.enhanced_appointment_service': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 ERPNEXT_URL = "https://u2.isnord.ca"
 ERP_API_KEY = "e7e440ba311946c"

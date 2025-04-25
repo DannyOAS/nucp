@@ -1,0 +1,141 @@
+{% comment %}
+This template contains calendar views for different display modes (day, week, month)
+{% endcomment %}
+
+{% if view_type == 'day' %}
+  <!-- Day view calendar -->
+  <div class="bg-white border-t border-gray-200 overflow-y-auto" style="max-height: 600px;">
+    {% if calendar_data.hours %}
+      {% for hour in calendar_data.hours %}
+        <div class="flex border-t border-gray-200 py-2">
+          <div class="w-20 flex-shrink-0 text-right pr-4 text-sm text-gray-500">
+            {{ hour.hour }}
+          </div>
+          <div class="flex-grow">
+            {% if hour.appointments %}
+              {% for appointment in hour.appointments %}
+                <div class="bg-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-100 border-l-4 border-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-500 p-2 rounded-r mb-2">
+                  <p class="font-medium text-gray-800">{{ appointment.patient_name }}</p>
+                  <p class="text-sm text-gray-600">{{ appointment.reason }} - {{ appointment.type }}</p>
+                  <div class="mt-1 flex justify-end">
+                    <a href="{% url 'view_appointment' appointment.id %}" class="text-xs text-[#004d40] hover:underline">View</a>
+                  </div>
+                </div>
+              {% endfor %}
+            {% else %}
+              <div class="h-12 border border-dashed border-gray-200 rounded bg-gray-50"></div>
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    {% else %}
+      <!-- Fallback if no hours data provided -->
+      <div class="text-center text-gray-500 py-8">
+        <p>No appointments scheduled for this day.</p>
+      </div>
+    {% endif %}
+  </div>
+
+{% elif view_type == 'week' %}
+  <!-- Week view calendar -->
+  <!-- Days header -->
+  <div class="grid grid-cols-8 gap-4 mb-2">
+    <div class="text-center">
+      <div class="text-xs font-medium text-gray-500 uppercase">Time</div>
+    </div>
+    {% if calendar_data.days %}
+      {% for day in calendar_data.days %}
+        <div class="text-center">
+          <div class="text-xs font-medium text-gray-500 uppercase">{{ day.day_name }}, {{ day.date|date:"M j" }}</div>
+          {% if day.is_today %}
+            <div class="text-xs text-[#004d40] font-medium">Today</div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <!-- Fallback headers if no days provided -->
+      {% for i in "1234567" %}
+        <div class="text-center">
+          <div class="text-xs font-medium text-gray-500 uppercase">Day {{ i }}</div>
+        </div>
+      {% endfor %}
+    {% endif %}
+  </div>
+
+  <!-- Calendar grid -->
+  <div class="border-t border-gray-200 overflow-y-auto" style="max-height: 600px;">
+    {% if calendar_data.time_slots %}
+      {% for time_slot in calendar_data.time_slots %}
+        <div class="grid grid-cols-8 gap-4">
+          <div class="py-4 text-right pr-2 text-sm text-gray-500">{{ time_slot.hour }}</div>
+          {% for day in time_slot.days %}
+            <div class="py-2 h-16 border-t">
+              {% if day.appointments %}
+                {% for appointment in day.appointments %}
+                  <div class="bg-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-100 border-l-4 border-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-500 p-2 h-full rounded-r text-xs">
+                    <p class="font-medium truncate">{{ appointment.patient_name }}</p>
+                    <p class="truncate">{{ appointment.reason }}</p>
+                    <a href="{% url 'view_appointment' appointment.id %}" class="text-[#004d40] hover:underline text-xs">View</a>
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <!-- Fallback grid if no time slots provided -->
+      <div class="text-center text-gray-500 py-8">
+        <p>No appointments scheduled for this week.</p>
+      </div>
+    {% endif %}
+  </div>
+
+{% elif view_type == 'month' %}
+  <!-- Month view calendar -->
+  <div class="grid grid-cols-7 gap-2 mb-2">
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Mon</div>
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Tue</div>
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Wed</div>
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Thu</div>
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Fri</div>
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Sat</div>
+    <div class="text-center text-xs font-medium text-gray-500 uppercase">Sun</div>
+  </div>
+
+  <div class="border-t border-gray-200">
+    {% if calendar_data.weeks %}
+      {% for week in calendar_data.weeks %}
+        <div class="grid grid-cols-7 gap-2">
+          {% for day in week %}
+            <div class="min-h-[100px] border border-gray-200 p-1 {% if day.is_current_month %}bg-white{% else %}bg-gray-50{% endif %} {% if day.is_today %}border-[#004d40] border-2{% endif %}">
+              <div class="text-right text-sm {% if day.is_current_month %}font-medium text-gray-700{% else %}text-gray-400{% endif %}">
+                {{ day.day }}
+              </div>
+              <div class="mt-1 space-y-1 max-h-[80px] overflow-y-auto">
+                {% for appointment in day.appointments %}
+                  <div class="bg-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-100 text-xs p-1 rounded truncate">
+                    <a href="{% url 'view_appointment' appointment.id %}" class="hover:underline">
+                      {{ appointment.patient_name }}
+                    </a>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        </div>
+      {% endfor %}
+    {% else %}
+      <!-- Fallback month grid if no weeks provided -->
+      <div class="text-center text-gray-500 py-8">
+        <p>No appointments scheduled for this month.</p>
+      </div>
+    {% endif %}
+  </div>
+
+{% else %}
+  <!-- Default view if no valid view type is provided -->
+  <div class="text-center text-gray-500 p-8">
+    <p>Please select a valid calendar view (day, week, or month).</p>
+  </div>
+{% endif %}
