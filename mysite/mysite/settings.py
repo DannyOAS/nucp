@@ -160,6 +160,9 @@ EMAIL_HOST_USER = 'postmaster@onmhiconnect.ca'
 EMAIL_HOST_PASSWORD = 'g654D!'
 DEFAULT_FROM_EMAIL = 'postmaster@onmhiconnect.ca'
 
+CALDAV_URL = 'https://nh1.onmhiconnect.ca/SOGo/dav/postmaster@onmhiconnect.ca/Calendar/personal/'
+CALDAV_USERNAME = 'postmaster@onmhiconnect.ca'
+CALDAV_PASSWORD = 'g654D!'  # same as your mail password
 
 ERPNEXT_URL = "https://u2.isnord.ca"
 ERP_API_KEY = "e7e440ba311946c"

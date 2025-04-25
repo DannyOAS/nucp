@@ -14,7 +14,7 @@ def ai_config_dashboard(request):
         'admin_name': 'Admin'
     }
     
-    return render(request, "admin/ai_config_dashboard.html", context)
+    return render(request, "custom_admin/ai_dashboard.html", context)
 
 def edit_model_config(request, config_id):
     """Edit AI model configuration"""

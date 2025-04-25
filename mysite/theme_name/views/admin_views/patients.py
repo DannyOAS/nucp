@@ -37,4 +37,4 @@ def admin_patients(request):
         'admin_name': 'Admin'
     }
     
-    return render(request, "admin/patients.html", context)
+    return render(request, "custom_admin/patients.html", context)
