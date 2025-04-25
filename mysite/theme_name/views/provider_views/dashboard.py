@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from datetime import datetime
 from ...repositories import ProviderRepository, PrescriptionRepository, AppointmentRepository
+from ...services.provider_service import ProviderService  # Add this line
 
 def provider_dashboard(request):
     provider_id = 1  # In production, replace with request.user

@@ -1,20 +1,16 @@
 from django.shortcuts import render
 from ...repositories import ProviderRepository
 from ...services import VideoService
+from ...data_access import get_provider_appointments
+
 
 def provider_video_consultation(request):
-    """Provider video consultation view"""
-    provider_id = 1  # In production, get from request.user
-    provider = ProviderRepository.get_by_id(provider_id)
-    
-    # Setup video consultation
-    video_data = VideoService.setup_provider_consultation(provider_id)
-    
+    provider_id = 1
+    all_appointments = get_provider_appointments(provider_id)
+    video_appointments = [a for a in all_appointments if a.get('type') == 'Virtual']
     context = {
-        'provider': provider,
-        'provider_name': f"Dr. {provider['last_name']}",
-        'video_data': video_data,
-        'active_section': 'consultations'
+        'active_section': 'consultations',
+        'provider_name': 'Dr. Provider',
+        'video_appointments': video_appointments
     }
-    
-    return render(request, "provider/video_consultation.html", context)
+    return render(request, 'provider/video_consultation.html', context)

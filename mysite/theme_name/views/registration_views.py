@@ -32,7 +32,7 @@ def login_view(request):
 
 def register_selection(request):
     """View for selecting registration type (patient or provider)"""
-    return render(request, "register_selection.html")
+    return render(request, "register.html")
 
 def patient_registration(request):
     """Patient registration view"""

@@ -151,7 +151,15 @@ STATICFILES_DIRS = [
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+#EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'nh1.onmhiconnect.ca'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'postmaster@onmhiconnect.ca'
+EMAIL_HOST_PASSWORD = 'g654D!'
+DEFAULT_FROM_EMAIL = 'postmaster@onmhiconnect.ca'
+
 
 ERPNEXT_URL = "https://u2.isnord.ca"
 ERP_API_KEY = "e7e440ba311946c"

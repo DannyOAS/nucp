@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from ...repositories import ProviderRepository, AppointmentRepository, PrescriptionRepository
+from ...repositories import ProviderRepository, PatientRepository, AppointmentRepository, PrescriptionRepository
 from ...services import ProviderService
 from ...forms import PatientForm
 
@@ -118,7 +118,7 @@ def view_patient(request, patient_id):
     provider = ProviderRepository.get_by_id(provider_id)
     
     # Get patient data
-    patient = ProviderRepository.get_patient_by_id(patient_id)
+    patient = PatientRepository.get_by_id(patient_id)
     
     print(f"[VIEW] Retrieved patient: {patient.get('first_name')} {patient.get('last_name')}, ID: {patient.get('id')}")
 

@@ -7,101 +7,125 @@ from ...services import FormAutomationService
 from ...models import DocumentTemplate, GeneratedDocument
 
 def forms_dashboard(request):
-    """Forms dashboard view"""
-    provider_id = 1  # In production, get from request.user
-    provider = ProviderRepository.get_by_id(provider_id)
-    
-    # Get forms data
-    templates = DocumentTemplate.objects.filter(is_active=True).order_by('name')
-    recent_documents = GeneratedDocument.objects.filter(created_by=request.user).order_by('-created_at')[:10]
-    
+    provider_id = 1
+    templates_result = FormAutomationService.get_available_templates()
+    patients = ProviderRepository.get_patients(provider_id)
+    if not templates_result.get('success'):
+        messages.error(request, f"Error loading templates: {templates_result.get('error', 'Unknown error')}")
+    recent_documents = [
+        {
+            'id': 1,
+            'template_name': 'Lab Requisition',
+            'patient_name': 'Jane Doe',
+            'created_at': 'Today, 11:23 AM',
+            'status': 'Completed'
+        },
+        {
+            'id': 2,
+            'template_name': 'Sick Note',
+            'patient_name': 'John Smith',
+            'created_at': 'Yesterday, 3:45 PM',
+            'status': 'Draft'
+        },
+        {
+            'id': 3,
+            'template_name': 'Specialist Referral',
+            'patient_name': 'Emily Williams',
+            'created_at': 'March 30, 2025',
+            'status': 'Sent'
+        }
+    ]
     context = {
-        'provider': provider,
-        'provider_name': f"Dr. {provider['last_name']}",
-        'templates': templates,
-        'recent_documents': recent_documents,
-        'active_section': 'forms'
+        'active_section': 'forms',
+        'provider_name': 'Dr. Provider',
+        'templates': templates_result.get('templates', []),
+        'patients': patients,
+        'recent_documents': recent_documents
     }
-    
     return render(request, "provider/forms_dashboard.html", context)
 
 def create_form(request, template_id):
-    """Create a form from template"""
-    provider_id = 1  # In production, get from request.user
-    provider = ProviderRepository.get_by_id(provider_id)
-    template = get_object_or_404(DocumentTemplate, id=template_id)
-    
+    template_result = FormAutomationService.get_template_by_id(template_id)
+    if not template_result.get('success'):
+        messages.error(request, f"Error loading template: {template_result.get('error', 'Unknown error')}")
+        return redirect('forms_dashboard')
     if request.method == 'POST':
-        # Process form submission
         form_data = request.POST.dict()
-        # Remove CSRF token from form data
-        form_data.pop('csrfmiddlewaretoken', None)
-        
-        document = FormAutomationService.create_document(
+        document_result = FormAutomationService.create_document(
             template_id=template_id,
-            patient_id=form_data.get('patient_id'),
-            provider_id=provider_id,
-            form_data=form_data
+            form_data=form_data,
+            created_by_id=request.user.id
         )
-        
-        messages.success(request, f"{template.get_template_type_display()} created successfully.")
-        return redirect('view_document', document_id=document.id)
-    
-    # Get patients for dropdown
-    patients = ProviderRepository.get_patients(provider_id)
-    
+        if document_result.get('success'):
+            document_id = document_result['document']['id']
+            messages.success(request, "Document created successfully!")
+            return redirect('view_document', document_id=document_id)
+        else:
+            messages.error(request, f"Error creating document: {document_result.get('error', 'Unknown error')}")
+    patient_id = request.GET.get('patient_id')
+    form_data = {}
+    if patient_id:
+        auto_populate_result = FormAutomationService.auto_populate_form(
+            template_id=template_id,
+            patient_id=patient_id,
+            provider_id=request.user.id
+        )
+        if auto_populate_result.get('success'):
+            form_data = auto_populate_result.get('form_data', {})
     context = {
-        'provider': provider,
-        'provider_name': f"Dr. {provider['last_name']}",
-        'template': template,
-        'patients': patients,
-        'active_section': 'forms'
+        'active_section': 'forms',
+        'provider_name': 'Dr. Provider',
+        'template': template_result.get('template'),
+        'form_data': form_data,
+        'patients': [
+            {'id': 1, 'name': 'Jane Doe'},
+            {'id': 2, 'name': 'John Smith'},
+            {'id': 3, 'name': 'Robert Johnson'},
+            {'id': 4, 'name': 'Emily Williams'}
+        ]
     }
-    
-    return render(request, "provider/create_form.html", context)
+    return render(request, 'provider/create_form.html', context)
 
 def view_document(request, document_id):
-    """View generated document"""
-    document = get_object_or_404(GeneratedDocument, id=document_id)
-    
+    render_result = FormAutomationService.render_document(document_id)
+    if not render_result.get('success'):
+        messages.error(request, f"Error rendering document: {render_result.get('error', 'Unknown error')}")
+        return redirect('forms_dashboard')
     context = {
-        'document': document,
-        'active_section': 'forms'
+        'active_section': 'forms',
+        'provider_name': 'Dr. Provider',
+        'document_id': document_id,
+        'html_content': render_result.get('html_content'),
+        'pdf_available': render_result.get('pdf_available')
     }
-    
-    return render(request, "provider/view_document.html", context)
+    return render(request, 'provider/view_document.html', context)
+
 
 def download_document_pdf(request, document_id):
-    """Download document as PDF"""
-    document = get_object_or_404(GeneratedDocument, id=document_id)
-    
-    # Generate PDF
-    pdf_file = FormAutomationService.generate_pdf(document_id)
-    
-    # Return PDF
-    response = HttpResponse(pdf_file, content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="{document.template.name}_{document.patient.get_full_name()}.pdf"'
+    render_result = FormAutomationService.render_document(document_id)
+    if not render_result.get('success'):
+        messages.error(request, f"Error rendering document: {render_result.get('error', 'Unknown error')}")
+        return redirect('forms_dashboard')
+    response = HttpResponse(b'PDF content would go here', content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="document_{document_id}.pdf"'
     return response
+
 
 @require_POST
 def update_document_status(request, document_id):
-    """Update document status"""
-    document = get_object_or_404(GeneratedDocument, id=document_id)
-    new_status = request.POST.get('status')
-    
-    if new_status in [choice[0] for choice in GeneratedDocument.STATUS_CHOICES]:
-        document.status = new_status
-        document.save()
-        
-        return JsonResponse({
-            'success': True,
-            'message': f'Document status updated to {document.get_status_display()}.'
-        })
+    status_value = request.POST.get('status')
+    if not status_value:
+        return JsonResponse({'success': False, 'error': 'Status is required'}, status=400)
+    result = FormAutomationService.update_document_status(
+        document_id=document_id,
+        status=status_value,
+        updated_by_id=request.user.id
+    )
+    if result.get('success'):
+        return JsonResponse({'success': True, 'document': result.get('document')})
     else:
-        return JsonResponse({
-            'success': False,
-            'message': 'Invalid status value.'
-        }, status=400)
+        return JsonResponse({'success': False, 'error': result.get('error', 'Unknown error')}, status=500)
+
 
 def templates_dashboard(request):
     """Templates management dashboard"""
