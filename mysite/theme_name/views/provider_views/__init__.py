@@ -9,5 +9,9 @@ from .messages import (
     provider_messages, provider_sent_messages, provider_view_message,
     provider_compose_message, provider_message_action
 )
+from .email import (
+    provider_email, provider_view_message, provider_compose_message,
+    provider_message_action, load_templates
+)
 from .video import provider_video_consultation
 from .appointments import provider_appointments

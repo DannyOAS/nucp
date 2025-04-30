@@ -5,8 +5,11 @@ from django.core.mail import send_mail
 from ..forms import ContactForm
 from ..models import ContactMessage, BlogPost
 
+#def home(request):
+#    return render(request, "home.html")
 def home(request):
-    return render(request, "home.html")
+    return render(request, "home2.html")
+
 
 def about(request):
     """About page view"""
@@ -49,3 +52,9 @@ def blog_detail(request, pk):
         raise Http404("Blog post does not exist")
     
     return render(request, "blog/detail.html", {'post': post})
+
+def privacy_policy(request):
+    return render(request, "privacy_policy.html")
+
+def terms_of_use(request):
+    return render(request, "terms_of_use.html")

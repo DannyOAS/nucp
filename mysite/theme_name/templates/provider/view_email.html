@@ -1,0 +1,243 @@
+{% extends "provider/base.html" %}
+{% block title %}View Message - Provider Portal{% endblock %}
+{% block content %}
+<main class="p-4">
+  <!-- Back button and message actions -->
+  <div class="flex justify-between items-center mb-6">
+    <a href="{% url 'provider_email' %}?folder={{ request.GET.folder|default:'inbox' }}" class="flex items-center text-[#004d40] hover:text-[#00332e]">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+      </svg>
+      Back to Inbox
+    </a>
+    
+    <div class="flex space-x-2">
+      {% if message.read|default:True %}
+        <a href="{% url 'provider_message_action' message.id 'mark_unread' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          Mark as Unread
+        </a>
+      {% else %}
+        <a href="{% url 'provider_message_action' message.id 'mark_read' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" />
+          </svg>
+          Mark as Read
+        </a>
+      {% endif %}
+      
+      {% if message.priority|default:"normal" == "high" %}
+        <a href="{% url 'provider_message_action' message.id 'priority' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Remove Priority
+        </a>
+      {% else %}
+        <a href="{% url 'provider_message_action' message.id 'priority' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Mark as Priority
+        </a>
+      {% endif %}
+      
+      <a href="{% url 'provider_message_action' message.id 'archive' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+        </svg>
+        Archive
+      </a>
+      
+      <a href="{% url 'provider_message_action' message.id 'delete' %}" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+        Delete
+      </a>
+    </div>
+  </div>
+  
+  <!-- Message display -->
+  <div class="bg-white p-6 rounded-xl shadow mb-6">
+    <!-- Message header -->
+    <div class="border-b border-gray-200 pb-4 mb-4">
+      <div class="flex justify-between items-start">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-800">{{ message.subject }}</h1>
+          <div class="flex items-center mt-2">
+            <div class="flex items-center">
+              <div class="h-10 w-10 rounded-full flex items-center justify-center overflow-hidden mr-3 
+                {% if sender_info.type == 'patient' %}bg-blue-100{% elif sender_info.type == 'staff' %}bg-green-100{% else %}bg-gray-100{% endif %}">
+                <span class="
+                  {% if sender_info.type == 'patient' %}text-blue-600{% elif sender_info.type == 'staff' %}text-green-600{% else %}text-gray-600{% endif %} 
+                  font-medium text-lg">{{ sender_info.name|slice:":1" }}</span>
+              </div>
+              <div>
+                <div class="font-medium text-gray-800">{{ sender_info.name }}</div>
+                <div class="text-sm text-gray-500">{{ sender_info.email }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-sm text-gray-500">
+          <div>{{ message.created_at }}</div>
+          {% if message.priority == 'high' %}
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800 mt-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              High Priority
+            </span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Message body -->
+    <div class="text-gray-800 mb-6 prose max-w-none">
+      {{ message.content|linebreaks }}
+    </div>
+    
+    <!-- Message attachments if any -->
+    {% if message.attachments.exists %}
+      <div class="border-t border-gray-200 pt-4 mt-6">
+        <h3 class="text-sm font-medium text-gray-500 mb-3">Attachments</h3>
+        <div class="space-y-2">
+          {% for attachment in message.attachments.all %}
+            <div class="flex items-center p-2 border border-gray-200 rounded-md bg-gray-50">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+              </svg>
+              <div class="flex-1 truncate">
+                <span class="text-sm font-medium text-gray-700">{{ attachment.file_name }}</span>
+                <span class="text-xs text-gray-500 ml-2">({{ attachment.file_size|filesizeformat }})</span>
+              </div>
+              <a href="{{ attachment.file.url }}" download class="text-[#004d40] hover:text-[#00332e] text-sm font-medium ml-4">Download</a>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+  
+  <!-- Reply form -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <h2 class="text-lg font-semibold text-gray-800 mb-4">Reply</h2>
+    
+    <form action="{% url 'provider_compose_message' %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- Hidden fields for reply metadata -->
+      <input type="hidden" name="recipient_type" value="{{ sender_info.type|default:'patient' }}">
+      <input type="hidden" name="recipient_id" value="{{ message.sender.id|default:'1' }}">
+      <input type="hidden" name="subject" value="Re: {{ message.subject }}">
+      <input type="hidden" name="thread_id" value="{{ message.thread_id|default:'' }}">
+      
+      <div class="mb-4">
+        <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Reply Message</label>
+        <textarea id="content" name="content" rows="6" class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#004d40] focus:ring focus:ring-[#004d40] focus:ring-opacity-50" placeholder="Type your reply here..."></textarea>
+      </div>
+      
+      <div class="flex justify-between items-center">
+        <div class="flex items-center space-x-4">
+          <div class="flex items-center">
+            <input id="priority_high" name="priority" type="checkbox" value="high" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="priority_high" class="ml-2 text-sm text-gray-700">High Priority</label>
+          </div>
+          
+          {% if sender_info.type == 'patient' %}
+            <div class="flex items-center">
+              <input id="add_to_record" name="add_to_record" type="checkbox" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" checked>
+              <label for="add_to_record" class="ml-2 text-sm text-gray-700">Add to Patient Record</label>
+            </div>
+          {% endif %}
+        </div>
+        
+        <div class="flex space-x-2">
+          <button type="button" id="attachBtn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            Attach
+          </button>
+          <input type="file" id="attachments" name="attachments" multiple class="hidden">
+          
+          <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#004d40] hover:bg-[#00332e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Send Reply
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Previous messages in thread (if any) -->
+  {% if thread_messages %}
+    <div class="mt-8">
+      <h2 class="text-lg font-semibold text-gray-800 mb-4">Previous Messages in This Thread</h2>
+      
+      <div class="space-y-4">
+        {% for thread_message in thread_messages %}
+          <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+            <div class="flex justify-between items-start">
+              <div class="flex items-center">
+                <div class="h-8 w-8 rounded-full flex items-center justify-center overflow-hidden mr-3 bg-gray-200">
+                  <span class="text-gray-600 font-medium text-sm">{{ thread_message.sender_name|default:"S"|slice:":1" }}</span>
+                </div>
+                <div>
+                  <span class="font-medium text-gray-800">{{ thread_message.sender_name|default:"Sender" }}</span>
+                  <span class="text-sm text-gray-500 ml-2">{{ thread_message.created_at|default:"April 25, 2025" }}</span>
+                </div>
+              </div>
+              
+              {% if thread_message.priority == 'high' %}
+                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  High Priority
+                </span>
+              {% endif %}
+            </div>
+            
+            <div class="mt-3 text-gray-700">
+              {{ thread_message.content|default:"Thread message content"|linebreaks }}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</main>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Attachment button functionality
+    const attachBtn = document.getElementById('attachBtn');
+    const attachmentsInput = document.getElementById('attachments');
+    
+    if (attachBtn && attachmentsInput) {
+      attachBtn.addEventListener('click', function() {
+        attachmentsInput.click();
+      });
+      
+      attachmentsInput.addEventListener('change', function() {
+        const fileCount = this.files.length;
+        if (fileCount > 0) {
+          attachBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            ${fileCount} file${fileCount !== 1 ? 's' : ''} selected
+          `;
+        }
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,349 @@
+{% extends "provider/base.html" %}
+{% block title %}Compose Message - Provider Portal{% endblock %}
+{% block content %}
+<main class="p-4">
+  <!-- Back button and page title -->
+  <div class="flex justify-between items-center mb-6">
+    <div class="flex items-center">
+      <a href="{% url 'provider_email' %}" class="text-[#004d40] hover:text-[#00332e] mr-4">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+      </a>
+      <h1 class="text-2xl font-bold text-gray-800">Compose New Message</h1>
+    </div>
+  </div>
+  
+  <!-- Compose form -->
+  <div class="bg-white p-6 rounded-xl shadow">
+    <form action="{% url 'provider_compose_message' %}" method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      
+      <!-- Hidden fields if replying -->
+      {% if original_message %}
+        <input type="hidden" name="thread_id" value="{{ original_message.thread_id|default:'' }}">
+      {% endif %}
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+        <div>
+          <label for="recipient_type" class="block text-sm font-medium text-gray-700 mb-1">Recipient Type</label>
+          <select id="recipient_type" name="recipient_type" class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#004d40] focus:ring focus:ring-[#004d40] focus:ring-opacity-50">
+            <option value="patient" {% if form.initial.recipient_type == 'patient' %}selected{% endif %}>Patient</option>
+            <option value="staff" {% if form.initial.recipient_type == 'staff' %}selected{% endif %}>Staff Member</option>
+            <option value="pharmacy">Pharmacy</option>
+            <option value="billing">Billing Department</option>
+          </select>
+        </div>
+        
+        <div id="patientSelectContainer">
+          <label for="recipient_id" class="block text-sm font-medium text-gray-700 mb-1">Select Patient</label>
+          <select id="recipient_id" name="recipient_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#004d40] focus:ring focus:ring-[#004d40] focus:ring-opacity-50">
+            {% for patient in patients %}
+              <option value="{{ patient.id }}" {% if form.initial.recipient_id == patient.id %}selected{% endif %}>
+                {{ patient.first_name }} {{ patient.last_name }}
+              </option>
+            {% empty %}
+              <option value="1">Jane Doe</option>
+              <option value="2">John Smith</option>
+              <option value="3">Robert Johnson</option>
+              <option value="4">Emily Williams</option>
+            {% endfor %}
+          </select>
+        </div>
+        
+        <div id="staffSelectContainer" class="hidden">
+          <label for="staff_recipient_id" class="block text-sm font-medium text-gray-700 mb-1">Select Staff Member</label>
+          <select id="staff_recipient_id" name="staff_recipient_id" class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#004d40] focus:ring focus:ring-[#004d40] focus:ring-opacity-50">
+            {% for staff in staff_members %}
+              <option value="{{ staff.id }}" {% if form.initial.recipient_id == staff.id %}selected{% endif %}>
+                {{ staff.first_name }} {{ staff.last_name }}{% if staff.role %} - {{ staff.role }}{% endif %}
+              </option>
+            {% empty %}
+              <option value="1">Nurse Williams</option>
+              <option value="2">Dr. Thompson</option>
+              <option value="3">Dr. Martinez</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      
+      <div class="mb-4">
+        <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Subject</label>
+        <input type="text" id="subject" name="subject" value="{{ form.initial.subject|default:'' }}" class="w-full rounded-md border-gray-300 shadow-sm focus:border-[#004d40] focus:ring focus:ring-[#004d40] focus:ring-opacity-50" placeholder="Message subject">
+      </div>
+      
+      <div class="mb-4">
+        <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Message</label>
+        <div class="rounded-t-md border border-gray-300 bg-gray-50 px-3 py-2 flex items-center">
+          <button type="button" id="templateBtn" class="inline-flex items-center px-3 py-1 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40] mr-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2" />
+            </svg>
+            Templates
+          </button>
+        </div>
+        <textarea id="content" name="content" rows="12" class="w-full rounded-t-none rounded-b-md border-t-0 border-gray-300 shadow-sm focus:border-[#004d40] focus:ring focus:ring-[#004d40] focus:ring-opacity-50" placeholder="Type your message here...">{{ form.initial.content|default:'' }}</textarea>
+      </div>
+      
+      <div class="flex justify-between items-center mb-4">
+        <div class="flex space-x-4">
+          <div class="flex items-center">
+            <input id="priority_high" name="priority" type="checkbox" value="high" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]">
+            <label for="priority_high" class="ml-2 text-sm text-gray-700">High Priority</label>
+          </div>
+          
+          <div class="flex items-center" id="addToRecordContainer">
+            <input id="add_to_record" name="add_to_record" type="checkbox" class="h-4 w-4 text-[#004d40] border-gray-300 rounded focus:ring-[#004d40]" checked>
+            <label for="add_to_record" class="ml-2 text-sm text-gray-700">Add to Patient Record</label>
+          </div>
+        </div>
+        
+        <div>
+          <button type="button" id="attachBtn" class="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            Attach Files
+          </button>
+          <input type="file" id="attachments" name="attachments" multiple class="hidden">
+        </div>
+      </div>
+      
+      <div id="attachmentList" class="mb-4 hidden">
+        <div class="bg-gray-50 rounded-md p-3 border border-gray-200">
+          <h3 class="text-sm font-medium text-gray-700 mb-2">Selected Attachments</h3>
+          <ul id="fileList" class="text-sm text-gray-600 space-y-1"></ul>
+        </div>
+      </div>
+      
+      <div class="flex justify-end">
+        <div class="flex space-x-3">
+          <button type="button" id="saveAsDraftBtn" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+            Save as Draft
+          </button>
+          <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-[#004d40] hover:bg-[#00332e] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#004d40]">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+            </svg>
+            Send Message
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Template Modal -->
+  <div id="templateModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-full md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+      <div class="flex justify-between items-center border-b pb-3 mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Message Templates</h3>
+        <button id="closeTemplateBtn" class="text-gray-600 hover:text-gray-800">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#004d40] hover:bg-[#edf7f5] cursor-pointer template-item" data-template="lab_results">
+          <h4 class="font-medium text-gray-800">Lab Results Follow-up</h4>
+          <p class="text-sm text-gray-500 mt-1">Template for discussing lab results with patients</p>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#004d40] hover:bg-[#edf7f5] cursor-pointer template-item" data-template="prescription_renewal">
+          <h4 class="font-medium text-gray-800">Prescription Renewal</h4>
+          <p class="text-sm text-gray-500 mt-1">Template for confirming prescription renewals</p>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#004d40] hover:bg-[#edf7f5] cursor-pointer template-item" data-template="appointment_confirmation">
+          <h4 class="font-medium text-gray-800">Appointment Confirmation</h4>
+          <p class="text-sm text-gray-500 mt-1">Template for confirming upcoming appointments</p>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#004d40] hover:bg-[#edf7f5] cursor-pointer template-item" data-template="post_visit">
+          <h4 class="font-medium text-gray-800">Post-visit Summary</h4>
+          <p class="text-sm text-gray-500 mt-1">Template for summarizing visit information</p>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#004d40] hover:bg-[#edf7f5] cursor-pointer template-item" data-template="referral">
+          <h4 class="font-medium text-gray-800">Referral Information</h4>
+          <p class="text-sm text-gray-500 mt-1">Template for providing referral details</p>
+        </div>
+        
+        <div class="border border-gray-200 rounded-lg p-4 hover:border-[#004d40] hover:bg-[#edf7f5] cursor-pointer template-item" data-template="test_preparation">
+          <h4 class="font-medium text-gray-800">Test Preparation</h4>
+          <p class="text-sm text-gray-500 mt-1">Template for preparing patients for tests</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Form elements
+    const recipientTypeSelect = document.getElementById('recipient_type');
+    const patientSelectContainer = document.getElementById('patientSelectContainer');
+    const staffSelectContainer = document.getElementById('staffSelectContainer');
+    const addToRecordContainer = document.getElementById('addToRecordContainer');
+    const contentTextarea = document.getElementById('content');
+    
+    // Templates
+    const templateBtn = document.getElementById('templateBtn');
+    const templateModal = document.getElementById('templateModal');
+    const closeTemplateBtn = document.getElementById('closeTemplateBtn');
+    const templateItems = document.querySelectorAll('.template-item');
+    
+    // Attachments
+    const attachBtn = document.getElementById('attachBtn');
+    const attachmentsInput = document.getElementById('attachments');
+    const attachmentList = document.getElementById('attachmentList');
+    const fileList = document.getElementById('fileList');
+    
+    // Toggle recipient selection based on type
+    if (recipientTypeSelect) {
+      recipientTypeSelect.addEventListener('change', function() {
+        if (this.value === 'patient') {
+          patientSelectContainer.classList.remove('hidden');
+          staffSelectContainer.classList.add('hidden');
+          addToRecordContainer.classList.remove('hidden');
+        } else if (this.value === 'staff') {
+          patientSelectContainer.classList.add('hidden');
+          staffSelectContainer.classList.remove('hidden');
+          addToRecordContainer.classList.add('hidden');
+        } else {
+          patientSelectContainer.classList.add('hidden');
+          staffSelectContainer.classList.add('hidden');
+          addToRecordContainer.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Template modal
+    if (templateBtn) {
+      templateBtn.addEventListener('click', function() {
+        templateModal.classList.remove('hidden');
+      });
+    }
+    
+    if (closeTemplateBtn) {
+      closeTemplateBtn.addEventListener('click', function() {
+        templateModal.classList.add('hidden');
+      });
+    }
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', function(event) {
+      if (event.target === templateModal) {
+        templateModal.classList.add('hidden');
+      }
+    });
+    
+    // Handle template selection
+    if (templateItems.length > 0) {
+      templateItems.forEach(item => {
+        item.addEventListener('click', function() {
+          const templateType = this.getAttribute('data-template');
+          
+          // Fetch template content via AJAX
+          fetch(`/provider-dashboard/email/templates/?type=${templateType}`)
+            .then(response => response.json())
+            .then(data => {
+              // Set subject and content
+              document.getElementById('subject').value = data.subject || '';
+              contentTextarea.value = data.content || '';
+              
+              // Close the template modal
+              templateModal.classList.add('hidden');
+            })
+            .catch(error => {
+              console.error('Error loading template:', error);
+              // Use fallback templates if AJAX fails
+              const fallbacks = {
+                'lab_results': {
+                  subject: 'Your Recent Lab Results',
+                  content: 'Dear [Patient Name],\n\nI\'ve reviewed your recent lab results...'
+                },
+                'prescription_renewal': {
+                  subject: 'Prescription Renewal',
+                  content: 'Dear [Patient Name],\n\nI\'ve approved your request to renew your prescription...'
+                }
+                // Add other fallbacks as needed
+              };
+              
+              const fallback = fallbacks[templateType] || {subject: '', content: ''};
+              document.getElementById('subject').value = fallback.subject;
+              contentTextarea.value = fallback.content;
+              
+              // Close the modal
+              templateModal.classList.add('hidden');
+            });
+        });
+      });
+    }
+    
+    // Attachment handling
+    if (attachBtn && attachmentsInput) {
+      attachBtn.addEventListener('click', function() {
+        attachmentsInput.click();
+      });
+      
+      attachmentsInput.addEventListener('change', function() {
+        const files = this.files;
+        
+        if (files.length > 0) {
+          // Update button text
+          attachBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            ${files.length} file${files.length !== 1 ? 's' : ''} selected
+          `;
+          
+          // Show attachment list
+          attachmentList.classList.remove('hidden');
+          
+          // Clear previous list
+          fileList.innerHTML = '';
+          
+          // Add files to list
+          Array.from(files).forEach(file => {
+            const fileSize = (file.size / 1024).toFixed(1) + ' KB';
+            const li = document.createElement('li');
+            li.innerHTML = `
+              <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-gray-400 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                </svg>
+                ${file.name} (${fileSize})
+              </div>
+            `;
+            fileList.appendChild(li);
+          });
+        } else {
+          // Reset button text
+          attachBtn.innerHTML = `
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+            </svg>
+            Attach Files
+          `;
+          
+          // Hide attachment list
+          attachmentList.classList.add('hidden');
+        }
+      });
+    }
+    
+    // Draft saving
+    const saveAsDraftBtn = document.getElementById('saveAsDraftBtn');
+    if (saveAsDraftBtn) {
+      saveAsDraftBtn.addEventListener('click', function() {
+        // In a production environment, this would save to the database
+        // For now, we'll just show an alert
+        alert("Draft saved successfully!");
+      });
+    }
+  });
+</script>
+{% endblock %}

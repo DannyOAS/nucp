@@ -1,7 +1,7 @@
 # Import all views for backward compatibility
 
 # Main website views
-from .main_views import home, about, contact, blog_list, blog_detail
+from .main_views import home, about, contact, blog_list, blog_detail, privacy_policy, terms_of_use
 
 # Registration views
 from .registration_views import (
@@ -42,6 +42,13 @@ from .provider_views.profile import provider_profile, provider_settings, provide
 from .provider_views.messages import (
     provider_messages, provider_sent_messages, provider_view_message,
     provider_compose_message, provider_message_action
+)
+from .provider_views.email import (
+    provider_email,
+    provider_view_message, 
+    provider_compose_message,
+    provider_message_action,
+    load_templates
 )
 from .provider_views.video import provider_video_consultation
 from .provider_views.appointments import (

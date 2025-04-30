@@ -135,19 +135,19 @@ def site_settings(request):
         'company_full_name': 'Northern Health Innovations Inc.',
         'copyright_text': '© 2025 Northern Health Innovations Inc. All rights reserved.'
     }
-
-def navigation(request):
-    """
-    Add navigation context to all templates.
-    """
-    # This could be more dynamic based on user permissions
-    return {
-        'nav_sections': [
-            {'name': 'dashboard', 'label': 'Dashboard', 'url': 'patient_dashboard', 'icon': '🏠'},
-            {'name': 'appointments', 'label': 'Appointments', 'url': 'patient_appointments', 'icon': '📅'},
-            {'name': 'prescriptions', 'label': 'Prescriptions', 'url': 'patient_prescriptions', 'icon': '💊'},
-            {'name': 'email', 'label': 'Email', 'url': 'patient_email', 'icon': '📧'},
-            {'name': 'messages', 'label': 'Messages', 'url': 'patient_messages', 'icon': '📧'},
-            {'name': 'video', 'label': 'Jitsi Video', 'url': 'patient_jitsi', 'icon': '🎥'},
-        ],
-    }
+#
+#def navigation(request):
+#    """
+#    Add navigation context to all templates.
+#    """
+#    # This could be more dynamic based on user permissions
+#    return {
+#        'nav_sections': [
+#            {'name': 'dashboard', 'label': 'Dashboard', 'url': 'patient_dashboard', 'icon': '🏠'},
+#            {'name': 'appointments', 'label': 'Appointments', 'url': 'patient_appointments', 'icon': '📅'},
+#            {'name': 'prescriptions', 'label': 'Prescriptions', 'url': 'patient_prescriptions', 'icon': '💊'},
+#            {'name': 'email', 'label': 'Email', 'url': 'patient_email', 'icon': '📧'},
+#            {'name': 'messages', 'label': 'Messages', 'url': 'patient_messages', 'icon': '📧'},
+##            {'name': 'video', 'label': 'Jitsi Video', 'url': 'patient_jitsi', 'icon': '🎥'},
+#        ],
+#    }

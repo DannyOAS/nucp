@@ -160,6 +160,40 @@ EMAIL_HOST_USER = 'postmaster@onmhiconnect.ca'
 EMAIL_HOST_PASSWORD = 'g654D!'
 DEFAULT_FROM_EMAIL = 'postmaster@onmhiconnect.ca'
 
+
+# Message Configuration
+DEFAULT_PROVIDER_SIGNATURE = """
+Best regards,
+
+Dr. {doctor_name}
+Northern Health Innovations
+Phone: (555) 123-4567
+Email: {doctor_email}
+"""
+
+# Email Templates Directory
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'templates/emails'),  # Add this line for email templates
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'theme_name.context_processors.site_settings',  # Your custom context processors
+            ],
+        },
+    },
+]
+
+
+
 CALDAV_URL = 'https://nh1.onmhiconnect.ca/SOGo/dav/postmaster@onmhiconnect.ca/Calendar/personal/'
 CALDAV_USERNAME = 'postmaster@onmhiconnect.ca'
 CALDAV_PASSWORD = 'g654D!'  # same as your mail password
@@ -193,6 +227,8 @@ LOGGING = {
         },
     },
 }
+
+
 
 ERPNEXT_URL = "https://u2.isnord.ca"
 ERP_API_KEY = "e7e440ba311946c"

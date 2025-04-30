@@ -8,9 +8,13 @@ from django.contrib.auth import views as auth_views
 # Main website URLs
 website_urls = [
     path("", home, name="home"),
+#    path("", home, name="home"),
     path('admin/', admin.site.urls),
     path("about/", about, name="about"),
     path("contact/", contact, name="contact"),
+    path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
+    path('terms-of-use/', views.terms_of_use, name='terms_of_use'),
+
     path("blog/", blog_list, name="blog_list"),  # Blog list page
     path("blog/<int:pk>/", blog_detail, name="blog_detail"),  # Blog detail page
     path("nucp/", RedirectView.as_view(url="https://nucp.ca", permanent=True), name="nucp"),
@@ -51,6 +55,15 @@ provider_urls = [
     path('provider-dashboard/messages/view/<int:message_id>/', views.provider_view_message, name='provider_view_message'),
     path('provider-dashboard/messages/compose/', views.provider_compose_message, name='provider_compose_message'),
     path('provider-dashboard/messages/action/<int:message_id>/<str:action>/', views.provider_message_action, name='provider_message_action'),
+
+# Add these URL patterns to your urls.py file in the provider_urls section
+
+    # Provider email URLs
+    path('provider-dashboard/email/', views.provider_email, name='provider_email'),
+    path('provider-dashboard/email/view/<int:message_id>/', views.provider_view_message, name='provider_view_message'),
+    path('provider-dashboard/email/compose/', views.provider_compose_message, name='provider_compose_message'),
+    path('provider-dashboard/email/action/<int:message_id>/<str:action>/', views.provider_message_action, name='provider_message_action'),
+    path('provider-dashboard/email/templates/', views.load_templates, name='load_templates'),
 # Prescription management URLs
     path('provider-dashboard/prescriptions/approve/<int:prescription_id>/', views.approve_prescription, name='approve_prescription'),
     path('provider-dashboard/prescriptions/review/<int:prescription_id>/', views.review_prescription, name='review_prescription'),
@@ -139,8 +152,7 @@ admin_ai_urls = [
     path('admin-dashboard/templates/<int:template_id>/edit/', views.edit_template, name='edit_template'),
 ]
 
-# Combine all URL patterns
-#urlpatterns = ai_scribe_urls + forms_urls + admin_ai_urls
+
 
 # Combine all URL patterns
 urlpatterns = website_urls + provider_urls + patient_urls + admin_urls + ai_scribe_urls + forms_urls + admin_ai_urls
