@@ -1,58 +1,23 @@
-# Create a new branch with just the basic structure
-git checkout --orphan temp-branch
-
-# Create a proper .gitignore file
-cat > .gitignore << EOF
-# Django
-*.log
-*.pot
-*.pyc
-__pycache__/
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-media/
-staticfiles/
-.env
-
 # Virtual Environment
 venv/
 ENV/
+.venv/
+
+# Database
+db.sqlite3
+db.sqlite3-journal
+
+# Local settings
+local_settings.py
+.env
+
+# Compiled Python
+__pycache__/
+*.py[cod]
+*$py.class
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
-
-# Compiled Python
-*.py[cod]
-*$py.class
-
-# Distribution / packaging
-dist/
-build/
-*.egg-info/
-EOF
-
-# Add just the essential files
-git add .gitignore
-git add *.py
-git add mysite/
-git add theme_name/
-
-# Exclude any large directories you know about
-git reset -- media/
-git reset -- staticfiles/
-git reset -- .venv/
-git reset -- db.sqlite3
-
-# Commit
-git commit -m "Initial commit: Basic Django project structure"
-
-# Replace master with this branch
-git branch -D master
-git branch -m master
-
-# Push
-git push -f origin master

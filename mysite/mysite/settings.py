@@ -23,7 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g%q4p@jgu_8nl(ue1at483&dm-%45871@l#ilb*&mu2o2lla+)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 #ALLOWED_HOSTS = ['nucp.norhi.ca', 'www.nucp.norhi.ca', 'localhost', '127.0.0.1', '192.168.2.153']
 ALLOWED_HOSTS = ['u1.isnord.ca', 'localhost', '127.0.0.1']
