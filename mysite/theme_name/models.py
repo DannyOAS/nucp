@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from django.db.models import SET_NULL
 
 class ContactMessage(models.Model):
     name = models.CharField(max_length=255)
@@ -15,6 +15,7 @@ class ContactMessage(models.Model):
         ordering = ['-created_at']
 
 class PatientRegistration(models.Model):
+    """Patient registration model"""
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     primary_phone = models.CharField(max_length=20)
@@ -22,24 +23,30 @@ class PatientRegistration(models.Model):
     email = models.EmailField()
     date_of_birth = models.DateField()
     address = models.TextField()
-    ohip_number = models.CharField(max_length=12)
+    ohip_number = models.CharField(max_length=10)
     current_medications = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
-    supplements = models.TextField(blank=True)
-    pharmacy_details = models.CharField(max_length=200, blank=True)
+    pharmacy_details = models.TextField(blank=True)
     emergency_contact_name = models.CharField(max_length=100)
     emergency_contact_phone = models.CharField(max_length=20)
     emergency_contact_alternate_phone = models.CharField(max_length=20, blank=True)
-    virtual_care_consent = models.BooleanField()
-    ehr_consent = models.BooleanField()
+    virtual_care_consent = models.BooleanField(default=False)
+    ehr_consent = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
-    erpnext_id = models.CharField(max_length=255, null=True, blank=True)
-
+    supplements = models.TextField(blank=True)
+    erpnext_id = models.CharField(max_length=50, blank=True)
+    
+    # Add provider field
+    provider = models.ForeignKey(
+        'provider.Provider', 
+        on_delete=SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='patients'
+    )
+    
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
-    
-    class Meta:
-        ordering = ['-created_at']
 
 class DemoRequest(models.Model):
     name = models.CharField(max_length=100)

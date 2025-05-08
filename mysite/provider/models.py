@@ -1,6 +1,49 @@
 from django.db import models
 from django.contrib.auth.models import User
-from common.models import Appointment, Prescription, Message  # Import shared models
+from common.models import Appointment, Prescription, Message
+
+class Provider(models.Model):
+    """Model for healthcare providers"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='provider_profile')
+    license_number = models.CharField(max_length=50, unique=True)
+    specialty = models.CharField(max_length=100)
+    bio = models.TextField(blank=True)
+    phone = models.CharField(max_length=20, blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"Dr. {self.user.last_name}"
+    
+    @property
+    def full_name(self):
+        return f"{self.user.first_name} {self.user.last_name}"
+    
+    def get_appointments(self, start_date=None, end_date=None, view_type='week'):
+        """Get provider appointments, optionally filtered by date range"""
+        appointments = Appointment.objects.filter(doctor=self)
+        if start_date:
+            appointments = appointments.filter(time__gte=start_date)
+        if end_date:
+            appointments = appointments.filter(time__lte=end_date)
+        return appointments.order_by('time')
+    
+    def get_patients(self):
+        """Get all patients associated with this provider"""
+        from theme_name.models import PatientRegistration
+        
+        # Check if provider field exists in PatientRegistration
+        if hasattr(PatientRegistration, 'provider'):
+            # Use the provider field if it exists
+            return PatientRegistration.objects.filter(provider=self)
+        else:
+            # Alternative approach: Get patients from appointments
+            from common.models import Appointment
+            patient_ids = Appointment.objects.filter(doctor=self).values_list('patient_id', flat=True).distinct()
+            return PatientRegistration.objects.filter(id__in=patient_ids)
+    
+    def get_prescription_requests(self):
+        """Get pending prescription requests for this provider"""
+        return Prescription.objects.filter(doctor=self, status='Pending')
 
 class RecordingSession(models.Model):
     """Model to store recording sessions for AI transcription"""
@@ -12,6 +55,7 @@ class RecordingSession(models.Model):
     ]
     
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='recordings')
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='recordings')
     jitsi_recording_id = models.CharField(max_length=255, blank=True, null=True)
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
@@ -36,6 +80,7 @@ class ClinicalNote(models.Model):
     ]
     
     appointment = models.ForeignKey(Appointment, on_delete=models.CASCADE, related_name='clinical_notes')
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name='clinical_notes')
     transcription = models.ForeignKey(RecordingSession, on_delete=models.SET_NULL, null=True, blank=True)
     ai_generated_text = models.TextField(blank=True)
     provider_edited_text = models.TextField(blank=True)
@@ -92,6 +137,7 @@ class GeneratedDocument(models.Model):
     ]
     
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name="patient_documents")
+    provider = models.ForeignKey(Provider, on_delete=models.CASCADE, related_name="generated_documents")
     template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE)
     document_data = models.TextField()  # JSON containing filled form data
     rendered_content = models.TextField(blank=True)  # The final HTML/text content

@@ -3,27 +3,65 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 
 class Appointment(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='appointments')
-    doctor = models.CharField(max_length=100)
-    time = models.DateTimeField()
-    type = models.CharField(max_length=50)  # e.g., "Virtual", "Clinic Visit"
-
-    def __str__(self):
-        return f"{self.patient} with {self.doctor} on {self.time}"
+    """Model for appointments between patients and providers"""
+    STATUS_CHOICES = [
+        ('Scheduled', 'Scheduled'),
+        ('Checked In', 'Checked In'),
+        ('In Progress', 'In Progress'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
+        ('No Show', 'No Show'),
+    ]
     
-    class Meta:
-        ordering = ['time']
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_appointments')
+    doctor = models.ForeignKey('provider.Provider', on_delete=models.CASCADE, related_name='doctor_appointments')
+    time = models.DateTimeField()
+    type = models.CharField(max_length=50, choices=[('Virtual', 'Virtual'), ('In-Person', 'In-Person')], default='In-Person')
+    # Add status field
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Scheduled')
+    
+    def __str__(self):
+        return f"Appointment {self.id}: {self.patient} with {self.doctor} at {self.time}"
+    
+    def get_status_display(self):
+        """Return the display value for the status"""
+        for key, value in self.STATUS_CHOICES:
+            if key == self.status:
+                return value
+        return self.status
 
 class Prescription(models.Model):
-    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prescriptions')
-    name = models.CharField(max_length=100)
-    dose = models.CharField(max_length=100)
-
-    def __str__(self):
-        return f"{self.name} - {self.dose}"
+    STATUS_CHOICES = [
+        ('Pending', 'Pending'),
+        ('Active', 'Active'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
+        ('Expired', 'Expired'),
+        ('Refill Requested', 'Refill Requested'),
+    ]
     
-    class Meta:
-        ordering = ['name']
+    name = models.CharField(max_length=255)
+    dose = models.CharField(max_length=100)
+    patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prescriptions')
+    doctor = models.ForeignKey('provider.Provider', on_delete=models.CASCADE, related_name='prescriptions')
+    
+    # Add these fields
+    status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    notes = models.TextField(blank=True)
+    refills = models.PositiveIntegerField(default=0)
+    refills_remaining = models.PositiveIntegerField(default=0)
+    
+    def __str__(self):
+        return f"{self.name} - {self.dose} for {self.patient.get_full_name()}"
+    
+    def save(self, *args, **kwargs):
+        # Set refills_remaining equal to refills on creation
+        if not self.id and self.refills_remaining == 0:
+            self.refills_remaining = self.refills
+        super().save(*args, **kwargs)
+
 
 class Message(models.Model):
     """Model for messages between patients and providers"""
