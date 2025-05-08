@@ -1,0 +1,177 @@
+{% extends "patient/base.html" %}
+{% block title %}Patient Dashboard - Northern Health Innovations{% endblock %}
+
+{% block content %}
+<main class="p-4">
+  <!-- Page header -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Patient Dashboard</h1>
+      <p class="text-gray-600">Manage your health information and appointments</p>
+    </div>
+  </div>
+
+  <!-- Welcome alert -->
+  <div class="bg-blue-100 text-blue-700 px-6 py-4 rounded-lg relative mb-6">
+    <div>
+      <strong class="font-bold">Welcome, {{ patient_name|default:"Patient" }}!</strong>
+      <span class="block sm:inline"> You have 2 upcoming appointments scheduled.</span>
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Health Overview</h2>
+    <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      New Appointment
+    </button>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <!-- Upcoming Appointments -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex flex-wrap items-center">
+        <div class="p-2 md:p-3 rounded-full bg-blue-200 bg-opacity-75 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <div class="ml-3 md:ml-4 min-w-0 flex-1">
+          <h3 class="text-xs md:text-sm text-gray-500 truncate">Upcoming Appointments</h3>
+          <p class="text-xl md:text-2xl font-semibold text-gray-800">2</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Prescriptions -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex flex-wrap items-center">
+        <div class="p-2 md:p-3 rounded-full bg-green-200 bg-opacity-75 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+          </svg>
+        </div>
+        <div class="ml-3 md:ml-4 min-w-0 flex-1">
+          <h3 class="text-xs md:text-sm text-gray-500 truncate">Active Prescriptions</h3>
+          <p class="text-xl md:text-2xl font-semibold text-gray-800">3</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex flex-wrap items-center">
+        <div class="p-2 md:p-3 rounded-full bg-purple-200 bg-opacity-75 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-purple-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="ml-3 md:ml-4 min-w-0 flex-1">
+          <h3 class="text-xs md:text-sm text-gray-500 truncate">Unread Messages</h3>
+          <p class="text-xl md:text-2xl font-semibold text-gray-800">5</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health Metrics -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex flex-wrap items-center">
+        <div class="p-2 md:p-3 rounded-full bg-yellow-200 bg-opacity-75 flex-shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 md:h-8 md:w-8 text-yellow-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+          </svg>
+        </div>
+        <div class="ml-3 md:ml-4 min-w-0 flex-1">
+          <h3 class="text-xs md:text-sm text-gray-500 truncate">Health Metrics</h3>
+          <p class="text-xl md:text-2xl font-semibold text-gray-800">4</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card layout - cleaned version -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-20">
+    <!-- Appointments -->
+    <div class="bg-white p-6 rounded-xl shadow max-h-80 overflow-y-auto">
+      <h3 class="text-xl font-semibold text-[#004d40] mb-4">📅 Your Appointments</h3>
+      {% if appointments %}
+        <ul class="space-y-2 text-gray-700">
+          {% for appt in appointments %}
+            <li><strong>{{ appt.doctor }}</strong> – {{ appt.time }} ({{ appt.type }})</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <!-- Fallback appointments if none are provided -->
+        <ul class="space-y-2 text-gray-700">
+          <li><strong>Dr. Johnson</strong> – Apr 3, 2025 - 10:00 AM (In-Person)</li>
+          <li><strong>Dr. Smith</strong> – Apr 10, 2025 - 2:30 PM (Virtual)</li>
+        </ul>
+      {% endif %}
+      <div class="mt-4">
+        <!--<a href="#" class="text-[#004d40] hover:underline font-semibold">View all appointments →</a>-->
+        <a href="{% url 'patient:patient_appointments' %}" class="text-[#004d40] hover:underline font-semibold">View all appointments →</a>
+      </div>
+    </div>
+
+    <!-- Prescriptions -->
+    <div class="bg-white p-6 rounded-xl shadow max-h-80 overflow-y-auto">
+      <h3 class="text-xl font-semibold text-[#004d40] mb-4">💊 Current Prescriptions</h3>
+      {% if prescriptions %}
+        <ul class="space-y-2 text-gray-700">
+          {% for rx in prescriptions %}
+            <li><strong>{{ rx.medication_name }}</strong> – {{ rx.dosage }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <!-- Fallback prescriptions -->
+        <ul class="space-y-2 text-gray-700">
+          <li><strong>Amoxicillin</strong> – 500mg, 3 times daily for 10 days</li>
+          <li><strong>Lisinopril</strong> – 10mg, once daily</li>
+          <li><strong>Metformin</strong> – 500mg, twice daily with meals</li>
+        </ul>
+      {% endif %}
+      <div class="mt-4">
+        <a href="{% url 'patient:patient_prescriptions' %}" class="text-[#004d40] hover:underline font-semibold">Manage prescriptions →</a>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="bg-white p-6 rounded-xl shadow max-h-80 overflow-y-auto">
+      <h3 class="text-xl font-semibold text-[#004d40] mb-4">📨 Recent Messages</h3>
+      {% if messages %}
+        {% for msg in messages %}
+          <p class="text-gray-700 mb-2"><strong>{{ msg.sender }}:</strong> "{{ msg.content }}"</p>
+        {% endfor %}
+      {% else %}
+        <!-- Fallback messages -->
+        <p class="text-gray-700 mb-2"><strong>Dr. Johnson:</strong> "Your latest test results look good. We'll discuss them at your next appointment."</p>
+        <p class="text-gray-700 mb-2"><strong>Nurse Williams:</strong> "Please remember to fast for 12 hours before your blood test on Friday."</p>
+      {% endif %}
+      <div class="mt-4">
+        <a href="#" class="text-[#004d40] hover:underline font-semibold">Reply →</a>
+      </div>
+    </div>
+
+    <!-- Health Summary -->
+    <div class="bg-white p-6 rounded-xl shadow max-h-80 overflow-y-auto">
+      <h3 class="text-xl font-semibold text-[#004d40] mb-4">📄 Health Summary</h3>
+      <p class="text-gray-700">Last updated: March 26, 2025</p>
+      <div class="mt-4 space-y-2">
+        <p class="text-gray-600">Blood Pressure: 120/80 mmHg</p>
+        <p class="text-gray-600">Heart Rate: 72 bpm</p>
+        <p class="text-gray-600">Weight: 160 lbs</p>
+        <p class="text-gray-600">Temperature: 98.6°F</p>
+      </div>
+      <div class="mt-4">
+        <a href="#" class="text-[#004d40] hover:underline font-semibold">View full health record →</a>
+      </div>
+    </div>
+  </div>
+</main>
+{% endblock %}

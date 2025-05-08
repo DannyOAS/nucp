@@ -29,10 +29,11 @@
     <nav class="bg-white shadow-md border-b border-gray-300">
         <div class="container mx-auto px-4 py-3 flex justify-between items-center">
             <!-- Left side - NUCP Login -->
-            <a href="https://u1.isnord.ca/auth" target="_blank" rel="noopener noreferrer"
+            <a href="https://auth.norhi.ca" target="_blank" rel="noopener noreferrer"
                 class="bg-[#004d40] text-white font-bold py-2 px-4 rounded-lg hover:bg-[#00332e] transition duration-300">
                   NUCP<sup>™</sup> Platform
             </a>
+            
             <!-- Center/Right side -->
             <div class="hidden md:flex items-center space-x-6">
                 <!-- Main Navigation-->
@@ -40,48 +41,10 @@
                 <a href="{% url 'about' %}" class="text-gray-700 hover:text-[#004d40] px-4">About</a>
                 <a href="{% url 'contact' %}" class="text-gray-700 hover:text-[#004d40] px-4">Contact</a>
                 <a href="{% url 'register_selection' %}" class="text-xl text-[#004d40] font-bold px-4">Register</a>
+            </div>
 
-                <!-- Patient Portal Dropdown 
-                <div class="relative">
-                    <button type="button"
-                            onclick="toggleDropdown('patientDropdown', event)"
-                            class="text-gray-700 hover:text-[#004d40] px-4 flex items-center">
-                        Patient Portal
-                    </button>
-                    <!-- Dropdown menu 
-                    <div id="patientDropdown"
-                         class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden z-50">
-                        <a href="{% url 'register_selection' %}"
-                           class="dropdown-item block px-4 py-2 text-gray-700 rounded-t-lg">
-                            Register
-                        </a>
-                        <a href="{% url 'patient_dashboard' %}"
-                           class="dropdown-item block px-4 py-2 text-gray-700 rounded-b-lg">
-                            Login
-                        </a>
-                    </div>
-                </div>
-
-                <!-- Provider Portal Dropdown 
-                <div class="relative">
-                    <button type="button"
-                            onclick="toggleDropdown('providerDropdown', event)"
-                            class="text-gray-700 hover:text-[#004d40] px-4 flex items-center">
-                        Provider Portal
-                    </button>
-                    <!-- Dropdown menu 
-                    <div id="providerDropdown"
-                         class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg hidden z-50">
-                        <a href="{% url 'provider_dashboard' %}"
-                           class="dropdown-item block px-4 py-2 text-gray-700 rounded-lg">
-                            Login
-                        </a>
-                    </div>
-                </div>
-            </div>-->
-
-            <!-- Mobile Menu Button - ONLY HERE -->
-            <button id="menu-toggle" class="block md:hidden focus:outline-none">
+            <!-- Mobile Menu Button -->
+            <button id="menu-toggle" class="md:hidden focus:outline-none">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                      xmlns="http://www.w3.org/2000/svg">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -90,13 +53,15 @@
             </button>
         </div>
 
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white shadow-md px-4 py-3">
-           
-            <a href="{% url 'home' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">Home</a>
-            <a href="{% url 'about' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">About</a>
-            <a href="{% url 'contact' %}" class="block py-2 text-gray-700 hover:text-[#004d40]">Contact</a>
-            <a href="{% url 'register_selection' %}" class="text-xl text-[#004d40] font-bold px-4">Register</a>
+        <!-- Mobile Menu with Right Alignment -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white px-4 pb-4">
+            <!-- Mobile menu container with right alignment -->
+            <div class="flex flex-col items-end">
+                <a href="{% url 'home' %}" class="py-2 text-gray-700 hover:text-[#004d40] text-right">Home</a>
+                <a href="{% url 'about' %}" class="py-2 text-gray-700 hover:text-[#004d40] text-right">About</a>
+                <a href="{% url 'contact' %}" class="py-2 text-gray-700 hover:text-[#004d40] text-right">Contact</a>
+                <a href="{% url 'register_selection' %}" class="py-2 text-xl text-[#004d40] font-bold text-right">Register</a>
+            </div>
         </div>
     </nav>
        
@@ -105,17 +70,6 @@
     <main class="container mx-auto my-6 px-4">
         {% block content %}{% endblock %}
     </main>
-
-    <!-- Footer -->
-<!--    <footer class="bg-white shadow-md py-6 mt-12">-->
-<!--        <div class="container mx-auto text-center">-->
-<!--            <p class="text-gray-600">&copy; 2025 Northern Health Innovations Inc. All rights reserved.</p>-->
-<!--            <p class="text-gray-600 mt-1">5600-100 King Street West, Toronto, ON, M5X 1A9</p>-->
-<!--            <p class="text-gray-600 mt-1">-->
-<!--                Email: <a href="mailto:info@norhi.ca" class="text-[#004d40] hover:underline">info@norhi.ca</a>-->
-<!--            </p>-->
-<!--        </div>-->
-<!--    </footer>-->
 
     <!-- Footer -->
     <footer class="bg-white shadow-md py-6 mt-12">
@@ -138,55 +92,33 @@
   
     <!-- JavaScript for Mobile Menu Toggle -->
     <script>
-        // Define currentDropdown in global scope
-        let currentDropdown = null;
-
         document.addEventListener("DOMContentLoaded", function () {
-            // Mobile menu elements
             const menuToggle = document.getElementById("menu-toggle");
             const mobileMenu = document.getElementById("mobile-menu");
 
-            // Mobile menu functionality
+            // Ensure mobile menu is initially hidden on large screens
+            function checkScreenSize() {
+                if (window.innerWidth >= 768) { // md breakpoint
+                    mobileMenu.classList.add("hidden");
+                }
+            }
+
+            // Check screen size on load and resize
+            checkScreenSize();
+            window.addEventListener('resize', checkScreenSize);
+
+            // Toggle mobile menu
             menuToggle.addEventListener("click", function () {
                 mobileMenu.classList.toggle("hidden");
             });
 
-            // Close dropdown when clicking outside
+            // Optional: Close menu when clicking outside
             document.addEventListener('click', function(event) {
-                // If clicking outside of dropdown container
-                if (!event.target.closest('.relative') && 
-                    !event.target.matches('button[onclick^="toggleDropdown"]')) {
-                    // Close all dropdowns
-                    const dropdowns = document.querySelectorAll('[id$="Dropdown"]');
-                    dropdowns.forEach(dropdown => {
-                        dropdown.classList.add('hidden');
-                    });
-                    currentDropdown = null;
+                if (!menuToggle.contains(event.target) && !mobileMenu.contains(event.target)) {
+                    mobileMenu.classList.add('hidden');
                 }
             });
         });
-
-        // Global toggle dropdown function
-        function toggleDropdown(dropdownId, event) {
-            // Prevent default behavior and stop propagation
-            if (event) {
-                event.preventDefault();
-                event.stopPropagation();
-            }
-            
-            const dropdown = document.getElementById(dropdownId);
-            
-            // If there's an open dropdown and it's not the one we're clicking
-            if (currentDropdown && currentDropdown !== dropdown) {
-                currentDropdown.classList.add('hidden');
-            }
-            
-            // Toggle the clicked dropdown
-            dropdown.classList.toggle('hidden');
-            
-            // Update current dropdown reference
-            currentDropdown = dropdown.classList.contains('hidden') ? null : dropdown;
-        }
     </script>
 </body>
 </html>

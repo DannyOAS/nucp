@@ -1,3 +1,4 @@
+import os
 """
 Django settings for mysite project.
 
@@ -23,9 +24,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g%q4p@jgu_8nl(ue1at483&dm-%45871@l#ilb*&mu2o2lla+)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
-#ALLOWED_HOSTS = ['nucp.norhi.ca', 'www.nucp.norhi.ca', 'localhost', '127.0.0.1', '192.168.2.153']
+
 ALLOWED_HOSTS = ['u1.isnord.ca', 'localhost', '127.0.0.1']
 
 # Application definition
@@ -37,9 +38,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Your apps
+    'theme_name',
+    'common',
+    'patient',
+    'provider',
+    'admin_portal',
     "tailwind",
-    "theme_name",
     "phonenumber_field",
+#    "rest_framework",
 
 ]
 
@@ -61,7 +69,10 @@ ROOT_URLCONF = 'mysite.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'theme_name' / 'templates'],
+        'DIRS': [
+                BASE_DIR / 'theme_name' / 'templates',
+                BASE_DIR / 'templates',
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -118,8 +129,6 @@ AUTH_PASSWORD_VALIDATORS = [
 #SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None'
 #CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF token
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
 
 LANGUAGE_CODE = 'en-us'
 
@@ -134,7 +143,6 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 # Static files (CSS, JavaScript, Images)
-import os
 
 STATIC_URL = "/static/"
 

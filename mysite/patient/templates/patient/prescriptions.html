@@ -1,0 +1,197 @@
+{% extends "patient/base.html" %}
+{% block title %}Prescriptions{% endblock %}
+{% block content %}
+  <!-- Your prescriptions content here -->
+<main class="p-4">
+  <!-- Page header with action button -->
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">Prescriptions</h1>
+      <p class="text-gray-600">Manage your current medications and refills</p>
+    </div>
+    <!-- <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Request New Prescription
+    </button>-->
+    <a href="{% url 'patient:request_prescription' %}" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      Request New Prescription
+    </a>
+  </div>
+
+  <!-- Prescription stats -->
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Active Prescriptions</h3>
+          <p class="text-2xl font-semibold text-gray-800">3</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Renewals Needed</h3>
+          <p class="text-2xl font-semibold text-gray-800">1</p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="bg-white p-4 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Pharmacy</h3>
+          <p class="text-md font-semibold text-gray-800">Northern Pharmacy</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Active Prescriptions Section -->
+  <div class="mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Active Prescriptions</h2>
+    
+  <!-- Prescription Cards -->
+  <div class="grid grid-cols-1 gap-4">
+    {% for prescription in active_prescriptions %}
+      <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex flex-col md:flex-row justify-between gap-4">
+          <div class="flex-1">
+            <div class="flex items-center mb-2">
+              <span class="text-xl font-semibold text-gray-800">{{ prescription.medication_name }}</span>
+              <span class="ml-2 px-2 py-1 bg-{% if prescription.status == 'Active' %}green{% elif prescription.status == 'Renewal Soon' %}yellow{% else %}gray{% endif %}-100 text-{% if prescription.status == 'Active' %}green{% elif prescription.status == 'Renewal Soon' %}yellow{% else %}gray{% endif %}-800 text-xs font-semibold rounded">
+               {{ prescription.status }}
+              </span>
+            </div>
+            <p class="text-gray-600 mb-1"><span class="font-medium">Dosage:</span> {{ prescription.dosage }}</p>
+            <p class="text-gray-600 mb-1"><span class="font-medium">Prescribed by:</span> {{ prescription.prescribed_by }}</p>
+            <p class="text-gray-600 mb-1"><span class="font-medium">Prescribed:</span> {{ prescription.prescribed_date }}</p>
+            <p class="text-gray-600 mb-4"><span class="font-medium">Refills remaining:</span> {{ prescription.refills_remaining }}</p>
+            
+            <div class="flex flex-wrap gap-2">
+              {% if prescription.refills_remaining > 0 %} 
+              <a href="{% url 'patient:request_refill' prescription.id %}" class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium inline-block">Request Refill</a>
+              {% endif %}
+              <a href="{% url 'patient:prescription_detail' prescription.id %}" class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">View Details</a>
+            </div>
+          </div>
+          <div class="flex items-start justify-end">
+            <div class="bg-gray-100 p-3 rounded-lg">
+              <p class="text-sm text-gray-600">{{ prescription.instructions }}</p>
+              <p class="text-sm text-gray-600">{{ prescription.expires }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- Prescription History Section -->
+  <div class="mb-8">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-bold text-gray-800">Prescription History</h2>
+      <button class="text-[#004d40] hover:underline font-medium">View All</button>
+    </div>
+    
+    <div class="bg-white shadow overflow-hidden rounded-lg">
+      <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+          <thead class="bg-gray-50">
+            <tr>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dosage</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Prescribed</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End Date</th>
+              <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+            </tr>
+          </thead>
+          <tbody class="bg-white divide-y divide-gray-200">
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Ibuprofen</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">800mg, as needed</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Jan 15, 2025</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Feb 15, 2025</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                  Completed
+                </span>
+              </td>
+            </tr>
+            <tr>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm font-medium text-gray-900">Azithromycin</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">500mg, daily for 3 days</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Dec 10, 2024</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">Dec 13, 2024</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
+                  Completed
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Pharmacy Section -->
+  <div class="bg-white p-6 rounded-xl shadow mb-8">
+    <h2 class="text-xl font-bold text-gray-800 mb-4">Pharmacy Information</h2>
+    
+    <div class="flex flex-col md:flex-row justify-between gap-6">
+      <div>
+        <h3 class="font-medium text-gray-800 mb-2">Default Pharmacy</h3>
+        <p class="text-gray-600">Northern Pharmacy</p>
+        <p class="text-gray-600">123 Health Street</p>
+        <p class="text-gray-600">Anytown, ST 12345</p>
+        <p class="text-gray-600">Phone: (555) 123-4567</p>
+        <button class="mt-4 text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium">Change Pharmacy</button>
+      </div>
+      
+      <div class="bg-gray-50 p-4 rounded-lg">
+        <h3 class="font-medium text-gray-800 mb-2">Prescription Delivery</h3>
+        <p class="text-gray-600 mb-2">Home delivery available for eligible prescriptions.</p>
+        <button class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium">Setup Delivery</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+{% endblock %}

@@ -1,6 +1,8 @@
 from django import forms
 from django.core.validators import FileExtensionValidator
-from .models import ContactMessage, PatientRegistration, PrescriptionRequest, Appointment, Message, DemoRequest
+from .models import ContactMessage, PatientRegistration, DemoRequest
+from patient.models import PrescriptionRequest
+from common.models import Appointment, Message
 from datetime import date, timedelta
 
 class ContactForm(forms.ModelForm):

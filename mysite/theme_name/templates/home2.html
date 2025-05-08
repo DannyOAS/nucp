@@ -327,7 +327,7 @@
                       <div class="w-2 h-2 rounded-full bg-green-500"></div>
                       <div class="w-2 h-2 rounded-full bg-green-500"></div>
                     </div>
-                    <div class="text-xs text-gray-400">Server Cluster 1</div>
+<!--                    <div class="text-xs text-gray-400">Server Cluster 1</div>-->
                   </div>
                   <div class="mt-2 grid grid-cols-3 gap-2">
                     <div class="bg-gray-700 h-4 rounded"></div>
@@ -343,7 +343,7 @@
                       <div class="w-2 h-2 rounded-full bg-green-500"></div>
                       <div class="w-2 h-2 rounded-full bg-green-500"></div>
                     </div>
-                    <div class="text-xs text-gray-400">Server Cluster 2</div>
+<!--                    <div class="text-xs text-gray-400">Server Cluster 2</div>-->
                   </div>
                   <div class="mt-2 grid grid-cols-3 gap-2">
                     <div class="bg-gray-700 h-4 rounded"></div>
@@ -359,7 +359,7 @@
                       <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
                       <div class="w-2 h-2 rounded-full bg-yellow-500"></div>
                     </div>
-                    <div class="text-xs text-gray-400">Server Cluster 3 (Implementing)</div>
+<!--                    <div class="text-xs text-gray-400">Server Cluster 3 (Implementing)</div>-->
                   </div>
                   <div class="mt-2 grid grid-cols-3 gap-2">
                     <div class="bg-gray-700 h-4 rounded"></div>
@@ -374,7 +374,7 @@
                       <div class="w-2 h-2 rounded-full bg-green-500"></div>
                       <div class="w-2 h-2 rounded-full bg-green-500"></div>
                     </div>
-                    <div class="text-xs text-gray-400">Core Network Infrastructure</div>
+<!--                    <div class="text-xs text-gray-400">Core Network Infrastructure</div>-->
                   </div>
                   <div class="mt-2 grid grid-cols-2 gap-2">
                     <div class="bg-gray-700 h-4 rounded"></div>
@@ -788,7 +788,8 @@ document.addEventListener('DOMContentLoaded', function() {
           method: 'POST',
           body: formData,
           headers: {
-              'X-Requested-With': 'XMLHttpRequest'
+              'X-Requested-With': 'XMLHttpRequest',
+              'X-CSRFToken': csrftoken  // Add CSRF token to headers
           }
       })
       .then(response => {
@@ -803,16 +804,22 @@ document.addEventListener('DOMContentLoaded', function() {
               demoFormContainer.classList.add('hidden');
               formSuccessMessage.classList.remove('hidden');
           } else {
-              // Show errors
-              console.log("Form validation errors:", data.errors);
-              for(const field in data.errors) {
-                  const fieldElement = form.querySelector(`[name="${field}"]`);
-                  if(fieldElement) {
-                      const errorEl = fieldElement.nextElementSibling;
-                      if(errorEl) {
-                          errorEl.textContent = data.errors[field][0];
+              // Show errors (form validation errors)
+              if(data.errors) {
+                  console.log("Form validation errors:", data.errors);
+                  for(const field in data.errors) {
+                      const fieldElement = form.querySelector(`[name="${field}"]`);
+                      if(fieldElement) {
+                          const errorEl = fieldElement.nextElementSibling;
+                          if(errorEl) {
+                              errorEl.textContent = data.errors[field][0];
+                          }
                       }
                   }
+              }
+              // Show general error message if any
+              if(data.error) {
+                  alert(data.error);
               }
           }
       })
@@ -871,4 +878,5 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 </script>
+
 {% endblock %}

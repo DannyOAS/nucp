@@ -1,0 +1,10 @@
+<!-- emails/demo_request.txt -->
+New Demo Request
+
+Name: {{ request.name }}
+Email: {{ request.email }}
+Organization: {{ request.organization }}
+User Type: {{ request.get_user_type_display }}
+Preferred Date: {{ request.preferred_date }}
+Preferred Time: {{ request.get_preferred_time_display }}
+Message: {{ request.message|default:"No message provided" }}

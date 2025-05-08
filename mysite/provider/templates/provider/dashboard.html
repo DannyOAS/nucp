@@ -1,0 +1,286 @@
+{% extends "provider/base.html" %}
+{% block title %}Provider Dashboard - Northern Health Innovations{% endblock %}
+{% block content %}
+  <!-- Welcome alert -->
+  <div class="bg-green-100 text-green-700 px-6 py-4 rounded-lg relative mb-5 mt-0">
+    <div>
+      <strong class="font-bold">Welcome, {{ provider_name|default:"Dr. Provider" }}!</strong>
+      <span class="block sm:inline"> You have {{ stats.today_appointments }} upcoming appointments today.</span>
+    </div>
+  </div>
+
+  <div class="flex justify-between items-center mb-6">
+    <h2 class="text-xl font-bold text-gray-800">Practice Overview</h2>
+    <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+      </svg>
+      New Appointment
+    </button>
+  </div>
+
+  <!-- Stats grid -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <!-- Today's Appointments -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-blue-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-blue-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Today's Appointments</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.today_appointments }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Active Patients -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-green-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Active Patients</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.active_patients }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Pending Prescriptions -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-yellow-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-yellow-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Pending Prescriptions</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.pending_prescriptions }}</p>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Unread Messages -->
+    <div class="bg-white p-4 md:p-6 rounded-xl shadow">
+      <div class="flex items-center">
+        <div class="p-3 rounded-full bg-purple-200 bg-opacity-75">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </div>
+        <div class="ml-4">
+          <h3 class="text-sm text-gray-500">Unread Messages</h3>
+          <p class="text-2xl font-semibold text-gray-800">{{ stats.unread_messages }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Grid -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+    <!-- First Column - Upcoming Appointments -->
+    <div class="col-span-1 lg:col-span-2">
+      <!-- Today's Schedule -->
+      <div class="bg-white p-6 rounded-xl shadow mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-[#004d40]">Today's Schedule</h3>
+          <a href="{% url 'provider:provider_appointments' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+        </div>
+        
+        <div class="space-y-4">
+          {% for appointment in appointments %}
+            {% with app_date=appointment.time|date:"Y-m-d" today_date=today|date:"Y-m-d" %}
+              {% if app_date == today_date %}
+                <!-- Appointment Item -->
+                <div class="flex border-l-4 {% if appointment.type == 'Virtual' %}border-green-500{% else %}border-blue-500{% endif %} pl-3">
+                  <div class="w-16 flex-shrink-0">
+                    <p class="text-sm font-medium text-gray-500">{{ appointment.time|slice:"11:" }}</p>
+                  </div>
+                  <div class="flex-1">
+                    <p class="font-medium text-gray-800">{{ appointment.patient_name }}</p>
+                    <p class="text-sm text-gray-500">{{ appointment.reason }} - <span class="{% if appointment.type == 'Virtual' %}text-green-600{% else %}text-blue-600{% endif %}">{{ appointment.type }}</span></p>
+                  </div>
+                  <div class="flex items-center">
+                    <button class="text-gray-400 hover:text-gray-600 ml-2">
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              {% endif %}
+            {% endwith %}
+          {% empty %}
+            <p class="text-gray-500 text-center py-4">No appointments scheduled for today.</p>
+          {% endfor %}
+        </div>
+      </div>
+      
+      <!-- Recent Patients -->
+      <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-[#004d40]">Recent Patients</h3>
+          <a href="{% url 'provider:provider_patients' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+        </div>
+        
+        <div class="space-y-4">
+          {% for patient in patients|slice:":4" %}
+            <div class="flex items-center p-2 hover:bg-gray-50 rounded-lg">
+              <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center mr-3">
+                <span class="text-gray-600 font-medium">{{ patient.first_name|first }}{{ patient.last_name|first }}</span>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">{{ patient.first_name }} {{ patient.last_name }}</p>
+                <p class="text-sm text-gray-500">Last visit: {{ patient.last_visit }}</p>
+              </div>
+              <button class="text-[#004d40] hover:bg-[#edf7f5] p-2 rounded-full">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            </div>
+          {% empty %}
+            <p class="text-gray-500 text-center py-4">No recent patients found.</p>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    
+    <!-- Middle Section - Prescription Requests & AI Scribe -->
+    <div class="col-span-1 lg:col-span-3">
+      <!-- AI Scribe Integration Placeholder -->
+      {% if ai_scribe_data.enabled %}
+      <div class="bg-white p-6 rounded-xl shadow mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-[#004d40]">AI Scribe</h3>
+          <a href="{% url 'provider:ai_scribe_dashboard' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+        </div>
+        
+        {% if ai_scribe_data.recent_recordings %}
+        <div class="space-y-3">
+          {% for recording in ai_scribe_data.recent_recordings|slice:":2" %}
+          <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+            <div class="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+              </svg>
+            </div>
+            <div class="flex-1">
+              <p class="font-medium text-gray-800">{{ recording.patient_name }}</p>
+              <p class="text-sm text-gray-500">{{ recording.appointment_type }} - {{ recording.date }}</p>
+            </div>
+            <span class="px-2 py-1 text-xs rounded-full {% if recording.status == 'Completed' %}bg-green-100 text-green-800{% else %}bg-blue-100 text-blue-800{% endif %}">{{ recording.status }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-gray-500 text-center py-4">No recent recordings found.</p>
+        {% endif %}
+      </div>
+      {% endif %}
+      
+      <!-- Prescription Requests -->
+      <div class="bg-white p-6 rounded-xl shadow mb-6">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-[#004d40]">Pending Prescription Requests</h3>
+          <a href="{% url 'provider:provider_prescriptions' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+        </div>
+        
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Patient</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Medication</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {% for req in prescription_requests|slice:":3" %}
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{{ req.patient_name }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ req.medication_name }}</div>
+                    <div class="text-sm text-gray-500">{{ req.current_dosage }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ req.requested_date }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Approve</a>
+                    <a href="#" class="text-red-600 hover:text-red-900">Deny</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4" class="px-6 py-4 text-center text-sm text-gray-500">
+                    No pending prescription requests.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <!-- Forms & Templates Section -->
+      {% if forms_templates_data.enabled %}
+      <div class="bg-white p-6 rounded-xl shadow">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold text-[#004d40]">Forms & Templates</h3>
+          <a href="{% url 'provider:forms_dashboard' %}" class="text-[#004d40] hover:underline text-sm">View All</a>
+        </div>
+        
+        <div class="space-y-3">
+          {% if forms_templates_data.recent_documents %}
+            {% for doc in forms_templates_data.recent_documents|slice:":2" %}
+            <div class="flex items-center p-3 bg-gray-50 rounded-lg">
+              <div class="h-10 w-10 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div class="flex-1">
+                <p class="font-medium text-gray-800">{{ doc.type }}</p>
+                <p class="text-sm text-gray-500">{{ doc.patient_name }} - {{ doc.created_date }}</p>
+              </div>
+              <span class="px-2 py-1 text-xs rounded-full {% if doc.status == 'Completed' %}bg-green-100 text-green-800{% else %}bg-yellow-100 text-yellow-800{% endif %}">{{ doc.status }}</span>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {% for template in forms_templates_data.templates|slice:":4" %}
+              <div class="border border-gray-200 rounded-lg p-3 hover:border-[#004d40] transition-colors duration-200">
+                <h4 class="font-medium text-gray-800">{{ template.name }}</h4>
+                <p class="text-xs text-gray-500 mt-1">{{ template.description|truncatechars:60 }}</p>
+                <div class="mt-2 flex justify-end">
+                  <a href="#" class="text-[#004d40] hover:text-[#00332e] text-sm">Use →</a>
+                </div>
+              </div>
+              {% empty %}
+              <p class="text-gray-500 text-center py-4 col-span-2">No templates available.</p>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}
