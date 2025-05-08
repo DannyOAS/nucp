@@ -1,8 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from theme_name.repositories import PatientRepository, PrescriptionRepository
-from common.services import PrescriptionService
-from theme_name.forms import PrescriptionRequestForm
+from provider.services import PrescriptionService
+from patient.forms import PrescriptionRequestForm
 
 def patient_prescriptions(request):
     """Patient prescriptions view"""

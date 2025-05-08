@@ -5,8 +5,9 @@ from django.http import JsonResponse
 from django.template.loader import render_to_string
 from ..forms import (
     PatientRegistrationForm, ProviderRegistrationForm, 
-    PrescriptionRequestForm, DemoRequestForm
+    DemoRequestForm  # PrescriptionRequestForm removed from here
 )
+from patient.forms import PrescriptionRequestForm  # Add this new import
 from ..models import PatientRegistration
 
 def registration_view(request):

@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.utils import timezone
 from datetime import datetime
 from theme_name.repositories import ProviderRepository, PrescriptionRepository, AppointmentRepository
-from theme_name.forms import ProviderProfileEditForm
+from provider.forms import ProviderProfileEditForm
 def provider_profile(request):
     """Provider profile page with edit functionality"""
     provider_id = 1  # In production, replace with request.user.id

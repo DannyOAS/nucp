@@ -39,9 +39,8 @@ from .email import provider_email, load_templates
 from .video import provider_video_consultation
 from .profile import provider_profile, provider_settings, provider_help_support
 # Import AI and form related views if needed
-
-from common.views.ai_views.scribe import (
-    ai_scribe_dashboard, 
+from .ai_views.scribe import (
+    ai_scribe_dashboard,
     start_recording,
     stop_recording,
     get_transcription,
@@ -49,7 +48,7 @@ from common.views.ai_views.scribe import (
     view_clinical_note,
     edit_clinical_note
 )
-from common.views.ai_views.forms import (
+from .ai_views.forms import (
     forms_dashboard,
     create_form,
     view_document,

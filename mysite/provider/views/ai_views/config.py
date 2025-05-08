@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from common.services import AIConfigurationService
+from admin_portal.services import AIConfigurationService
 from admin_portal.models import AIModelConfig
 
 def ai_config_dashboard(request):

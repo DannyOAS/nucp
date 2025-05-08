@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from common.services import AIConfigurationService
+from admin_portal.services import AIConfigurationService
 from theme_name.data_access import get_current_admin, get_system_stats, get_admin_logs
 
 def admin_dashboard(request):

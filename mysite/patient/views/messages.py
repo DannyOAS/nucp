@@ -4,7 +4,7 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from theme_name.repositories import PatientRepository, MessageRepository
 from common.services import MessageService
 from common.models import Message
-from theme_name.forms import PatientMessageForm
+from patient.forms import PatientMessageForm
 
 def email_view(request):
     """Email view (alias for messages)"""

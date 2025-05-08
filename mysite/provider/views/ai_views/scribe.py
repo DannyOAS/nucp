@@ -3,7 +3,7 @@ from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from theme_name.repositories import ProviderRepository
-from common.services import AIScribeService
+from provider.services import AIScribeService
 from provider.models import RecordingSession, ClinicalNote
 
 def ai_scribe_dashboard(request):

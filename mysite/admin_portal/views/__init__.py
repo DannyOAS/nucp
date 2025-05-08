@@ -10,5 +10,5 @@ admin_providers = providers_list
 admin_logs = logs_dashboard
 
 # Import AI-related views from common app
-from common.views.ai_views.config import ai_config_dashboard, edit_model_config
-from common.views.ai_views.forms import templates_dashboard, create_template, edit_template
+from provider.views.ai_views.config import ai_config_dashboard, edit_model_config
+from provider.views.ai_views.forms import templates_dashboard, create_template, edit_template

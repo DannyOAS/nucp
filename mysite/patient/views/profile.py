@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from theme_name.repositories import PatientRepository
-from theme_name.forms import PatientProfileEditForm
+from patient.forms import PatientProfileEditForm
 
 def patient_profile(request):
     """Patient profile view"""

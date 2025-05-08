@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from theme_name.repositories import ProviderRepository, PatientRepository, AppointmentRepository, PrescriptionRepository
-from common.services import ProviderService
-from theme_name.forms import PatientForm
+from provider.services import ProviderService
+from provider.forms import PatientForm
 
 def provider_patients(request):
     """Provider patients list view"""

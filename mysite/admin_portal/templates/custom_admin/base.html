@@ -99,13 +99,13 @@
         
         <!-- Admin Navigation Menu -->
         <nav>
-          <a href="{% url 'admin_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'dashboard' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <a href="{% url 'admin_portal:admin_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'dashboard' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
             <span class="mr-2">🏠</span> Dashboard
           </a>
-          <a href="{% url 'admin_patients' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'patients' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <a href="{% url 'admin_portal:admin_patients' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'patients' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
             <span class="mr-2">👥</span> Patients
           </a>
-          <a href="{% url 'admin_providers' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'providers' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <a href="{% url 'admin_portal:admin_providers' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'providers' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
             <span class="mr-2">👨‍⚕️</span> Providers
           </a>
           <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'appointments' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
@@ -115,13 +115,13 @@
             <span class="mr-2">📊</span> Analytics
           </a>
           <div class="border-t border-gray-200 my-3"></div>
-          <a href="{% url 'ai_config_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'ai_config' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <a href="{% url 'admin_portal:ai_config_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'ai_config' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
             <span class="mr-2">🤖</span> AI Configuration
           </a>
           <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'templates' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
             <span class="mr-2">📄</span> Form Templates
           </a>
-          <a href="{% url 'admin_logs' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'logs' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+          <a href="{% url 'admin_portal:admin_logs' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'logs' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
             <span class="mr-2">📝</span> System Logs
           </a>
           <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'settings' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
@@ -142,13 +142,13 @@
       </div>
       <!-- Mobile Navigation Menu -->
       <nav>
-        <a href="{% url 'admin_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'dashboard' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+        <a href="{% url 'admin_portal:admin_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'dashboard' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
           <span class="mr-2">🏠</span> Dashboard
         </a>
-        <a href="{% url 'admin_patients' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'patients' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+        <a href="{% url 'admin_portal:admin_patients' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'patients' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
           <span class="mr-2">👥</span> Patients
         </a>
-        <a href="{% url 'admin_providers' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'providers' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+        <a href="{% url 'admin_portal:admin_providers' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'providers' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
           <span class="mr-2">👨‍⚕️</span> Providers
         </a>
         <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'appointments' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
@@ -158,13 +158,13 @@
           <span class="mr-2">📊</span> Analytics
         </a>
         <div class="border-t border-gray-200 my-3"></div>
-        <a href="{% url 'ai_config_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'ai_config' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+        <a href="{% url 'admin_portal:ai_config_dashboard' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'ai_config' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
           <span class="mr-2">🤖</span> AI Configuration
         </a>
         <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'templates' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
           <span class="mr-2">📄</span> Form Templates
         </a>
-        <a href="{% url 'admin_logs' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'logs' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
+        <a href="{% url 'admin_portal:admin_logs' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'logs' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
           <span class="mr-2">📝</span> System Logs
         </a>
         <a href="#" class="block px-4 py-2 mb-1 rounded {% if active_section == 'settings' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">

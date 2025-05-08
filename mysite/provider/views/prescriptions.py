@@ -4,8 +4,8 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import logging
 from datetime import datetime, date
 from theme_name.repositories import ProviderRepository, PrescriptionRepository
-from common.services.provider_service import ProviderService
-from common.services.prescription_service import PrescriptionService
+from provider.services import ProviderService
+from provider.services import PrescriptionService
 from theme_name.data_access import get_provider_prescription_requests
 
 logger = logging.getLogger(__name__)

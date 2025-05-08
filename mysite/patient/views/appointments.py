@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from theme_name.repositories import PatientRepository, AppointmentRepository
 # Import the renamed AppointmentService
-from common.services.appointment_service import AppointmentService
+from provider.services import AppointmentService
 
 def appointments_view(request):
     """Patient appointments view with calendar integration"""

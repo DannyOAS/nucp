@@ -7,7 +7,7 @@ import calendar
 
 from theme_name.repositories import ProviderRepository
 # Import the renamed AppointmentService
-from common.services.appointment_service import AppointmentService
+from provider.services.appointment_service import AppointmentService
 
 def provider_appointments(request):
     """Provider appointments view with calendar integration"""
