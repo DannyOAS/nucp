@@ -1,6 +1,7 @@
 # provider/views/__init__.py
 
-from .dashboard import provider_dashboard, get_provider
+# Import views from their respective modules
+from .dashboard import provider_dashboard
 from .appointments import (
     provider_appointments,
     schedule_appointment,
@@ -10,7 +11,7 @@ from .appointments import (
     reschedule_appointment,
     update_appointment_status
 )
-from .patients import provider_patients, add_patient, view_patient, get_recent_patient_activity, format_time_ago
+from .patients import provider_patients, add_patient, view_patient
 from .prescriptions import (
     provider_prescriptions,
     approve_prescription,
@@ -26,82 +27,105 @@ from .email import (
     load_templates
 )
 from .profile import provider_profile, provider_settings, provider_help_support
-
-# Comment out the views we haven't updated yet
-"""
 from .video import provider_video_consultation
-from .ai_views.scribe import (
-    ai_scribe_dashboard,
-    start_recording,
-    stop_recording,
-    get_transcription,
-    generate_clinical_note,
-    view_clinical_note,
-    edit_clinical_note
-)
-from .ai_views.forms import (
-    forms_dashboard,
-    create_form,
-    view_document,
-    download_document_pdf,
-    update_document_status
-)
-"""
-# In provider/views/__init__.py
+
+# Import placeholder functions for views not yet fully implemented
 from django.shortcuts import render, redirect
+from django.contrib.auth.decorators import login_required
+from provider.utils import get_current_provider
 
-
-def provider_video_consultation(request):
-    """Placeholder for video consultation"""
-    return render(request, "provider/dashboard.html", {
-        'message': 'Video consultation is currently being updated.',
-        'active_section': 'dashboard'
-    })
-
-# Add other placeholder functions that might be needed
+@login_required
 def ai_scribe_dashboard(request):
-    return render(request, "provider/dashboard.html", {
+    """AI Scribe dashboard with authenticated provider."""
+    provider, provider_dict = get_current_provider(request)
+    
+    # If the function returns None, it has already redirected
+    if provider is None:
+        return redirect('unauthorized')
+    
+    context = {
+        'provider': provider_dict,
+        'provider_name': f"Dr. {provider_dict['last_name']}",
         'message': 'AI Scribe is currently being updated.',
-        'active_section': 'dashboard'
-    })
+        'active_section': 'ai_scribe'
+    }
+    return render(request, "provider/dashboard.html", context)
 
+@login_required
 def forms_dashboard(request):
-    return render(request, "provider/dashboard.html", {
+    """Forms dashboard with authenticated provider."""
+    provider, provider_dict = get_current_provider(request)
+    
+    # If the function returns None, it has already redirected
+    if provider is None:
+        return redirect('unauthorized')
+    
+    context = {
+        'provider': provider_dict,
+        'provider_name': f"Dr. {provider_dict['last_name']}",
         'message': 'Forms functionality is currently being updated.',
-        'active_section': 'dashboard'
-    })
+        'active_section': 'forms'
+    }
+    return render(request, "provider/dashboard.html", context)
 
-# Add any other functions referenced in your templates
-
-
-# The rest of these functions just redirect to the dashboard for now
+# Authentication-aware placeholder functions for AI views
+@login_required
 def start_recording(request):
-    return redirect('provider:provider_dashboard')
+    """Start recording with authenticated provider."""
+    get_current_provider(request)  # This will handle redirection if needed
+    return redirect('provider_dashboard')
 
+@login_required
 def stop_recording(request):
-    return redirect('provider:provider_dashboard')
+    """Stop recording with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def get_transcription(request, recording_id):
-    return redirect('provider:provider_dashboard')
+    """Get transcription with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def generate_clinical_note(request, transcription_id):
-    return redirect('provider:provider_dashboard')
+    """Generate clinical note with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def view_clinical_note(request, note_id):
-    return redirect('provider:provider_dashboard')
+    """View clinical note with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def edit_clinical_note(request, note_id):
-    return redirect('provider:provider_dashboard')
+    """Edit clinical note with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+# Authentication-aware placeholder functions for Forms views
+@login_required
 def create_form(request, template_id):
-    return redirect('provider:provider_dashboard')
+    """Create form with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def view_document(request, document_id):
-    return redirect('provider:provider_dashboard')
+    """View document with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def download_document_pdf(request, document_id):
-    return redirect('provider:provider_dashboard')
+    """Download document PDF with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')
 
+@login_required
 def update_document_status(request, document_id):
-    return redirect('provider:provider_dashboard')
-
+    """Update document status with authenticated provider."""
+    get_current_provider(request)
+    return redirect('provider_dashboard')

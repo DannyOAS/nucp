@@ -4,7 +4,7 @@ from common.models import Appointment, Message
 from theme_name.models import PatientRegistration
 from .models import Provider, ClinicalNote, DocumentTemplate, GeneratedDocument
 
-class ProviderProfileForm(forms.ModelForm):
+class ProviderProfileEditForm(forms.ModelForm):
     """Form for editing provider profile"""
     first_name = forms.CharField(max_length=100, required=True)
     last_name = forms.CharField(max_length=100, required=True)
@@ -12,11 +12,12 @@ class ProviderProfileForm(forms.ModelForm):
     
     class Meta:
         model = Provider
-        fields = ['specialty', 'bio', 'phone']
+        fields = ['specialty', 'bio', 'phone', 'license_number']
         widgets = {
             'bio': forms.Textarea(attrs={'rows': 4, 'class': 'block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm'}),
             'specialty': forms.TextInput(attrs={'class': 'block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm'}),
-            'phone': forms.TextInput(attrs={'class': 'block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm'})
+            'phone': forms.TextInput(attrs={'class': 'block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm'}),
+            'license_number': forms.TextInput(attrs={'class': 'block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm'})
         }
     
     def __init__(self, *args, **kwargs):
@@ -27,10 +28,10 @@ class ProviderProfileForm(forms.ModelForm):
             initial['last_name'] = instance.user.last_name
             initial['email'] = instance.user.email
             kwargs['initial'] = initial
-        super(ProviderProfileForm, self).__init__(*args, **kwargs)
+        super(ProviderProfileEditForm, self).__init__(*args, **kwargs)
     
     def save(self, commit=True):
-        provider = super(ProviderProfileForm, self).save(commit=False)
+        provider = super(ProviderProfileEditForm, self).save(commit=False)
         
         # Update the related User model fields
         user = provider.user

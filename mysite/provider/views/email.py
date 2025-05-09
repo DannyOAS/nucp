@@ -1,28 +1,55 @@
-# views/email.py
+# provider/views/email.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages as django_messages
+from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseRedirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.models import User
-from common.models import Message
 from theme_name.repositories import ProviderRepository, PatientRepository
-from provider.utils import get_current_provider  # or from provider.utils import get_current_provider
 
-
-# Import the helper function
-
+@login_required
 def provider_email(request):
-    """Main email view for providers with consistent provider ID."""
-    # Get provider using the consistent helper function
-    provider = get_current_provider(request)
-    provider_id = provider['id']
+    """Main email view for providers with authentication."""
+    # Check that user is in providers group
+    if not request.user.groups.filter(name='providers').exists():
+        return redirect('unauthorized')
     
+    # Get the authenticated user
+    user = request.user
+    
+    # Get provider associated with this user
+    from provider.models import Provider
+    try:
+        provider = Provider.objects.get(user=user)
+        # Create a dictionary compatible with existing templates
+        provider_dict = {
+            'id': provider.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'specialty': getattr(provider, 'specialty', 'General'),
+            'is_active': getattr(provider, 'is_active', True),
+        }
+    except Provider.DoesNotExist:
+        # Create a provider record if it doesn't exist
+        provider = Provider.objects.create(
+            user=user,
+            license_number=f'TMP{user.id}',
+            specialty='General',
+            is_active=True
+        )
+        provider_dict = {
+            'id': provider.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'specialty': provider.specialty,
+        }
+
     # Get folder parameter (inbox, sent, priority)
     folder = request.GET.get('folder', 'inbox')
     search_query = request.GET.get('search', '')
     
-    # Get user ID based on provider - for transition period
-    user_id = getattr(request.user, 'id', provider_id)  # Default to provider ID
+    # Get user ID from authenticated user
+    user_id = user.id
     
     # Start with all messages for this user
     try:
@@ -48,7 +75,7 @@ def provider_email(request):
             if hasattr(Message, 'status'):
                 message_qs = message_qs.filter(recipient_id=user_id, status='archived')
             else:
-                # If no archived status, just show inbox messages with warning
+                # If no archived status, just show inbox messages
                 message_qs = message_qs.filter(recipient_id=user_id)
                 django_messages.warning(request, "Archive feature is not fully implemented yet.")
         
@@ -62,10 +89,10 @@ def provider_email(request):
         # Get the messages and add any additional data needed for display
         messages_list = []
         for msg in message_qs[:10]:  # Limit to 10 for now
-            # Get sender name based on sender_id or sender_type
+            # Get sender name
             sender_name = "Unknown"
             if hasattr(msg, 'sender') and msg.sender:
-                if hasattr(msg.sender, 'first_name'):
+                if isinstance(msg.sender, User):
                     sender_name = f"{msg.sender.first_name} {msg.sender.last_name}"
                 else:
                     sender_name = str(msg.sender)
@@ -94,11 +121,8 @@ def provider_email(request):
         print(f"Error getting messages: {e}")
         messages_list = []
     
-    # Count statistics for sidebar - use try/except for robustness
+    # Count statistics for sidebar
     try:
-        from common.models import Message
-        
-        # Unread count
         unread_count = Message.objects.filter(recipient_id=user_id)
         if hasattr(Message, 'read'):
             unread_count = unread_count.filter(read=False).count()
@@ -109,7 +133,6 @@ def provider_email(request):
         else:
             unread_count = 5  # Fallback default
             
-        # Read count
         read_count = Message.objects.filter(recipient_id=user_id)
         if hasattr(Message, 'read'):
             read_count = read_count.filter(read=True).count()
@@ -120,10 +143,9 @@ def provider_email(request):
         else:
             read_count = 12  # Fallback default
             
-        # Sent count
         sent_count = Message.objects.filter(sender_id=user_id).count()
         
-        # Priority count
+        # For priority count
         priority_count = 0
         if hasattr(Message, 'priority'):
             priority_count = Message.objects.filter(recipient_id=user_id, priority='high').count()
@@ -139,42 +161,34 @@ def provider_email(request):
         sent_count = 8
         priority_count = 3
     
-    # Get patients for compose functionality
-    # Use direct ORM approach - get patients for this specific provider
+    # Get patients for this provider
     try:
-        # Get patients for this provider
-        from provider.models import Provider
-        from theme_name.models import PatientRegistration
-        from django.db.models import Q
-        from common.models import Appointment
-        
-        # Get provider object
-        provider_obj = Provider.objects.get(id=provider_id)
-        
         # Method 1: Get patients directly assigned to provider if field exists
+        from theme_name.models import PatientRegistration
+        
         if hasattr(PatientRegistration, 'provider'):
             # Get patients directly assigned to this provider
-            patients = PatientRegistration.objects.filter(provider=provider_obj)
+            patients = PatientRegistration.objects.filter(provider=provider)
         else:
             # Method 2: Get patient IDs from appointments with this provider
+            from common.models import Appointment
             patient_ids = Appointment.objects.filter(
-                doctor=provider_obj
+                doctor=provider
             ).values_list('patient_id', flat=True).distinct()
             
             # Get the patient objects
             patients = PatientRegistration.objects.filter(id__in=patient_ids)
-        
-        # Print useful debug info
-        print(f"Using provider ID {provider_id}, found {patients.count()} patients")
+            
+        print(f"Found {patients.count()} patients for provider {provider.id}")
         
     except Exception as e:
         print(f"Error getting provider's patients: {e}")
-        from theme_name.repositories import PatientRepository
+        # Fall back to repository in transition period
         patients = PatientRepository.get_all()
 
     context = {
-        'provider': provider,
-        'provider_name': f"Dr. {provider['last_name']}",
+        'provider': provider_dict,
+        'provider_name': f"Dr. {user.last_name}",
         'unread_count': unread_count,
         'read_count': read_count,
         'sent_count': sent_count,
@@ -188,55 +202,140 @@ def provider_email(request):
 
     return render(request, 'provider/email.html', context)
 
+@login_required
 def provider_compose_message(request):
-    """Handle composing and sending new messages with consistent provider."""
-    # Get provider using the consistent helper function
-    provider = get_current_provider(request)
-    provider_id = provider['id']
+    """Handle composing and sending new messages with authentication."""
+    # Check that user is in providers group
+    if not request.user.groups.filter(name='providers').exists():
+        return redirect('unauthorized')
+    
+    # Get the authenticated user
+    user = request.user
+    
+    # Get provider associated with this user
+    from provider.models import Provider
+    try:
+        provider = Provider.objects.get(user=user)
+        # Create a dictionary compatible with existing templates
+        provider_dict = {
+            'id': provider.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'specialty': getattr(provider, 'specialty', 'General'),
+            'is_active': getattr(provider, 'is_active', True),
+        }
+    except Provider.DoesNotExist:
+        # Create a provider record if it doesn't exist
+        provider = Provider.objects.create(
+            user=user,
+            license_number=f'TMP{user.id}',
+            specialty='General',
+            is_active=True
+        )
+        provider_dict = {
+            'id': provider.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'specialty': provider.specialty,
+        }
     
     if request.method == 'POST':
-        # Handle form submission logic
-        django_messages.success(request, "Message sent successfully.")
+        # Handle form submission
+        try:
+            from common.models import Message
+            
+            recipient_type = request.POST.get('recipient_type')
+            
+            # Get the appropriate recipient ID based on type
+            if recipient_type == 'patient':
+                recipient_id = request.POST.get('recipient_id')
+            elif recipient_type == 'staff':
+                recipient_id = request.POST.get('staff_recipient_id')
+            else:
+                recipient_id = None
+                
+            if recipient_id:
+                # Try to get the recipient user
+                try:
+                    recipient = User.objects.get(id=recipient_id)
+                    
+                    # Create the message
+                    message = Message.objects.create(
+                        sender=user,
+                        recipient=recipient,
+                        subject=request.POST.get('subject', ''),
+                        content=request.POST.get('content', ''),
+                    )
+                    
+                    # Set priority if applicable
+                    if request.POST.get('priority') == 'high' and hasattr(Message, 'priority'):
+                        message.priority = 'high'
+                        message.save()
+                    
+                    django_messages.success(request, "Message sent successfully.")
+                except User.DoesNotExist:
+                    django_messages.error(request, "Recipient not found.")
+            else:
+                django_messages.error(request, "No recipient selected.")
+        except Exception as e:
+            print(f"Error sending message: {e}")
+            django_messages.error(request, "Error sending message.")
+            
         return redirect('provider_email')
 
-    # DIRECT DB ACCESS for patients - ensure we only get provider's patients
+    # Get patients for this provider
     try:
-        # Import necessary models
-        from provider.models import Provider
-        from django.db.models import Q
+        # Method 1: Get patients directly assigned to provider if field exists
         from theme_name.models import PatientRegistration
-        from common.models import Appointment
         
-        # Get provider object
-        provider_obj = Provider.objects.get(id=provider_id)
-        
-        # Method 1: Check if PatientRegistration has provider field
         if hasattr(PatientRegistration, 'provider'):
             # Get patients directly assigned to this provider
-            patients = PatientRegistration.objects.filter(provider=provider_obj)
+            patients = PatientRegistration.objects.filter(provider=provider)
         else:
-            # Method 2: Get patient IDs from Appointment model
-            # This gets patients who have appointments with this provider
+            # Method 2: Get patient IDs from appointments with this provider
+            from common.models import Appointment
             patient_ids = Appointment.objects.filter(
-                doctor=provider_obj
+                doctor=provider
             ).values_list('patient_id', flat=True).distinct()
             
             # Get the patient objects
             patients = PatientRegistration.objects.filter(id__in=patient_ids)
-        
-        # Print useful debug info
-        print(f"Using provider ID {provider_id}, found {patients.count()} patients")
             
+        print(f"Found {patients.count()} patients for provider {provider.id}")
+        
     except Exception as e:
-        # Log the error but don't use repository as fallback anymore
         print(f"Error getting provider's patients: {e}")
-        patients = []  # Empty list, don't fallback to all patients
+        patients = []
     
-    # Get staff members (example data for now)
-    staff_members = [
-        {'id': 1, 'first_name': 'Nurse', 'last_name': 'Williams'},
-        {'id': 2, 'first_name': 'Dr.', 'last_name': 'Thompson'},
-    ]
+    # Get staff members
+    try:
+        # Get users in 'Staff' group
+        from django.contrib.auth.models import Group
+        staff_group = Group.objects.filter(name='staff').first()
+        if staff_group:
+            staff_users = staff_group.user_set.all()
+            staff_members = [
+                {
+                    'id': staff.id, 
+                    'first_name': staff.first_name, 
+                    'last_name': staff.last_name,
+                    'role': getattr(staff, 'role', '')
+                } 
+                for staff in staff_users
+            ]
+        else:
+            # Fallback staff members
+            staff_members = [
+                {'id': 1, 'first_name': 'Nurse', 'last_name': 'Williams'},
+                {'id': 2, 'first_name': 'Dr.', 'last_name': 'Thompson'},
+            ]
+    except Exception as e:
+        print(f"Error getting staff members: {e}")
+        # Fallback staff members
+        staff_members = [
+            {'id': 1, 'first_name': 'Nurse', 'last_name': 'Williams'},
+            {'id': 2, 'first_name': 'Dr.', 'last_name': 'Thompson'},
+        ]
 
     # Handle reply logic
     reply_to_id = request.GET.get('reply_to')
@@ -255,9 +354,9 @@ def provider_compose_message(request):
                 'subject': message.subject,
                 'sender_type': getattr(message, 'sender_type', 'patient'),
                 'sender': {
-                    'id': message.sender_id,
-                    'first_name': getattr(message.sender, 'first_name', 'Unknown') if message.sender else 'Unknown',
-                    'last_name': getattr(message.sender, 'last_name', 'Sender') if message.sender else 'Sender'
+                    'id': message.sender.id,
+                    'first_name': message.sender.first_name,
+                    'last_name': message.sender.last_name
                 },
                 'thread_id': getattr(message, 'thread_id', f'thread-{message.id}')
             }
@@ -282,10 +381,10 @@ def provider_compose_message(request):
         }
 
     context = {
-        'provider': provider,
-        'provider_name': f"Dr. {provider['last_name']}",
+        'provider': provider_dict,
+        'provider_name': f"Dr. {user.last_name}",
         'form': {'initial': form_initial},
-        'patients': patients,  # Use our filtered list, not repository data
+        'patients': patients,
         'staff_members': staff_members,
         'original_message': original_message,
         'active_section': 'email',
@@ -293,13 +392,71 @@ def provider_compose_message(request):
 
     return render(request, 'provider/compose_email.html', context)
 
-# Update other view functions with get_current_provider() as needed
-
+# Handle message actions like mark as read/archive
+@login_required
 def provider_message_action(request, message_id, action):
-    # Existing function implementation
-    action_text = action.replace('_', ' ')
-    django_messages.success(request, f"Message {action_text} successfully.")
+    """Handle message actions with authentication."""
+    # Check that user is in providers group
+    if not request.user.groups.filter(name='providers').exists():
+        return redirect('unauthorized')
+    
+    # Get the authenticated user
+    user = request.user
+    
+    # Handle the action
+    try:
+        from common.models import Message
+        message = Message.objects.get(id=message_id)
+        
+        # Verify the user has permission for this message
+        if message.recipient != user and message.sender != user:
+            django_messages.error(request, "You don't have permission to perform this action.")
+            return redirect('provider_email')
+        
+        # Perform the action
+        if action == 'mark_read':
+            if hasattr(message, 'read'):
+                message.read = True
+                message.save()
+            elif hasattr(message, 'read_at'):
+                from django.utils import timezone
+                message.read_at = timezone.now()
+                message.save()
+            elif hasattr(message, 'status'):
+                message.status = 'read'
+                message.save()
+                
+        elif action == 'mark_unread':
+            if hasattr(message, 'read'):
+                message.read = False
+                message.save()
+            elif hasattr(message, 'read_at'):
+                message.read_at = None
+                message.save()
+            elif hasattr(message, 'status'):
+                message.status = 'unread'
+                message.save()
+                
+        elif action == 'archive':
+            if hasattr(message, 'status'):
+                message.status = 'archived'
+                message.save()
+                
+        elif action == 'delete':
+            message.delete()
+            django_messages.success(request, "Message deleted successfully.")
+            return redirect('provider_email')
+            
+        action_text = action.replace('_', ' ')
+        django_messages.success(request, f"Message {action_text} successfully.")
+        
+    except Message.DoesNotExist:
+        django_messages.error(request, "Message not found.")
+    except Exception as e:
+        print(f"Error performing message action: {e}")
+        django_messages.error(request, f"Error performing action: {str(e)}")
 
+    # Determine redirect based on referring URL
     referer = request.META.get('HTTP_REFERER', '')
     if '/view/' in referer:
         return redirect('provider_view_message', message_id=message_id)
@@ -312,8 +469,118 @@ def provider_message_action(request, message_id, action):
     else:
         return redirect('provider_email')
 
+@login_required
+def provider_view_message(request, message_id):
+    """View a specific message with authentication."""
+    # Check that user is in providers group
+    if not request.user.groups.filter(name='providers').exists():
+        return redirect('unauthorized')
+    
+    # Get the authenticated user
+    user = request.user
+    
+    # Get provider associated with this user
+    from provider.models import Provider
+    try:
+        provider = Provider.objects.get(user=user)
+        # Create a dictionary compatible with existing templates
+        provider_dict = {
+            'id': provider.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'specialty': getattr(provider, 'specialty', 'General'),
+            'is_active': getattr(provider, 'is_active', True),
+        }
+    except Provider.DoesNotExist:
+        # Create a provider record if it doesn't exist
+        provider = Provider.objects.create(
+            user=user,
+            license_number=f'TMP{user.id}',
+            specialty='General',
+            is_active=True
+        )
+        provider_dict = {
+            'id': provider.id,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'specialty': provider.specialty,
+        }
+    
+    # Get the message
+    try:
+        from common.models import Message
+        message = Message.objects.get(id=message_id)
+        
+        # Verify the user has permission to view this message
+        if message.recipient != user and message.sender != user:
+            django_messages.error(request, "You don't have permission to view this message.")
+            return redirect('provider_email')
+        
+        # Mark as read if recipient is viewing
+        if message.recipient == user:
+            if hasattr(message, 'read'):
+                message.read = True
+                message.save()
+            elif hasattr(message, 'read_at') and not message.read_at:
+                from django.utils import timezone
+                message.read_at = timezone.now()
+                message.save()
+            elif hasattr(message, 'status') and message.status == 'unread':
+                message.status = 'read'
+                message.save()
+        
+        # Format the message for display
+        message_data = {
+            'id': message.id,
+            'subject': message.subject,
+            'content': message.content,
+            'created_at': message.created_at.strftime('%B %d, %Y - %I:%M %p') if hasattr(message, 'created_at') else "Unknown",
+            'priority': getattr(message, 'priority', 'normal'),
+            'read': True,  # We've just marked it as read if it wasn't already
+        }
+        
+        # Get sender info
+        sender_info = {
+            'name': f"{message.sender.first_name} {message.sender.last_name}" if message.sender else "Unknown",
+            'type': getattr(message, 'sender_type', 'user'),
+            'email': message.sender.email if message.sender else "unknown@example.com",
+        }
+        
+        # Get thread messages if thread_id exists
+        thread_messages = []
+        if hasattr(message, 'thread_id') and message.thread_id:
+            thread_msgs = Message.objects.filter(thread_id=message.thread_id).exclude(id=message.id).order_by('created_at')
+            for thread_msg in thread_msgs:
+                thread_messages.append({
+                    'id': thread_msg.id,
+                    'subject': thread_msg.subject,
+                    'content': thread_msg.content,
+                    'sender': f"{thread_msg.sender.first_name} {thread_msg.sender.last_name}" if thread_msg.sender else "Unknown",
+                    'created_at': thread_msg.created_at.strftime('%B %d, %Y - %I:%M %p') if hasattr(thread_msg, 'created_at') else "Unknown",
+                })
+        
+    except Message.DoesNotExist:
+        django_messages.error(request, "Message not found.")
+        return redirect('provider_email')
+    except Exception as e:
+        print(f"Error viewing message: {e}")
+        django_messages.error(request, f"Error viewing message: {str(e)}")
+        return redirect('provider_email')
+
+    context = {
+        'provider': provider_dict,
+        'provider_name': f"Dr. {user.last_name}",
+        'message': message_data,
+        'sender_info': sender_info,
+        'thread_messages': thread_messages,
+        'active_section': 'email',
+    }
+
+    return render(request, 'provider/view_message.html', context)
+
+# Load message templates for compose
 def load_templates(request):
-    # Existing function implementation
+    """AJAX endpoint to load message templates."""
     template_type = request.GET.get('type', '')
 
     templates = {
@@ -377,70 +644,3 @@ Dr. [Your Name]"""
         return JsonResponse(templates[template_type])
     else:
         return JsonResponse({'subject': '', 'content': ''})
-
-def provider_view_message(request, message_id):
-    # Existing function implementation
-    provider_id = getattr(request.user, 'id', 1)
-    provider = ProviderRepository.get_by_id(provider_id)
-
-    fake_messages = {
-        1: {
-            'subject': 'Lab Results Review',
-            'content': 'Please review my lab results from last week.',
-            'created_at': 'April 28, 2025 - 10:30 AM',
-            'priority': 'normal',
-            'read': False,
-            'sender_info': {
-                'name': 'Jane Doe',
-                'type': 'patient',
-                'email': 'jane.doe@example.com',
-            }
-        },
-        2: {
-            'subject': 'Follow-up Appointment',
-            'content': 'When should I schedule my next appointment?',
-            'created_at': 'April 27, 2025 - 02:45 PM',
-            'priority': 'high',
-            'read': True,
-            'sender_info': {
-                'name': 'John Smith',
-                'type': 'patient',
-                'email': 'john.smith@example.com',
-            }
-        }
-    }
-
-    message_data = fake_messages.get(int(message_id), {
-        'subject': 'Unknown Message',
-        'content': 'This message does not exist.',
-        'created_at': 'N/A',
-        'priority': 'normal',
-        'read': True,
-        'sender_info': {
-            'name': 'Unknown',
-            'type': 'unknown',
-            'email': 'unknown@example.com',
-        }
-    })
-
-    message = {
-        'id': message_id,
-        'subject': message_data['subject'],
-        'content': message_data['content'],
-        'created_at': message_data['created_at'],
-        'priority': message_data['priority'],
-        'read': message_data['read'],
-    }
-
-    sender_info = message_data['sender_info']
-    thread_messages = []
-
-    context = {
-        'provider': provider,
-        'provider_name': f"Dr. {provider['last_name']}",
-        'message': message,
-        'sender_info': sender_info,
-        'thread_messages': thread_messages,
-    }
-
-    return render(request, 'provider/view_message.html', context)

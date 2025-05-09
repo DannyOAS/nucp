@@ -24,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g%q4p@jgu_8nl(ue1at483&dm-%45871@l#ilb*&mu2o2lla+)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 
 ALLOWED_HOSTS = ['u1.isnord.ca', 'localhost', '127.0.0.1']
@@ -46,10 +46,91 @@ INSTALLED_APPS = [
     'provider',
     'admin_portal',
     "tailwind",
+    'django_auth_ldap',
     "phonenumber_field",
 #    "rest_framework",
-
 ]
+
+# LDAP Authentication Configuration
+import ldap
+from django_auth_ldap.config import LDAPSearch, GroupOfNamesType
+
+# Server URI - matches your Authelia config
+AUTH_LDAP_SERVER_URI = "ldap://10.88.89.156:389"
+
+# LDAP Bind Credentials - matches your Authelia config
+AUTH_LDAP_BIND_DN = "cn=admin,dc=isnord,dc=ca"
+AUTH_LDAP_BIND_PASSWORD = "g654D!"  # Consider using environment variables
+
+# User search configuration - matches your Authelia config
+AUTH_LDAP_USER_SEARCH = LDAPSearch(
+    "ou=people,dc=isnord,dc=ca",
+    ldap.SCOPE_SUBTREE,
+    "(uid=%(user)s)"
+)
+
+# Group search configuration - matches your Authelia config
+AUTH_LDAP_GROUP_SEARCH = LDAPSearch(
+    "ou=groups,dc=isnord,dc=ca",
+    ldap.SCOPE_SUBTREE,
+    "(objectClass=groupOfNames)"
+)
+AUTH_LDAP_GROUP_TYPE = GroupOfNamesType(name_attr="cn")
+
+# User attributes mapping - maps LDAP attributes to User fields
+AUTH_LDAP_USER_ATTR_MAP = {
+    "first_name": "givenName",
+    "last_name": "sn",
+    "email": "mail",
+}
+
+# Group membership checking
+AUTH_LDAP_FIND_GROUP_PERMS = True
+AUTH_LDAP_CACHE_GROUPS = True
+AUTH_LDAP_GROUP_CACHE_TIMEOUT = 3600
+
+# Define user flags based on group membership
+AUTH_LDAP_USER_FLAGS_BY_GROUP = {
+    "is_staff": "cn=providers,ou=groups,dc=isnord,dc=ca",
+    "is_superuser": "cn=admins,ou=groups,dc=isnord,dc=ca",
+}
+
+# Authentication backends - add LDAP and Authelia
+AUTHENTICATION_BACKENDS = [
+    'django_auth_ldap.backend.LDAPBackend',
+    'django_authelia.backends.AutheliaBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
+
+# Login settings
+LOGIN_URL = 'https://auth.isnord.ca/'
+LOGIN_REDIRECT_URL = '/provider-dashboard/'
+
+# Logging configuration for authentication debugging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/django/auth.log',
+        },
+    },
+    'loggers': {
+        'django_auth_ldap': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file'],
+        },
+        'django_authelia': {
+            'level': 'DEBUG',
+            'handlers': ['console', 'file'],
+        },
+    }
+}
 
 TAILWIND_APP_NAME = 'theme_name'
 
@@ -62,6 +143,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_browser_reload.middleware.BrowserReloadMiddleware',  # Enable auto-reload
+    'django_authelia.middleware.AutheliaMiddleware',
 ]
 
 ROOT_URLCONF = 'mysite.urls'
@@ -247,3 +329,9 @@ ERP_INTEGRATION_ENABLED = True
 CONTACT_FORM_RECIPIENT = 'admin@example.com'
 DEFAULT_FROM_EMAIL = 'noreply@example.com'
 print('Loading development settings')
+
+# Import LDAP authentication settings
+try:
+    from ldap_settings import *
+except ImportError:
+    pass

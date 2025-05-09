@@ -16,9 +16,18 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.http import HttpResponse
+from django.shortcuts import redirect
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", include("theme_name.urls")),  # ✅ Include app-level URLs
     path("__reload__/", include("django_browser_reload.urls")),
+
+    path('login/', lambda request: redirect('https://auth.isnord.ca/'), name='login'),
+    
+    # Simple unauthorized page (no template needed)
+    path('unauthorized/', 
+         lambda request: HttpResponse("Unauthorized access. You don't have permission to access this resource.", status=403), 
+         name='unauthorized'),
 ]
