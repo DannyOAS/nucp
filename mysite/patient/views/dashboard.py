@@ -1,46 +1,40 @@
+# patient/views/dashboard.py
 from django.shortcuts import render
-from theme_name.repositories import PatientRepository, MessageRepository
-from common.models import Message
+from patient.decorators import patient_required
+from common.models import Message, Appointment, Prescription
 
+@patient_required
 def patient_dashboard(request):
-    """Patient dashboard view"""
-    patient = PatientRepository.get_current(request)
+    """Patient dashboard view using database models"""
+    patient = request.patient  # Injected by decorator
     
-    # Get dashboard data
-    # In a real implementation, this would use PatientService.get_dashboard_data(patient['id'])
-    dashboard_data = {
-        'appointments': [],  # Will be populated from the repository
-        'prescriptions': [],  # Will be populated from the repository
-        'messages': []  # Will be populated from the repository
-    }
+    # Get recent appointments - use request.user since Appointment.patient is a User FK
+    appointments = Appointment.objects.filter(patient=request.user).order_by('-time')[:5]
     
-    # Add messaging data for the dashboard
-    unread_messages_count = 0
-    recent_messages = []
+    # Get recent prescriptions - use request.user since Prescription.patient is a User FK
+    prescriptions = Prescription.objects.filter(patient=request.user).order_by('-created_at')[:5]
     
-    if hasattr(request, 'user') and request.user.is_authenticated:
-        # Get unread message count
-        unread_messages_count = Message.objects.filter(
-            recipient=request.user, 
-            status='unread'
-        ).count()
-        
-        # Get recent messages (limit to 2 for dashboard)
-        recent_messages = Message.objects.filter(
-            recipient=request.user
-        ).exclude(
-            status='deleted'
-        ).order_by('-created_at')[:2]
+    # Get recent messages
+    recent_messages = Message.objects.filter(
+        recipient=request.user
+    ).exclude(
+        status='deleted'
+    ).order_by('-created_at')[:5]
     
-    # Add message data to context
-    dashboard_data['unread_messages_count'] = unread_messages_count
-    dashboard_data['recent_messages'] = recent_messages
+    # Get unread message count
+    unread_messages_count = Message.objects.filter(
+        recipient=request.user, 
+        status='unread'
+    ).count()
     
     context = {
-        **dashboard_data,
+        'patient': patient,
+        'patient_name': patient.full_name,
+        'appointments': appointments,
+        'prescriptions': prescriptions,
+        'recent_messages': recent_messages,
+        'unread_messages_count': unread_messages_count,
         'active_section': 'dashboard',
-        'patient_name': f"{patient['first_name']} {patient['last_name']}",
-        'patient': patient
     }
     
     return render(request, "patient/dashboard.html", context)

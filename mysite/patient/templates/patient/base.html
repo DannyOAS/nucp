@@ -84,9 +84,6 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
             </svg>
           </button>
-         <!-- <div class="h-8 w-8 bg-blue-200 text-blue-600 rounded-full flex items-center justify-center font-semibold">
-            P
-          </div>-->
 
             <div class="relative">
                 <div id="profileIcon" class="h-8 w-8 bg-blue-200 text-blue-600 rounded-full flex items-center justify-center font-semibold cursor-pointer">
@@ -149,9 +146,6 @@
     </a>
     <a href="{% url 'patient:patient_email' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'email' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
         <span class="mr-2">📧</span> Email
-    </a>
-    <a href="{% url 'patient:patient_messages' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'messages' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
-        <span class="mr-2">📧</span> Messages
     </a>
     <a href="{% url 'patient:patient_jitsi' %}" class="block px-4 py-2 mb-1 rounded {% if active_section == 'video' %}bg-[#004d40] text-white{% else %}hover:bg-gray-200{% endif %}">
         <span class="mr-2">🎥</span> Jitsi Video

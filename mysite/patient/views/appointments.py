@@ -1,92 +1,80 @@
-# views/patient_views/appointments.py
+# patient/views/appointments.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from datetime import datetime, timedelta
+from patient.decorators import patient_required
+from common.models import Appointment
+from provider.models import Provider
 
-from theme_name.repositories import PatientRepository, AppointmentRepository
-# Import the renamed AppointmentService
-from provider.services import AppointmentService
-
+@patient_required
 def appointments_view(request):
-    """Patient appointments view with calendar integration"""
-    patient = PatientRepository.get_current(request)
+    """Patient appointments view using database models"""
+    patient = request.patient
     
-    # Get appointments using service with calendar integration
-    appointment_data = AppointmentService.get_appointments_dashboard(patient['id'])
-    
-    # Add the current date for template usage
+    # Get appointments - use request.user instead of patient
     today = timezone.now()
+    upcoming_appointments = Appointment.objects.filter(
+        patient=request.user,  # Use request.user, not patient
+        time__gte=today
+    ).order_by('time')
+    
+    past_appointments = Appointment.objects.filter(
+        patient=request.user,  # Use request.user, not patient
+        time__lt=today
+    ).order_by('-time')[:10]  # Last 10 past appointments
     
     context = {
         'patient': patient,
-        'patient_name': f"{patient['first_name']} {patient['last_name']}",
+        'patient_name': patient.full_name,
+        'appointments': upcoming_appointments,
+        'past_appointments': past_appointments,
         'today': today,
-        'appointments': appointment_data['upcoming_appointments'],
-        'past_appointments': appointment_data['past_appointments'],
         'active_section': 'appointments'
     }
     
     return render(request, "patient/appointments.html", context)
-
+@patient_required
 def schedule_appointment(request):
-    """View for patient to schedule a new appointment"""
-    patient = PatientRepository.get_current(request)
+    """Schedule new appointment using database models"""
+    patient = request.patient
     
     if request.method == 'POST':
-        # Extract appointment data from the form
-        appointment_data = {
-            'doctor': request.POST.get('doctor'),
-            'time': request.POST.get('appointment_date') + ' - ' + request.POST.get('appointment_time'),
-            'type': request.POST.get('appointment_type'),
-            'reason': request.POST.get('reason'),
-            'location': request.POST.get('location', 'Northern Health Clinic'),
-            'notes': request.POST.get('notes', ''),
-            'patient_id': patient['id'],
-            'patient_name': f"{patient['first_name']} {patient['last_name']}",
-            'status': 'Scheduled'
-        }
+        # Get form data
+        provider_id = request.POST.get('doctor')
+        appointment_date = request.POST.get('appointment_date')
+        appointment_time = request.POST.get('appointment_time')
+        appointment_type = request.POST.get('appointment_type')
+        reason = request.POST.get('reason')
+        notes = request.POST.get('notes', '')
         
-        # Determine provider ID from doctor name
-        doctor_name = request.POST.get('doctor', '')
-        provider_id = None
-        
-        # In a real implementation, you would look up the provider by name
-        # For this example, we'll extract from format "Dr. Smith"
-        if doctor_name.startswith('Dr. '):
-            last_name = doctor_name[4:]
-            # Find provider by last name - simplified example
-            if last_name == 'Johnson':
-                provider_id = 1
-            elif last_name == 'Smith':
-                provider_id = 2
-            elif last_name == 'Wilson':
-                provider_id = 3
-        
-        # Schedule the appointment
-        appointment = AppointmentService.schedule_appointment(
-            appointment_data=appointment_data,
-            patient_id=patient['id'],
-            provider_id=provider_id
-        )
-        
-        if appointment:
+        try:
+            # Parse datetime
+            datetime_str = f"{appointment_date} {appointment_time}"
+            appointment_datetime = datetime.strptime(datetime_str, '%Y-%m-%d %I:%M %p')
+            appointment_datetime = timezone.make_aware(appointment_datetime)
+            
+            # Create appointment
+            appointment = Appointment.objects.create(
+                patient=patient,
+                doctor_id=provider_id,
+                time=appointment_datetime,
+                type=appointment_type,
+                reason=reason,
+                notes=notes,
+                status='Scheduled'
+            )
+            
             messages.success(request, "Appointment scheduled successfully!")
-            return redirect('patient_appointments')
-        else:
-            messages.error(request, "There was an error scheduling your appointment. Please try again.")
+            return redirect('patient:patient_appointments')
+            
+        except Exception as e:
+            messages.error(request, f"Error scheduling appointment: {str(e)}")
     
     # For GET requests, display the scheduling form
-    # Get available providers for dropdown
-    # In a real implementation, this would come from your provider repository
-    available_providers = [
-        {'id': 1, 'name': 'Johnson', 'speciality': 'Family Medicine'},
-        {'id': 2, 'name': 'Smith', 'speciality': 'Internal Medicine'},
-        {'id': 3, 'name': 'Wilson', 'speciality': 'Cardiology'}
-    ]
+    available_providers = Provider.objects.filter(is_active=True)
     
     # Generate available time slots
-    # In a real implementation, this would check the provider's calendar for availability
     available_dates = []
     start_date = timezone.now().date()
     for i in range(14):  # Next two weeks
@@ -96,7 +84,7 @@ def schedule_appointment(request):
     
     context = {
         'patient': patient,
-        'patient_name': f"{patient['first_name']} {patient['last_name']}",
+        'patient_name': patient.full_name,
         'available_providers': available_providers,
         'available_dates': available_dates,
         'available_times': available_times,
@@ -105,6 +93,7 @@ def schedule_appointment(request):
     
     return render(request, "patient/schedule_appointment.html", context)
 
+@login_required
 def reschedule_appointment(request, appointment_id):
     """View for patient to reschedule an existing appointment"""
     patient = PatientRepository.get_current(request)
@@ -153,6 +142,7 @@ def reschedule_appointment(request, appointment_id):
     
     return render(request, "patient/reschedule_appointment.html", context)
 
+@login_required
 def cancel_appointment(request, appointment_id):
     """View for patient to cancel an appointment"""
     patient = PatientRepository.get_current(request)

@@ -16,14 +16,23 @@ class PatientProfileEditForm(forms.Form):
     emergency_contact_name = forms.CharField(max_length=100, required=False)
     emergency_contact_phone = forms.CharField(max_length=20, required=False)
 
+
 class PrescriptionRequestForm(forms.ModelForm):
+    """Form for requesting a prescription"""
     class Meta:
         model = PrescriptionRequest
         fields = [
-            'first_name', 'last_name', 'date_of_birth', 'ohip_number', 'phone_number',
-            'medication_name', 'current_dosage', 'medication_duration', 'last_refill_date',
-            'preferred_pharmacy', 'new_medical_conditions', 'new_medications', 'side_effects',
-            'information_consent', 'pharmacy_consent'
+            'patient',  # This is now a ForeignKey to Patient
+            'medication_name', 
+            'current_dosage', 
+            'medication_duration', 
+            'last_refill_date',
+            'preferred_pharmacy', 
+            'new_medical_conditions', 
+            'new_medications', 
+            'side_effects',
+            'information_consent', 
+            'pharmacy_consent'
         ]
         widgets = {
             "first_name": forms.TextInput(attrs={"class": "shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline", "placeholder": "First Name"}),

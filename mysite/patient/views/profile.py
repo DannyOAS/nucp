@@ -1,48 +1,45 @@
+# patient/views/profile.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
-from theme_name.repositories import PatientRepository
+from patient.decorators import patient_required
 from patient.forms import PatientProfileEditForm
 
+@patient_required
 def patient_profile(request):
-    """Patient profile view"""
-    patient = PatientRepository.get_current(request)
+    """Patient profile view using database models"""
+    patient = request.patient
     
     if request.method == 'POST':
-        form = PatientProfileEditForm(request.POST)
+        form = PatientProfileEditForm(request.POST, instance=patient)
         if form.is_valid():
-            # Get cleaned data from form
-            updated_data = form.cleaned_data
+            # Update User fields
+            user = patient.user
+            user.first_name = form.cleaned_data.get('first_name', user.first_name)
+            user.last_name = form.cleaned_data.get('last_name', user.last_name)
+            user.email = form.cleaned_data.get('email', user.email)
+            user.save()
             
-            # Update patient data via repository
-            PatientRepository.update(patient['id'], updated_data)
+            # Save patient profile
+            form.save()
             
-            # Get updated patient data
-            patient = PatientRepository.get_by_id(patient['id'])
-            
-            # Add success message
             messages.success(request, "Profile updated successfully!")
-            
-            # Redirect to profile page to prevent form resubmission
             return redirect('patient:patient_profile')
     else:
-        # Pre-fill form with existing patient data
-        form = PatientProfileEditForm(initial={
-            'first_name': patient.get('first_name', ''),
-            'last_name': patient.get('last_name', ''),
-            'email': patient.get('email', ''),
-            'primary_phone': patient.get('primary_phone', ''),
-            'alternate_phone': patient.get('alternate_phone', ''),
-            'address': patient.get('address', ''),
-            'emergency_contact_name': patient.get('emergency_contact_name', ''),
-            'emergency_contact_phone': patient.get('emergency_contact_phone', '')
-        })
+        # Pre-fill form with existing data
+        initial_data = {
+            'first_name': patient.user.first_name,
+            'last_name': patient.user.last_name,
+            'email': patient.user.email,
+        }
+        form = PatientProfileEditForm(instance=patient, initial=initial_data)
     
     context = {
         'patient': patient,
-        'patient_name': f"{patient['first_name']} {patient['last_name']}",
+        'patient_name': patient.full_name,
+        'form': form,
         'active_section': 'profile',
-        'form': form
     }
+    
     return render(request, "patient/profile.html", context)
 
 def patient_medical_history(request):

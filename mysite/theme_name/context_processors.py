@@ -2,22 +2,27 @@
 
 from .repositories import PatientRepository
 
+# theme_name/context_processors.py (update patient_context function)
 def patient_context(request):
-    """
-    Add patient-related context data to all templates.
-    """
-    # Only attempt to get patient data if the user is authenticated
-    # In mock mode, this will always get a default patient
-    try:
-        patient = PatientRepository.get_current(request)
-        patient_name = f"{patient['first_name']} {patient['last_name']}"
-        return {
-            'patient': patient,
-            'patient_name': patient_name,
-        }
-    except Exception:
-        # Return empty context if there's an error
-        return {}
+    """Add patient-specific data to templates"""
+    context = {'is_patient': False}
+    
+    if request.user.is_authenticated:
+        # Check if user is in patients group
+        if request.user.groups.filter(name='patients').exists():
+            context['is_patient'] = True
+            
+            try:
+                patient = request.user.patient_profile
+                context['patient'] = patient
+                context['patient_name'] = patient.full_name
+                context['patient_id'] = patient.id
+            except:
+                # Patient profile doesn't exist yet
+                context['patient'] = None
+                context['patient_name'] = f"{request.user.first_name} {request.user.last_name}"
+    
+    return context
 
 def site_settings(request):
     """
