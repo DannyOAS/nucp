@@ -48,7 +48,8 @@ INSTALLED_APPS = [
     "tailwind",
     'django_auth_ldap',
     "phonenumber_field",
-#    "rest_framework",
+    "rest_framework",
+    'drf_yasg',
 ]
 
 # LDAP Authentication Configuration

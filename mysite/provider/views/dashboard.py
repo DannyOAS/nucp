@@ -1,14 +1,16 @@
+# provider/views/dashboard.py
 """Dashboard view for provider portal."""
 
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import datetime, timedelta
+import requests
+import logging
 
 from common.models import Appointment, Prescription, Message
 from provider.models import Provider, RecordingSession, DocumentTemplate
 from provider.utils import get_current_provider
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -27,8 +29,10 @@ def provider_dashboard(request):
     end_of_day = datetime.combine(today, datetime.max.time())
     start_of_day = datetime.combine(today, datetime.min.time())
     
-    # Get appointments using ORM - filtered for this provider
+    # Get appointments using the API or ORM based on configuration
+    # For now, we'll continue using the ORM but structure it so it's easy to switch
     try:
+        # Using ORM for now, but structured to make API transition easier
         upcoming_appointments = Appointment.objects.filter(
             doctor=provider, 
             time__gte=timezone.now()
@@ -53,6 +57,15 @@ def provider_dashboard(request):
                 doctor=provider,
                 time__lt=timezone.now()
             ).count()
+            
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri('/api/provider/')
+        # upcoming_response = requests.get(f'{api_url}appointments/upcoming/')
+        # if upcoming_response.status_code == 200:
+        #     upcoming_appointments = upcoming_response.json()
+        # else:
+        #     upcoming_appointments = []
+        
     except Exception as e:
         logger.error(f"Error retrieving appointments: {str(e)}")
         upcoming_appointments = []
@@ -99,6 +112,14 @@ def provider_dashboard(request):
             doctor=provider,
             status='Pending'
         )
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri('/api/provider/')
+        # prescription_response = requests.get(f'{api_url}prescriptions/pending/')
+        # if prescription_response.status_code == 200:
+        #     prescription_requests = prescription_response.json()
+        # else:
+        #     prescription_requests = []
     except Exception as e:
         logger.error(f"Error retrieving prescriptions: {str(e)}")
         prescription_requests = []

@@ -1,9 +1,11 @@
+# provider/views/profile.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import datetime
 import logging
+import requests
 
 from provider.forms import ProviderProfileEditForm
 from provider.utils import get_current_provider
@@ -39,6 +41,26 @@ def provider_profile(request):
                 
                 # Update provider data 
                 provider = form.save()
+                
+                # API version (commented out for now):
+                # api_url = request.build_absolute_uri(f'/api/provider/profile/{provider.id}/')
+                # data = {
+                #     'user': {
+                #         'first_name': updated_data.get('first_name'),
+                #         'last_name': updated_data.get('last_name'),
+                #         'email': updated_data.get('email')
+                #     },
+                #     'specialty': updated_data.get('specialty'),
+                #     'bio': updated_data.get('bio'),
+                #     'phone': updated_data.get('phone'),
+                #     'license_number': updated_data.get('license_number')
+                # }
+                # response = requests.put(api_url, json=data)
+                # if response.status_code == 200:
+                #     provider_dict = response.json()
+                # else:
+                #     # Handle error
+                #     messages.error(request, "Error updating profile via API")
                 
                 # Update provider_dict for template
                 provider_dict = {
@@ -97,6 +119,14 @@ def provider_settings(request):
                 'default_appointment_duration': int(request.POST.get('default_appointment_duration', 30)),
                 'calendar_sync_enabled': request.POST.get('calendar_sync_enabled') == 'on',
             }
+            
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri(f'/api/provider/profile/{provider.id}/')
+            # response = requests.patch(api_url, json=settings_data)
+            # if response.status_code == 200:
+            #     messages.success(request, "Settings updated successfully!")
+            # else:
+            #     messages.error(request, "Error updating settings via API")
             
             # Save settings to provider
             for key, value in settings_data.items():

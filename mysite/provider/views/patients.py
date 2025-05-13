@@ -1,9 +1,11 @@
+# provider/views/patients.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import models
 import logging
+import requests
 
 from theme_name.repositories import PatientRepository, AppointmentRepository, PrescriptionRepository
 from provider.services import ProviderService
@@ -68,6 +70,19 @@ def provider_patients(request):
                 'upcoming_appointment': getattr(patient, 'upcoming_appointment', ''),
                 'requires_attention': getattr(patient, 'requires_attention', False),
             })
+            
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri('/api/provider/patients/')
+        # params = {
+        #     'search': search_query,
+        #     'filter': filter_type
+        # }
+        # response = requests.get(api_url, params=params)
+        # if response.status_code == 200:
+        #     patients_list = response.json()
+        # else:
+        #     patients_list = []
+            
     except Exception as e:
         logger.error(f"Error retrieving patients from database: {str(e)}")
         # Fall back to repository during transition
@@ -103,6 +118,15 @@ def provider_patients(request):
     # Get recent patient activity
     try:
         recent_activity = ProviderService.get_recent_patient_activity(provider.id)
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri('/api/provider/patients/recent-activity/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     recent_activity = response.json()
+        # else:
+        #     recent_activity = []
+            
     except Exception as e:
         logger.error(f"Error retrieving recent activity: {str(e)}")
         recent_activity = []
@@ -155,6 +179,14 @@ def add_patient(request):
                 # Save using service or repository during transition
                 result = ProviderService.add_patient(patient_data, provider_id=provider.id)
                 
+                # API version (commented out for now):
+                # api_url = request.build_absolute_uri('/api/provider/patients/')
+                # response = requests.post(api_url, json=patient_data)
+                # if response.status_code == 201:  # Created
+                #     result = {'success': True, 'patient': response.json()}
+                # else:
+                #     result = {'success': False}
+                
                 # Check if the upload to cloud was successful
                 if result.get('patient'):
                     if result.get('cloud_upload', {}).get('success'):
@@ -192,6 +224,14 @@ def view_patient(request, patient_id):
     # Get patient data
     try:
         patient = PatientRepository.get_by_id(patient_id)
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/patients/{patient_id}/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     patient = response.json()
+        # else:
+        #     patient = None
         
         if not patient:
             messages.error(request, f"Patient with ID {patient_id} not found.")
@@ -241,6 +281,33 @@ def view_patient(request, patient_id):
         
         # Format the patient name
         patient_name = f"{patient.get('first_name', '')} {patient.get('last_name', '')}"
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/patients/{patient_id}/')
+        # appointments_response = requests.get(f'{api_url}appointments/')
+        # past_appointments_response = requests.get(f'{api_url}past-appointments/')
+        # prescriptions_response = requests.get(f'{api_url}prescriptions/')
+        # historical_prescriptions_response = requests.get(f'{api_url}historical-prescriptions/')
+        # 
+        # if appointments_response.status_code == 200:
+        #     appointments = appointments_response.json()
+        # else:
+        #     appointments = []
+        # 
+        # if past_appointments_response.status_code == 200:
+        #     past_appointments = past_appointments_response.json()
+        # else:
+        #     past_appointments = []
+        # 
+        # if prescriptions_response.status_code == 200:
+        #     prescriptions = prescriptions_response.json()
+        # else:
+        #     prescriptions = []
+        # 
+        # if historical_prescriptions_response.status_code == 200:
+        #     historical_prescriptions = historical_prescriptions_response.json()
+        # else:
+        #     historical_prescriptions = []
         
     except Exception as e:
         logger.error(f"Error retrieving patient details: {str(e)}")

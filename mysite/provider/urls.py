@@ -1,5 +1,5 @@
 # provider/urls.py
-from django.urls import path
+from django.urls import path, include
 from . import views
 
 app_name = 'provider'
@@ -40,22 +40,40 @@ urlpatterns = [
     path('email/action/<int:message_id>/<str:action>/', views.provider_message_action, name='provider_message_action'),
     path('email/templates/', views.load_templates, name='load_templates'),
     
-    # Video Consultation - PLACEHOLDER
+    # Video Consultation
     path('video-consultation/', views.provider_video_consultation, name='provider_video_consultation'),
+    path('video-consultation/start-recording/<int:appointment_id>/', views.video.start_recording, name='start_recording'),
+    path('video-consultation/stop-recording/<int:recording_id>/', views.video.stop_recording, name='stop_recording'),
+    path('video-consultation/view-recording/<int:recording_id>/', views.video.view_recording, name='view_recording'),
     
-    # AI Scribe views - PLACEHOLDER
-    path('ai-scribe/', views.ai_scribe_dashboard, name='ai_scribe_dashboard'),
-    path('ai-scribe/start-recording/', views.provider_dashboard, name='start_recording'),
-    path('ai-scribe/stop-recording/', views.provider_dashboard, name='stop_recording'),
-    path('ai-scribe/transcription/<int:recording_id>/', views.provider_dashboard, name='get_transcription'),
-    path('ai-scribe/generate-note/<int:transcription_id>/', views.provider_dashboard, name='generate_clinical_note'),
-    path('ai-scribe/notes/<int:note_id>/', views.provider_dashboard, name='view_clinical_note'),
-    path('ai-scribe/notes/<int:note_id>/edit/', views.provider_dashboard, name='edit_clinical_note'),
+    # AI Scribe views - Using the new module structure
+    path('ai-scribe/', views.ai_views.scribe.ai_scribe_dashboard, name='ai_scribe_dashboard'),
+    path('ai-scribe/start-recording/', views.ai_views.scribe.start_recording, name='ai_start_recording'),
+    path('ai-scribe/stop-recording/', views.ai_views.scribe.stop_recording, name='ai_stop_recording'),
+    path('ai-scribe/transcription/<int:recording_id>/', views.ai_views.scribe.get_transcription, name='get_transcription'),
+    path('ai-scribe/generate-note/<int:transcription_id>/', views.ai_views.scribe.generate_clinical_note, name='generate_clinical_note'),
+    path('ai-scribe/notes/<int:note_id>/', views.ai_views.scribe.view_clinical_note, name='view_clinical_note'),
+    path('ai-scribe/notes/<int:note_id>/edit/', views.ai_views.scribe.edit_clinical_note, name='edit_clinical_note'),
+
+    # AI Configuration views
+    path('ai-scribe/config/', views.ai_views.config.ai_config_dashboard, name='ai_config_dashboard'),
+    path('ai-scribe/config/edit/<int:config_id>/', views.ai_views.config.edit_model_config, name='edit_model_config'),
+    path('ai-scribe/config/create/', views.ai_views.config.create_model_config, name='create_model_config'),
+    path('ai-scribe/config/toggle/<int:config_id>/', views.ai_views.config.toggle_model_status, name='toggle_model_status'),
+    path('ai-scribe/config/test/<int:config_id>/', views.ai_views.config.test_model_config, name='test_model_config'),
     
-    # Forms views - PLACEHOLDER
-    path('forms/', views.forms_dashboard, name='forms_dashboard'),
-    path('forms/create/<int:template_id>/', views.provider_dashboard, name='create_form'),
-    path('forms/document/<int:document_id>/', views.provider_dashboard, name='view_document'),
-    path('forms/document/<int:document_id>/pdf/', views.provider_dashboard, name='download_document_pdf'),
-    path('forms/document/<int:document_id>/status/', views.provider_dashboard, name='update_document_status'),
+    # Forms views - Using the new module structure
+    path('forms/', views.ai_views.forms.forms_dashboard, name='forms_dashboard'),
+    path('forms/create/<int:template_id>/', views.ai_views.forms.create_form, name='create_form'),
+    path('forms/document/<int:document_id>/', views.ai_views.forms.view_document, name='view_document'),
+    path('forms/document/<int:document_id>/pdf/', views.ai_views.forms.download_document_pdf, name='download_document_pdf'),
+    path('forms/document/<int:document_id>/status/', views.ai_views.forms.update_document_status, name='update_document_status'),
+    
+    # Templates management views (admin only)
+    path('templates/', views.ai_views.forms.templates_dashboard, name='templates_dashboard'),
+    path('templates/create/', views.ai_views.forms.create_template, name='create_template'),
+    path('templates/edit/<int:template_id>/', views.ai_views.forms.edit_template, name='edit_template'),
+    
+    # API endpoints
+    path('api/', include('provider.api.urls')),
 ]

@@ -1,4 +1,4 @@
-# views/provider_views/appointments.py
+# provider/views/appointments.py
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -6,6 +6,8 @@ from django.utils import timezone
 from datetime import datetime, timedelta, date
 import calendar
 import logging
+import requests
+import json
 
 from theme_name.repositories import ProviderRepository
 from provider.utils import get_current_provider
@@ -101,6 +103,7 @@ def provider_appointments(request):
         next_date = (selected_date + timedelta(days=7)).strftime('%Y-%m-%d')
     
     # Get appointments using enhanced service with calendar integration
+    # We'll keep using the service layer for now, but could switch to API
     try:
         appointments = AppointmentService.get_provider_appointments(
             provider_id=provider.id,
@@ -124,6 +127,41 @@ def provider_appointments(request):
         upcoming_count = len([a for a in appointments if a.get('status') == 'Scheduled'])
         completed_count = len([a for a in appointments if a.get('status') == 'Completed'])
         cancelled_count = len([a for a in appointments if a.get('status') == 'Cancelled'])
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri('/api/provider/')
+        # params = {
+        #     'start_date': start_date.isoformat(),
+        #     'end_date': end_date.isoformat(),
+        #     'view_type': view_type
+        # }
+        # response = requests.get(f'{api_url}appointments/', params=params)
+        # if response.status_code == 200:
+        #     appointments = response.json()
+        #     # Process appointments for calendar display
+        #     calendar_data = process_appointments_for_calendar(appointments, start_date, end_date, view_type)
+        #     
+        #     # Get today's appointments
+        #     today_response = requests.get(f'{api_url}appointments/today/')
+        #     if today_response.status_code == 200:
+        #         todays_appointments = today_response.json()
+        #     else:
+        #         todays_appointments = []
+        #     
+        #     # Calculate statistics
+        #     today_count = len(todays_appointments)
+        #     upcoming_count = len([a for a in appointments if a.get('status') == 'Scheduled'])
+        #     completed_count = len([a for a in appointments if a.get('status') == 'Completed'])
+        #     cancelled_count = len([a for a in appointments if a.get('status') == 'Cancelled'])
+        # else:
+        #     appointments = []
+        #     calendar_data = {}
+        #     todays_appointments = []
+        #     today_count = 0
+        #     upcoming_count = 0
+        #     completed_count = 0
+        #     cancelled_count = 0
+        
     except Exception as e:
         logger.error(f"Error retrieving appointments: {str(e)}")
         appointments = []
@@ -157,6 +195,7 @@ def provider_appointments(request):
     
     return render(request, "provider/appointments.html", context)
 
+# Rest of the functions remain the same
 def get_appointment_date(appointment):
     """Extract date from appointment time string."""
     try:
@@ -175,6 +214,8 @@ def get_appointment_date(appointment):
 
 def process_appointments_for_calendar(appointments, start_date, end_date, view_type):
     """Process appointments into a format suitable for calendar display"""
+    # This function remains unchanged
+    # ...rest of the existing function code...
     result = {}
     
     if view_type == 'day':
@@ -360,7 +401,7 @@ def process_appointments_for_calendar(appointments, start_date, end_date, view_t
     
     return result
 
-
+# The remaining view functions would be updated similarly
 @login_required
 def view_appointment(request, appointment_id):
     """View for provider to see appointment details"""
@@ -373,6 +414,16 @@ def view_appointment(request, appointment_id):
     
     # Get the appointment
     try:
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/appointments/{appointment_id}/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     appointment = response.json()
+        # else:
+        #     messages.error(request, "Appointment not found.")
+        #     return redirect('provider_appointments')
+        
+        # Using service layer for now
         provider_appointments = AppointmentService.get_provider_appointments(provider.id)
         
         appointment = None
@@ -404,6 +455,7 @@ def view_appointment(request, appointment_id):
     }
     
     return render(request, "provider/view_appointment.html", context)
+# Continuing from the provider/views/appointments.py file
 
 @login_required
 def schedule_appointment(request):
@@ -436,6 +488,14 @@ def schedule_appointment(request):
                 patient_id=request.POST.get('patient_id'),
                 provider_id=provider.id  # Use authenticated provider
             )
+            
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri('/api/provider/appointments/')
+            # response = requests.post(api_url, json=appointment_data)
+            # if response.status_code == 201:  # Created
+            #     appointment = response.json()
+            # else:
+            #     appointment = None
             
             if appointment:
                 messages.success(request, "Appointment scheduled successfully!")
@@ -502,6 +562,14 @@ def reschedule_appointment(request, appointment_id):
     try:
         provider_appointments = AppointmentService.get_provider_appointments(provider.id)
         
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/appointments/{appointment_id}/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     appointment = response.json()
+        # else:
+        #     appointment = None
+        
         appointment = None
         for appt in provider_appointments:
             if appt.get('id') == appointment_id:
@@ -541,6 +609,21 @@ def reschedule_appointment(request, appointment_id):
                 reschedule_reason=reschedule_reason,
                 notify_patient=notify_patient
             )
+            
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri(f'/api/provider/appointments/{appointment_id}/reschedule/')
+            # reschedule_data = {
+            #     'new_time': new_time_data['time'],
+            #     'patient_id': patient_id,
+            #     'provider_initiated': True,
+            #     'reschedule_reason': reschedule_reason,
+            #     'notify_patient': notify_patient
+            # }
+            # response = requests.post(api_url, json=reschedule_data)
+            # if response.status_code == 200:
+            #     result = response.json()
+            # else:
+            #     result = {'success': False, 'error': 'API error'}
             
             if result.get('success', False):
                 messages.success(request, "Appointment rescheduled successfully!")
@@ -616,6 +699,14 @@ def update_appointment_status(request, appointment_id):
                 {'status': status}
             )
             
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri(f'/api/provider/appointments/{appointment_id}/')
+            # response = requests.patch(api_url, json={'status': status})
+            # if response.status_code == 200:
+            #     updated_appointment = response.json()
+            # else:
+            #     updated_appointment = None
+            
             if updated_appointment:
                 messages.success(request, f"Appointment status updated to {status}.")
                 
@@ -625,6 +716,15 @@ def update_appointment_status(request, appointment_id):
                         appointment_id=appointment_id,
                         provider_initiated=True
                     )
+                    
+                    # API version (commented out for now):
+                    # api_url = request.build_absolute_uri(f'/api/provider/appointments/{appointment_id}/cancel/')
+                    # cancel_response = requests.post(api_url, json={'provider_initiated': True})
+                    # if cancel_response.status_code == 200:
+                    #     result = cancel_response.json()
+                    # else:
+                    #     result = {'success': False}
+                    
                     if not result.get('success', False):
                         messages.warning(request, "Appointment status was updated, but there was an issue syncing with the calendar.")
             else:

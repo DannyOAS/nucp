@@ -5,7 +5,14 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseRedirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.models import User
+from django.utils import timezone
+import logging
+import requests
+
 from theme_name.repositories import ProviderRepository, PatientRepository
+from provider.utils import get_current_provider
+
+logger = logging.getLogger(__name__)
 
 @login_required
 def provider_email(request):
@@ -50,6 +57,27 @@ def provider_email(request):
     
     # Get user ID from authenticated user
     user_id = user.id
+    
+    # API version (commented out for now):
+    # api_url = request.build_absolute_uri('/api/provider/messages/')
+    # params = {
+    #     'folder': folder,
+    #     'search': search_query
+    # }
+    # response = requests.get(api_url, params=params)
+    # if response.status_code == 200:
+    #     api_data = response.json()
+    #     messages_list = api_data.get('messages', [])
+    #     unread_count = api_data.get('unread_count', 0)
+    #     read_count = api_data.get('read_count', 0)
+    #     sent_count = api_data.get('sent_count', 0)
+    #     priority_count = api_data.get('priority_count', 0)
+    # else:
+    #     messages_list = []
+    #     unread_count = 0
+    #     read_count = 0
+    #     sent_count = 0
+    #     priority_count = 0
     
     # Start with all messages for this user
     try:
@@ -118,7 +146,7 @@ def provider_email(request):
                 'read': is_read
             })
     except Exception as e:
-        print(f"Error getting messages: {e}")
+        logger.error(f"Error getting messages: {e}")
         messages_list = []
     
     # Count statistics for sidebar
@@ -155,7 +183,7 @@ def provider_email(request):
             priority_count = 3  # Fallback default
             
     except Exception as e:
-        print(f"Error calculating message counts: {e}")
+        logger.error(f"Error calculating message counts: {e}")
         unread_count = 5
         read_count = 12
         sent_count = 8
@@ -179,10 +207,10 @@ def provider_email(request):
             # Get the patient objects
             patients = PatientRegistration.objects.filter(id__in=patient_ids)
             
-        print(f"Found {patients.count()} patients for provider {provider.id}")
+        logger.debug(f"Found {patients.count()} patients for provider {provider.id}")
         
     except Exception as e:
-        print(f"Error getting provider's patients: {e}")
+        logger.error(f"Error getting provider's patients: {e}")
         # Fall back to repository in transition period
         patients = PatientRepository.get_all()
 
@@ -272,13 +300,28 @@ def provider_compose_message(request):
                         message.priority = 'high'
                         message.save()
                     
+                    # API version (commented out for now):
+                    # api_url = request.build_absolute_uri('/api/provider/messages/')
+                    # message_data = {
+                    #     'recipient_id': recipient_id,
+                    #     'recipient_type': recipient_type,
+                    #     'subject': request.POST.get('subject', ''),
+                    #     'content': request.POST.get('content', ''),
+                    #     'priority': request.POST.get('priority', 'normal')
+                    # }
+                    # response = requests.post(api_url, json=message_data)
+                    # if response.status_code == 201:  # Created
+                    #     django_messages.success(request, "Message sent successfully.")
+                    # else:
+                    #     django_messages.error(request, "Error sending message through API.")
+                    
                     django_messages.success(request, "Message sent successfully.")
                 except User.DoesNotExist:
                     django_messages.error(request, "Recipient not found.")
             else:
                 django_messages.error(request, "No recipient selected.")
         except Exception as e:
-            print(f"Error sending message: {e}")
+            logger.error(f"Error sending message: {e}")
             django_messages.error(request, "Error sending message.")
             
         return redirect('provider_email')
@@ -301,10 +344,10 @@ def provider_compose_message(request):
             # Get the patient objects
             patients = PatientRegistration.objects.filter(id__in=patient_ids)
             
-        print(f"Found {patients.count()} patients for provider {provider.id}")
+        logger.debug(f"Found {patients.count()} patients for provider {provider.id}")
         
     except Exception as e:
-        print(f"Error getting provider's patients: {e}")
+        logger.error(f"Error getting provider's patients: {e}")
         patients = []
     
     # Get staff members
@@ -330,7 +373,7 @@ def provider_compose_message(request):
                 {'id': 2, 'first_name': 'Dr.', 'last_name': 'Thompson'},
             ]
     except Exception as e:
-        print(f"Error getting staff members: {e}")
+        logger.error(f"Error getting staff members: {e}")
         # Fallback staff members
         staff_members = [
             {'id': 1, 'first_name': 'Nurse', 'last_name': 'Williams'},
@@ -361,9 +404,28 @@ def provider_compose_message(request):
                 'thread_id': getattr(message, 'thread_id', f'thread-{message.id}')
             }
             
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri(f'/api/provider/messages/{reply_to_id}/')
+            # response = requests.get(api_url)
+            # if response.status_code == 200:
+            #     message_data = response.json()
+            #     original_message = {
+            #         'id': message_data.get('id'),
+            #         'subject': message_data.get('subject'),
+            #         'sender_type': message_data.get('sender_type', 'patient'),
+            #         'sender': {
+            #             'id': message_data.get('sender', {}).get('id'),
+            #             'first_name': message_data.get('sender', {}).get('first_name'),
+            #             'last_name': message_data.get('sender', {}).get('last_name')
+            #         },
+            #         'thread_id': message_data.get('thread_id', f'thread-{message_data.get("id")}')
+            #     }
+            # else:
+            #     original_message = None
+            
         except Exception as e:
             # Fallback to mock data if message not found
-            print(f"Error getting original message: {e}")
+            logger.error(f"Error getting original message: {e}")
             original_message = {
                 'id': reply_to_id,
                 'subject': 'Original Message Subject',
@@ -413,6 +475,13 @@ def provider_message_action(request, message_id, action):
             django_messages.error(request, "You don't have permission to perform this action.")
             return redirect('provider_email')
         
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/messages/{message_id}/{action}/')
+        # response = requests.post(api_url)
+        # if response.status_code == 200:
+        #     action_text = action.replace('_', ' ')
+        #     django_messages.success(request, f"Message {action_text} successfully.")
+# provider/views/email.py (continued)
         # Perform the action
         if action == 'mark_read':
             if hasattr(message, 'read'):
@@ -453,7 +522,7 @@ def provider_message_action(request, message_id, action):
     except Message.DoesNotExist:
         django_messages.error(request, "Message not found.")
     except Exception as e:
-        print(f"Error performing message action: {e}")
+        logger.error(f"Error performing message action: {e}")
         django_messages.error(request, f"Error performing action: {str(e)}")
 
     # Determine redirect based on referring URL
@@ -511,6 +580,16 @@ def provider_view_message(request, message_id):
         from common.models import Message
         message = Message.objects.get(id=message_id)
         
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/messages/{message_id}/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     message_data = response.json()
+        #     thread_messages = message_data.get('thread_messages', [])
+        # else:
+        #     django_messages.error(request, "Message not found via API.")
+        #     return redirect('provider_email')
+        
         # Verify the user has permission to view this message
         if message.recipient != user and message.sender != user:
             django_messages.error(request, "You don't have permission to view this message.")
@@ -563,7 +642,7 @@ def provider_view_message(request, message_id):
         django_messages.error(request, "Message not found.")
         return redirect('provider_email')
     except Exception as e:
-        print(f"Error viewing message: {e}")
+        logger.error(f"Error viewing message: {e}")
         django_messages.error(request, f"Error viewing message: {str(e)}")
         return redirect('provider_email')
 

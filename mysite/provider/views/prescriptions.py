@@ -1,8 +1,10 @@
+# provider/views/prescriptions.py
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import logging
+import requests
 from datetime import datetime, date
 
 from theme_name.repositories import PrescriptionRepository
@@ -30,12 +32,30 @@ def provider_prescriptions(request):
     search_query = request.GET.get('search', '')
     
     try:
+        # Use service layer for now, but could switch to API
         prescriptions_data = ProviderService.get_prescriptions_dashboard(
             provider.id,  # Use authenticated provider ID
             time_period=time_period,
             search_query=search_query
         )
         logger.debug("Service call successful")
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri('/api/provider/')
+        # params = {
+        #     'time_period': time_period,
+        #     'search': search_query
+        # }
+        # response = requests.get(f'{api_url}prescriptions/', params=params)
+        # if response.status_code == 200:
+        #     prescriptions_data = response.json()
+        # else:
+        #     prescriptions_data = {
+        #         'stats': {'active_prescriptions': 0, 'pending_renewals': 0, 'new_today': 0, 'refill_requests': 0},
+        #         'prescription_requests': [],
+        #         'recent_prescriptions': []
+        #     }
+        
     except Exception as e:
         logger.error(f"Exception in service call: {e}")
         prescriptions_data = {
@@ -120,6 +140,14 @@ def approve_prescription(request, prescription_id):
         # Approve the prescription
         result = PrescriptionService.approve_prescription(prescription_id, provider.id)
         
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/approve/')
+        # response = requests.post(api_url)
+        # if response.status_code == 200:
+        #     result = response.json()
+        # else:
+        #     result = None
+        
         if result:
             messages.success(request, "Prescription approved successfully.")
         else:
@@ -143,6 +171,14 @@ def review_prescription(request, prescription_id):
     try:
         # Get prescription data
         prescription = PrescriptionRepository.get_by_id(prescription_id)
+        
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     prescription = response.json()
+        # else:
+        #     prescription = None
         
         if not prescription:
             messages.error(request, "Prescription not found.")
@@ -192,6 +228,14 @@ def create_prescription(request):
             
             # Create prescription
             result = PrescriptionService.create_prescription(prescription_data)
+            
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri('/api/provider/prescriptions/')
+            # response = requests.post(api_url, json=prescription_data)
+            # if response.status_code == 201:  # Created
+            #     result = {'success': True, 'prescription': response.json()}
+            # else:
+            #     result = {'success': False}
             
             if result and result.get('prescription'):
                 messages.success(request, "Prescription created successfully.")
@@ -260,6 +304,14 @@ def edit_prescription(request, prescription_id):
         # Get prescription data
         prescription = PrescriptionRepository.get_by_id(prescription_id)
         
+        # API version (commented out for now):
+        # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/')
+        # response = requests.get(api_url)
+        # if response.status_code == 200:
+        #     prescription = response.json()
+        # else:
+        #     prescription = None
+        
         if not prescription:
             messages.error(request, "Prescription not found.")
             return redirect('provider_prescriptions')
@@ -287,6 +339,14 @@ def edit_prescription(request, prescription_id):
             
             # Update prescription
             updated_prescription = PrescriptionRepository.update(prescription_id, updated_data)
+            
+            # API version (commented out for now):
+            # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/')
+            # response = requests.patch(api_url, json=updated_data)
+            # if response.status_code == 200:
+            #     updated_prescription = response.json()
+            # else:
+            #     updated_prescription = None
             
             if updated_prescription:
                 messages.success(request, "Prescription updated successfully.")

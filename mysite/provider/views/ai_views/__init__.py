@@ -21,3 +21,7 @@ from .config import (
     ai_config_dashboard,
     edit_model_config
 )
+# provider/views/ai_views/__init__.py
+from . import config
+from . import forms
+from . import scribe
