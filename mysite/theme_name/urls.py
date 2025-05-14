@@ -6,7 +6,6 @@ from . import views
 urlpatterns = [
     # Main website URLs
     path("", views.home, name="home"),
-    path('admin/', admin.site.urls),
     path("about/", views.about, name="about"),
     path("contact/", views.contact, name="contact"),
     path('privacy-policy/', views.privacy_policy, name='privacy_policy'),
@@ -23,9 +22,4 @@ urlpatterns = [
     path('registration/success/', views.registration_success, name='registration_success'),
     path('schedule-demo/', views.schedule_demo, name='schedule_demo'),
     path('logout/', views.logout_view, name='logout'),
-    
-    # Include other app URLs with appropriate prefixes
-    path('patient-dashboard/', include('patient.urls')),
-    path('provider-dashboard/', include('provider.urls')),
-    path('admin-dashboard/', include('admin_portal.urls')),
 ]

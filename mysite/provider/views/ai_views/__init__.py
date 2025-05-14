@@ -14,14 +14,16 @@ from .forms import (
     create_form,
     view_document,
     download_document_pdf,
-    update_document_status
+    update_document_status,
+    templates_dashboard,
+    create_template,
+    edit_template
 )
 
 from .config import (
     ai_config_dashboard,
-    edit_model_config
+    edit_model_config,
+    create_model_config,
+    toggle_model_status,
+    test_model_config
 )
-# provider/views/ai_views/__init__.py
-from . import config
-from . import forms
-from . import scribe

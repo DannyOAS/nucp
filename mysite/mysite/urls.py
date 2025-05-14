@@ -1,6 +1,5 @@
 """
 URL configuration for mysite project.
-
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.1/topics/http/urls/
 Examples:
@@ -37,20 +36,24 @@ schema_view = get_schema_view(
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("", include("theme_name.urls")),  # ✅ Include app-level URLs
+    path("", include("theme_name.urls")),  # Include theme URLs without patient/provider URLs
     path("__reload__/", include("django_browser_reload.urls")),
-
     path('login/', lambda request: redirect('https://auth.isnord.ca/'), name='login'),
-    path("provider-dashboard/", include("provider.urls")),
-    path("api/provider/", include("provider.api.urls"))
     
-    path('api/', include('api.urls')),  # Central API    
-
+    # Include app URLs - No namespace parameters, let app_name handle it
+    path('provider/', include('provider.urls')),
+    path('patient/', include('patient.urls')),
+    
+    # API endpoints - No namespace parameters, let app_name handle it
+    path('api/', include('api.urls')),  # Main API
+    path('api/patient/', include('patient.api.urls')),
+    path('api/provider/', include('provider.api.urls')),
+    
     # Swagger documentation URLs
     re_path(r'^api/docs(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     path('api/docs/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('api/redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-
+    
     # Simple unauthorized page (no template needed)
     path('unauthorized/', 
          lambda request: HttpResponse("Unauthorized access. You don't have permission to access this resource.", status=403), 

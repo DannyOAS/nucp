@@ -1,4 +1,3 @@
-import os
 """
 Django settings for mysite project.
 
@@ -11,11 +10,15 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 
+import os
 from pathlib import Path
+
+# =========================================================================
+# CORE SETTINGS
+# =========================================================================
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.1/howto/deployment/checklist/
@@ -26,10 +29,15 @@ SECRET_KEY = 'django-insecure-g%q4p@jgu_8nl(ue1at483&dm-%45871@l#ilb*&mu2o2lla+)
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-
 ALLOWED_HOSTS = ['u1.isnord.ca', 'localhost', '127.0.0.1']
 
-# Application definition
+# Default primary key field type
+# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# =========================================================================
+# APPLICATION DEFINITION
+# =========================================================================
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -45,11 +53,112 @@ INSTALLED_APPS = [
     'patient',
     'provider',
     'admin_portal',
+    'api',
     "tailwind",
     'django_auth_ldap',
     "phonenumber_field",
     "rest_framework",
+    'rest_framework.authtoken',
     'drf_yasg',
+]
+
+MIDDLEWARE = [
+    'django.middleware.security.SecurityMiddleware',
+    'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.common.CommonMiddleware',
+    'django.middleware.csrf.CsrfViewMiddleware',
+    'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'django.contrib.messages.middleware.MessageMiddleware',
+    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',  # Enable auto-reload
+    'django_authelia.middleware.AutheliaMiddleware',
+]
+
+ROOT_URLCONF = 'mysite.urls'
+
+WSGI_APPLICATION = 'mysite.wsgi.application'
+
+# =========================================================================
+# TEMPLATES CONFIGURATION
+# =========================================================================
+
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+                BASE_DIR / 'theme_name' / 'templates',
+                BASE_DIR / 'templates',
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                # Add your custom context processors here
+                'theme_name.context_processors.patient_context',
+                'theme_name.context_processors.site_settings',
+                'theme_name.context_processors.navigation',
+            ],
+        },
+    },
+]
+
+# Email Templates Directory
+TEMPLATES = [
+    {
+        'BACKEND': 'django.template.backends.django.DjangoTemplates',
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates'),
+            os.path.join(BASE_DIR, 'templates/emails'),  # Add this line for email templates
+        ],
+        'APP_DIRS': True,
+        'OPTIONS': {
+            'context_processors': [
+                'django.template.context_processors.debug',
+                'django.template.context_processors.request',
+                'django.contrib.auth.context_processors.auth',
+                'django.contrib.messages.context_processors.messages',
+                'theme_name.context_processors.site_settings',  # Your custom context processors
+            ],
+        },
+    },
+]
+
+# =========================================================================
+# DATABASE CONFIGURATION
+# =========================================================================
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+
+# =========================================================================
+# AUTHENTICATION SETTINGS
+# =========================================================================
+
+# Use mock data by default
+USE_MOCK_DATA = True
+
+# Password validation
+# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+AUTH_PASSWORD_VALIDATORS = [
+    {
+        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
+    },
+    {
+        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
+    },
 ]
 
 # LDAP Authentication Configuration
@@ -107,6 +216,81 @@ AUTHENTICATION_BACKENDS = [
 LOGIN_URL = 'https://auth.isnord.ca/'
 LOGIN_REDIRECT_URL = '/provider-dashboard/'
 
+# =========================================================================
+# INTERNATIONALIZATION
+# =========================================================================
+
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'UTC'
+USE_I18N = True
+USE_TZ = True
+
+# =========================================================================
+# STATIC FILES CONFIGURATION
+# =========================================================================
+
+# Static files (CSS, JavaScript, Images)
+STATIC_URL = "/static/"
+
+# Where Django will collect static files for production
+STATIC_ROOT = BASE_DIR / "staticfiles"
+
+# Include Tailwind-generated CSS and other static files during development
+STATICFILES_DIRS = [
+    BASE_DIR / "theme_name" / "static_src",
+]
+
+# =========================================================================
+# EMAIL CONFIGURATION
+# =========================================================================
+
+#EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'nh1.onmhiconnect.ca'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'postmaster@onmhiconnect.ca'
+EMAIL_HOST_PASSWORD = 'g654D!'
+DEFAULT_FROM_EMAIL = 'postmaster@onmhiconnect.ca'
+
+# =========================================================================
+# THIRD-PARTY APP SETTINGS
+# =========================================================================
+
+TAILWIND_APP_NAME = 'theme_name'
+
+# =========================================================================
+# CUSTOM APPLICATION SETTINGS
+# =========================================================================
+
+# Message Configuration
+DEFAULT_PROVIDER_SIGNATURE = """
+Best regards,
+
+Dr. {doctor_name}
+Northern Health Innovations
+Phone: (555) 123-4567
+Email: {doctor_email}
+"""
+
+# Calendar Integration
+CALDAV_URL = 'https://nh1.onmhiconnect.ca/SOGo/dav/postmaster@onmhiconnect.ca/Calendar/personal/'
+CALDAV_USERNAME = 'postmaster@onmhiconnect.ca'
+CALDAV_PASSWORD = 'g654D!'  # same as your mail password
+
+# ERP Integration
+ERPNEXT_URL = "https://u2.isnord.ca"
+ERP_API_KEY = "e7e440ba311946c"
+ERP_API_SECRET = "dc461decd332261"
+ERP_INTEGRATION_ENABLED = True
+
+CONTACT_FORM_RECIPIENT = 'admin@example.com'
+DEFAULT_FROM_EMAIL = 'noreply@example.com'
+
+# =========================================================================
+# LOGGING CONFIGURATION
+# =========================================================================
+
 # Logging configuration for authentication debugging
 LOGGING = {
     'version': 1,
@@ -133,161 +317,6 @@ LOGGING = {
     }
 }
 
-TAILWIND_APP_NAME = 'theme_name'
-
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_browser_reload.middleware.BrowserReloadMiddleware',  # Enable auto-reload
-    'django_authelia.middleware.AutheliaMiddleware',
-]
-
-ROOT_URLCONF = 'mysite.urls'
-
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-                BASE_DIR / 'theme_name' / 'templates',
-                BASE_DIR / 'templates',
-        ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                # Add your custom context processors here
-                'theme_name.context_processors.patient_context',
-                'theme_name.context_processors.site_settings',
-                'theme_name.context_processors.navigation',
-            ],
-        },
-    },
-]
-
-WSGI_APPLICATION = 'mysite.wsgi.application'
-
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
-}
-
-# Use mock data by default
-USE_MOCK_DATA = True
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
-
-
-# settings.py
-#CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None'
-#SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None'
-#CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF token
-
-
-LANGUAGE_CODE = 'en-us'
-
-TIME_ZONE = 'UTC'
-
-USE_I18N = True
-
-USE_TZ = True
-
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-# Static files (CSS, JavaScript, Images)
-
-STATIC_URL = "/static/"
-
-# Where Django will collect static files for production
-STATIC_ROOT = BASE_DIR / "staticfiles"
-
-# Include Tailwind-generated CSS and other static files during development
-STATICFILES_DIRS = [
-    BASE_DIR / "theme_name" / "static_src",
-]
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
-
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-#EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'nh1.onmhiconnect.ca'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'postmaster@onmhiconnect.ca'
-EMAIL_HOST_PASSWORD = 'g654D!'
-DEFAULT_FROM_EMAIL = 'postmaster@onmhiconnect.ca'
-
-
-# Message Configuration
-DEFAULT_PROVIDER_SIGNATURE = """
-Best regards,
-
-Dr. {doctor_name}
-Northern Health Innovations
-Phone: (555) 123-4567
-Email: {doctor_email}
-"""
-
-# Email Templates Directory
-TEMPLATES = [
-    {
-        'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [
-            os.path.join(BASE_DIR, 'templates'),
-            os.path.join(BASE_DIR, 'templates/emails'),  # Add this line for email templates
-        ],
-        'APP_DIRS': True,
-        'OPTIONS': {
-            'context_processors': [
-                'django.template.context_processors.debug',
-                'django.template.context_processors.request',
-                'django.contrib.auth.context_processors.auth',
-                'django.contrib.messages.context_processors.messages',
-                'theme_name.context_processors.site_settings',  # Your custom context processors
-            ],
-        },
-    },
-]
-
-
-
-CALDAV_URL = 'https://nh1.onmhiconnect.ca/SOGo/dav/postmaster@onmhiconnect.ca/Calendar/personal/'
-CALDAV_USERNAME = 'postmaster@onmhiconnect.ca'
-CALDAV_PASSWORD = 'g654D!'  # same as your mail password
 # Logging for CalDAV integration - Console Only
 LOGGING = {
     'version': 1,
@@ -319,16 +348,15 @@ LOGGING = {
     },
 }
 
-
-
-ERPNEXT_URL = "https://u2.isnord.ca"
-ERP_API_KEY = "e7e440ba311946c"
-ERP_API_SECRET = "dc461decd332261"
+# =========================================================================
+# ADDITIONAL SETTINGS
+# =========================================================================
 
 # settings.py
-ERP_INTEGRATION_ENABLED = True
-CONTACT_FORM_RECIPIENT = 'admin@example.com'
-DEFAULT_FROM_EMAIL = 'noreply@example.com'
+#CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None'
+#SESSION_COOKIE_SAMESITE = 'Lax'  # or 'None'
+#CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to access the CSRF token
+
 print('Loading development settings')
 
 # Import LDAP authentication settings
@@ -336,3 +364,28 @@ try:
     from ldap_settings import *
 except ImportError:
     pass
+
+# REST Framework settings
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'rest_framework.filters.OrderingFilter',
+    ],
+
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
+
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_VERSION': 'v1',
+    'ALLOWED_VERSIONS': ['v1'],
+    'VERSION_PARAM': 'version',
+}

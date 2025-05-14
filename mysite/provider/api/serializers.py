@@ -46,39 +46,6 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     def get_patient_name(self, obj):
         return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
 
-class ClinicalNoteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ClinicalNote
-        fields = ['id', 'appointment', 'provider', 'transcription', 'ai_generated_text', 
-                 'provider_edited_text', 'status', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-class DocumentTemplateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = DocumentTemplate
-        fields = ['id', 'name', 'description', 'template_type', 'template_content', 
-                 'is_active', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-
-class GeneratedDocumentSerializer(serializers.ModelSerializer):
-    template_name = serializers.SerializerMethodField()
-    patient_name = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = GeneratedDocument
-        fields = ['id', 'patient', 'provider', 'template', 'template_name', 'patient_name',
-                 'document_data', 'status', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'created_at', 'updated_at']
-    
-    def get_template_name(self, obj):
-        return obj.template.name if obj.template else ""
-    
-    def get_patient_name(self, obj):
-        return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
-
-# provider/api/serializers.py
-# Add these serializers to the existing file
-
 class RecordingSessionSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     duration = serializers.SerializerMethodField()
