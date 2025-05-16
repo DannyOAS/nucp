@@ -4,9 +4,9 @@ from .models import Prescription, Appointment, Message
 
 @admin.register(Prescription)
 class PrescriptionAdmin(admin.ModelAdmin):
-    list_display = ('name', 'dose', 'patient', 'doctor', 'status', 'created_at')
+    list_display = ('medication_name', 'dosage', 'patient', 'doctor', 'status', 'created_at')  # Updated field names
     list_filter = ('status', 'doctor')
-    search_fields = ('name', 'patient__first_name', 'patient__last_name')
+    search_fields = ('medication_name', 'patient__first_name', 'patient__last_name')  # Updated field name
     date_hierarchy = 'created_at'
 
 @admin.register(Appointment)

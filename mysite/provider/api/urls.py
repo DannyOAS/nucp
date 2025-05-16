@@ -4,8 +4,9 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     ProviderViewSet, AppointmentViewSet, PrescriptionViewSet,
     ClinicalNoteViewSet, DocumentTemplateViewSet, GeneratedDocumentViewSet,
-    RecordingSessionViewSet
+    RecordingSessionViewSet, ProviderPatientsViewSet, MessageViewSet
 )
+from .views import ProviderPatientsViewSet  # Import the new ViewSet
 
 app_name = 'provider_api'  # Add this line
 
@@ -19,6 +20,8 @@ router.register(r'generated-documents', GeneratedDocumentViewSet, basename='prov
 router.register(r'recordings', RecordingSessionViewSet, basename='provider-recordings')
 router.register(r'templates', DocumentTemplateViewSet, basename='provider-templates')
 router.register(r'documents', GeneratedDocumentViewSet, basename='provider-documents')
+router.register(r'patients', ProviderPatientsViewSet, basename='provider-patients')
+router.register(r'messages', MessageViewSet, basename='provider-messages')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -8,8 +8,12 @@ from common.models import Appointment, Prescription, Message
 from .serializers import (
     ProviderSerializer, AppointmentSerializer, PrescriptionSerializer,
     ClinicalNoteSerializer, DocumentTemplateSerializer, GeneratedDocumentSerializer,
-    RecordingSessionSerializer
+    RecordingSessionSerializer, MessageSerializer
 )
+from django.db import models  # For Q objects
+from patient.models import Patient
+from patient.api.serializers import PatientSerializer  # Import the existing patient serializer
+from .permissions import IsProvider  # Import the permission from the new file
 
 class IsProviderOrReadOnly(permissions.BasePermission):
     """
@@ -43,6 +47,32 @@ class ProviderViewSet(viewsets.ModelViewSet):
         if hasattr(self.request.user, 'provider_profile'):
             return Provider.objects.filter(id=self.request.user.provider_profile.id)
         return Provider.objects.none()
+
+class ProviderPatientsViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    API endpoint that allows providers to view patients assigned to them.
+    """
+    serializer_class = PatientSerializer
+    permission_classes = [permissions.IsAuthenticated, IsProvider]
+    
+    def get_queryset(self):
+        if hasattr(self.request.user, 'provider_profile'):
+            # Return patients where this provider is the primary provider
+            return Patient.objects.filter(primary_provider=self.request.user.provider_profile)
+        return Patient.objects.none()
+
+#class ProviderPatientsViewSet(viewsets.ReadOnlyModelViewSet):
+#    """
+#    API endpoint that allows providers to view patients assigned to them.
+#    """
+#    serializer_class = PatientSerializer
+#    permission_classes = [permissions.IsAuthenticated, IsProvider]  # Assuming you have an IsProvider permission
+#    
+#    def get_queryset(self):
+#        if hasattr(self.request.user, 'provider_profile'):
+#            # Return patients where this provider is the primary provider
+#            return Patient.objects.filter(primary_provider=self.request.user.provider_profile)
+#        return Patient.objects.none()
 
 class AppointmentViewSet(viewsets.ModelViewSet):
     """
@@ -134,6 +164,62 @@ class PrescriptionViewSet(viewsets.ModelViewSet):
         queryset = self.get_queryset().filter(status='Active')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+class MessageViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint for provider messages
+    """
+    serializer_class = MessageSerializer  # Make sure this is imported at the top
+    permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['subject', 'content', 'status']
+    ordering_fields = ['created_at', 'status']
+    ordering = ['-created_at']
+    
+    def get_queryset(self):
+        # A provider can see messages they've sent or received
+        if hasattr(self.request.user, 'provider_profile'):
+            # Get messages where the user is either the sender or recipient
+            return Message.objects.filter(
+                models.Q(sender=self.request.user) |
+                models.Q(recipient=self.request.user)
+            ).order_by('-created_at')
+        return Message.objects.none()
+    
+    @action(detail=False, methods=['get'])
+    def inbox(self, request):
+        """Get received messages"""
+        queryset = Message.objects.filter(
+            recipient=request.user
+        ).exclude(
+            status='deleted'
+        ).order_by('-created_at')
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def sent(self, request):
+        """Get sent messages"""
+        queryset = Message.objects.filter(
+            sender=request.user
+        ).order_by('-created_at')
+        
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+            
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user, sender_type='provider')
 
 class ClinicalNoteViewSet(viewsets.ModelViewSet):
     """

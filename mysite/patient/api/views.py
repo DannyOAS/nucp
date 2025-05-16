@@ -60,7 +60,11 @@ class AppointmentViewSet(viewsets.ReadOnlyModelViewSet):
     def upcoming(self, request):
         """Get upcoming appointments"""
         now = timezone.now()
-        queryset = self.get_queryset().filter(time__gt=now).order_by('time')
+        queryset = self.get_queryset().filter(
+            time__gt=now  # Future appointments
+        ).exclude(
+            status='Cancelled'  # Exclude cancelled appointments
+        ).order_by('time')
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     

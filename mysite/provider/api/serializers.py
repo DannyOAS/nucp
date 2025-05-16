@@ -3,6 +3,7 @@ from rest_framework import serializers
 from provider.models import Provider, RecordingSession, ClinicalNote, DocumentTemplate, GeneratedDocument
 from common.models import Appointment, Prescription, Message
 from django.contrib.auth.models import User
+from common.models import Message
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -25,7 +26,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Appointment
-        fields = ['id', 'patient', 'doctor', 'time', 'type', 'status', 'patient_name', 'doctor_name']
+        fields = ['id', 'patient', 'doctor', 'time', 'type', 'status', 'reason', 'notes', 'patient_name', 'doctor_name']
         read_only_fields = ['id']
     
     def get_patient_name(self, obj):
@@ -45,6 +46,26 @@ class PrescriptionSerializer(serializers.ModelSerializer):
     
     def get_patient_name(self, obj):
         return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
+
+class MessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+    recipient_name = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Message
+        fields = ['id', 'sender', 'recipient', 'subject', 'content', 
+                 'status', 'created_at', 'sender_name', 'recipient_name']
+        read_only_fields = ['id', 'sender', 'created_at', 'sender_name', 'recipient_name']
+    
+    def get_sender_name(self, obj):
+        if obj.sender:
+            return f"{obj.sender.first_name} {obj.sender.last_name}"
+        return ""
+    
+    def get_recipient_name(self, obj):
+        if obj.recipient:
+            return f"{obj.recipient.first_name} {obj.recipient.last_name}"
+        return ""
 
 class RecordingSessionSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()

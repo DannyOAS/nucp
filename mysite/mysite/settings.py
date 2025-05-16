@@ -27,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-g%q4p@jgu_8nl(ue1at483&dm-%45871@l#ilb*&mu2o2lla+)'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 ALLOWED_HOSTS = ['u1.isnord.ca', 'localhost', '127.0.0.1']
 
@@ -60,11 +60,13 @@ INSTALLED_APPS = [
     "rest_framework",
     'rest_framework.authtoken',
     'drf_yasg',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -351,6 +353,22 @@ LOGGING = {
 # =========================================================================
 # ADDITIONAL SETTINGS
 # =========================================================================
+
+# CORS settings
+CORS_ALLOW_ALL_ORIGINS = True  # For development only
+
+# Swagger settings
+SWAGGER_SETTINGS = {
+    'SECURITY_DEFINITIONS': {
+        'Token': {
+            'type': 'apiKey',
+            'name': 'Authorization',
+            'in': 'header'
+        }
+    },
+    'USE_SESSION_AUTH': False,
+    'JSON_EDITOR': True,
+}
 
 # settings.py
 #CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None'

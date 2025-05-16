@@ -17,6 +17,8 @@ class Appointment(models.Model):
     doctor = models.ForeignKey('provider.Provider', on_delete=models.CASCADE, related_name='doctor_appointments')
     time = models.DateTimeField()
     type = models.CharField(max_length=50, choices=[('Virtual', 'Virtual'), ('In-Person', 'In-Person')], default='In-Person')
+    reason = models.CharField(max_length=255, blank=True)  # Add this field
+    notes = models.TextField(blank=True)  # Add this field
     # Add status field
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Scheduled')
     
@@ -39,14 +41,16 @@ class Prescription(models.Model):
         ('Expired', 'Expired'),
         ('Refill Requested', 'Refill Requested'),
     ]
-    
-    name = models.CharField(max_length=255)
-    dose = models.CharField(max_length=100)
+
+    medication_name = models.CharField(max_length=255)  # Changed from name
+    dosage = models.CharField(max_length=100)  # Changed from dose
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prescriptions')
     doctor = models.ForeignKey('provider.Provider', on_delete=models.CASCADE, related_name='prescriptions')
     
     # Add these fields
+    instructions = models.TextField(blank=True)  # Add this field
     status = models.CharField(max_length=50, choices=STATUS_CHOICES, default='Pending')
+    expires = models.DateField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     notes = models.TextField(blank=True)
