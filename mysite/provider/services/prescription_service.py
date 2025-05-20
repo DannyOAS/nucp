@@ -1,165 +1,479 @@
-# services.py
-import json
-import os
-from django.conf import settings
-from datetime import datetime, timedelta
-from io import BytesIO
-from django.template.loader import render_to_string
-from weasyprint import HTML
-import requests
+# provider/services/prescription_service.py
 import logging
-from django.core.mail import send_mail
-from django.contrib import messages
+from django.utils import timezone
+from django.db.models import Count, Q
+from datetime import datetime, timedelta, date
 
-from theme_name.repositories import (
-    PatientRepository, 
-    PrescriptionRepository, 
-    AppointmentRepository, 
-    MessageRepository, 
-    ProviderRepository
-)
+from provider.models import Provider
+from patient.models import Patient
+from common.models import Prescription
 
 logger = logging.getLogger(__name__)
-
-# Import models
-# In a real implementation, you would uncomment these imports
-# from .models import RecordingSession, ClinicalNote, DocumentTemplate, GeneratedDocument, AIModelConfig, AIUsageLog
-
 
 class PrescriptionService:
     """Service layer for prescription-related operations."""
     
     @staticmethod
-    def request_prescription(form_data, request=None):
-        """Process a new prescription request."""
-        # Save to database
-        prescription = PrescriptionRepository.create(form_data)
-        
-        # Generate PDF
-        pdf_result = PrescriptionService.generate_prescription_pdf(form_data)
-        
-        # Upload to Nextcloud
-        if pdf_result['success']:
-            cloud_result = PrescriptionService.upload_prescription_to_nextcloud(
-                form_data, 
-                pdf_result['pdf_data']
-            )
-        else:
-            cloud_result = {'success': False, 'error': 'PDF generation failed'}
-        
-        # Notify provider (in real implementation)
-        # PrescriptionService.notify_provider(prescription)
-        
-        return {
-            'prescription': prescription,
-            'pdf_generated': pdf_result['success'],
-            'cloud_upload': cloud_result
-        }
+    def get_provider_prescriptions_dashboard(provider_id, time_period='week', search_query=''):
+        """
+        Get prescriptions dashboard data:
+        - Recent prescriptions based on time period
+        - Prescription requests
+        - Stats
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            now = timezone.now()
+            
+            # Determine date range based on time period
+            if time_period == 'day':
+                start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elif time_period == 'week':
+                # Start from the beginning of the week (Monday)
+                weekday = now.weekday()
+                start_date = (now - timedelta(days=weekday)).replace(hour=0, minute=0, second=0, microsecond=0)
+            elif time_period == 'month':
+                # Start from the 1st of the month
+                start_date = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            else:
+                # Default to week if invalid period
+                weekday = now.weekday()
+                start_date = (now - timedelta(days=weekday)).replace(hour=0, minute=0, second=0, microsecond=0)
+            
+            # Get recent prescriptions based on date range and search
+            prescriptions_query = Prescription.objects.filter(doctor=provider)
+            
+            if search_query:
+                prescriptions_query = prescriptions_query.filter(
+                    Q(medication_name__icontains=search_query) |
+                    Q(patient__first_name__icontains=search_query) |
+                    Q(patient__last_name__icontains=search_query)
+                )
+            
+            # Apply date filter for 'recent' prescriptions
+            recent_prescriptions = prescriptions_query.filter(
+                created_at__gte=start_date
+            ).order_by('-created_at')
+            
+            # Get prescription requests (pending prescriptions and refill requests)
+            prescription_requests = prescriptions_query.filter(
+                status__in=['Pending', 'Refill Requested']
+            ).order_by('-created_at')
+            
+            # Calculate stats
+            active_count = prescriptions_query.filter(status='Active').count()
+            pending_count = prescriptions_query.filter(status='Pending').count()
+            refill_count = prescriptions_query.filter(status='Refill Requested').count()
+            
+            # Get count created today
+            today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            new_today_count = prescriptions_query.filter(created_at__gte=today_start).count()
+            
+            stats = {
+                'active_prescriptions': active_count,
+                'pending_renewals': pending_count,
+                'new_today': new_today_count,
+                'refill_requests': refill_count,
+                'total': prescriptions_query.count()
+            }
+            
+            return {
+                'recent_prescriptions': recent_prescriptions,
+                'prescription_requests': prescription_requests,
+                'stats': stats
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'recent_prescriptions': [],
+                'prescription_requests': [],
+                'stats': {
+                    'active_prescriptions': 0,
+                    'pending_renewals': 0,
+                    'new_today': 0,
+                    'refill_requests': 0,
+                    'total': 0
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error in get_provider_prescriptions_dashboard: {str(e)}")
+            raise
     
     @staticmethod
-    def generate_prescription_pdf(form_data):
-        """Generate a PDF for the prescription request."""
+    def approve_prescription(prescription_id, provider_id):
+        """
+        Approve a prescription request
+        """
         try:
-            timestamp = datetime.now().strftime('%B %d, %Y at %I:%M %p')
+            provider = Provider.objects.get(id=provider_id)
+            prescription = Prescription.objects.get(id=prescription_id, doctor=provider)
             
-            html_string = render_to_string('prescription_pdf.html', {
-                'form_data': form_data,
-                'timestamp': timestamp
-            })
+            # Verify the prescription is in a state that can be approved
+            if prescription.status not in ['Pending', 'Refill Requested']:
+                return {
+                    'success': False,
+                    'error': f"Cannot approve prescription with status '{prescription.status}'"
+                }
             
-            pdf_file = BytesIO()
-            HTML(string=html_string).write_pdf(target=pdf_file)
+            # Update status to active
+            prescription.status = 'Active'
+            
+            # If this was a refill request, update refills_remaining
+            if prescription.status == 'Refill Requested':
+                prescription.refills_remaining = max(0, prescription.refills_remaining - 1)
+            
+            # Save changes
+            prescription.save()
+            
+            # Send notification if configured
+            notification_result = {'success': True}
+            try:
+                from common.services.notification_service import NotificationService
+                notification_result = NotificationService.send_prescription_notification(
+                    prescription=prescription,
+                    notification_type='approved'
+                )
+            except (ImportError, AttributeError):
+                notification_result = {
+                    'success': False,
+                    'error': 'Notification service not available'
+                }
             
             return {
                 'success': True,
-                'pdf_data': pdf_file.getvalue()
+                'prescription_id': prescription.id,
+                'notification': notification_result
             }
-        except Exception as e:
-            logger.error(f"Error generating prescription PDF: {e}")
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
             return {
                 'success': False,
-                'error': str(e)
+                'error': 'Provider not found'
             }
-    
-    @staticmethod
-    def upload_prescription_to_nextcloud(form_data, pdf_data):
-        """Upload prescription PDF to Nextcloud."""
-        try:
-            patient_name = f"{form_data['first_name']} {form_data['last_name']}"
-            folder_name = patient_name.replace(" ", "_")
-            username = 'danny'
-            password = 'g654D!'  # In production, use environment variables or settings
-            base_url = f'https://u3.isnord.ca/remote.php/dav/files/{username}/Patients/Prescriptions/{folder_name}/'
-            file_name = 'prescription_request.pdf'
-            
-            # Create necessary folders
-            requests.request('MKCOL', f'https://u3.isnord.ca/remote.php/dav/files/{username}/Patients/Prescriptions/', 
-                             auth=(username, password))
-            requests.request('MKCOL', base_url, auth=(username, password))
-            
-            # Upload the PDF
-            response = requests.put(
-                base_url + file_name,
-                data=pdf_data,
-                auth=(username, password),
-                headers={'Content-Type': 'application/pdf'}
-            )
-            
-            return {
-                'success': response.status_code in [200, 201, 204],
-                'status_code': response.status_code
-            }
-        except Exception as e:
-            logger.error(f"Error uploading prescription PDF to Nextcloud: {e}")
-            return {
-                'success': False,
-                'error': str(e)
-            }
-    
-    @staticmethod
-    def request_refill(prescription_id, refill_data):
-        """Process a prescription refill request."""
-        prescription = PrescriptionRepository.get_by_id(prescription_id)
-        
-        if not prescription:
+        except Prescription.DoesNotExist:
+            logger.error(f"Prescription with ID {prescription_id} not found or not assigned to provider {provider_id}")
             return {
                 'success': False,
                 'error': 'Prescription not found'
             }
-        
-        # Update refill count and status
-        refills_remaining = prescription.get('refills_remaining', 0) - 1
-        updated_prescription = PrescriptionRepository.update(
-            prescription_id, 
-            {'refills_remaining': refills_remaining}
-        )
-        
-        # Generate confirmation
-        result = {
-            'success': True,
-            'prescription': updated_prescription,
-            'refill_request_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-            'estimated_ready_date': datetime.now() + timedelta(days=1)
-        }
-        
-        # In a real implementation, would notify pharmacy
-        # PrescriptionService.notify_pharmacy(prescription_id, refill_data)
-        
-        return result
+        except Exception as e:
+            logger.error(f"Error approving prescription: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
     
     @staticmethod
-    def get_prescriptions_dashboard(patient_id):
-        """Get all prescription data needed for prescriptions dashboard."""
-        active_prescriptions = PrescriptionRepository.get_active_for_patient(patient_id)
-        prescription_history = PrescriptionRepository.get_historical_for_patient(patient_id)
-        
-        # Calculate additional metrics
-        renewal_count = sum(1 for p in active_prescriptions if p.get('status') == 'Renewal Soon')
-        
-        return {
-            'active_prescriptions': active_prescriptions,
-            'prescription_history': prescription_history,
-            'active_count': len(active_prescriptions),
-            'renewal_count': renewal_count
-        }
-
+    def get_prescription_details(prescription_id, provider_id):
+        """
+        Get detailed info for a single prescription
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            prescription = Prescription.objects.get(id=prescription_id, doctor=provider)
+            
+            # Get patient details if available
+            patient_data = None
+            if prescription.patient:
+                try:
+                    patient = Patient.objects.get(user=prescription.patient)
+                    patient_data = {
+                        'id': patient.id,
+                        'user_id': patient.user.id,
+                        'first_name': patient.user.first_name,
+                        'last_name': patient.user.last_name,
+                        'full_name': f"{patient.user.first_name} {patient.user.last_name}",
+                        'email': patient.user.email,
+                        'date_of_birth': patient.date_of_birth,
+                        'ohip_number': patient.ohip_number
+                    }
+                except Patient.DoesNotExist:
+                    # If patient record not found, use basic user info
+                    patient_data = {
+                        'user_id': prescription.patient.id,
+                        'first_name': prescription.patient.first_name,
+                        'last_name': prescription.patient.last_name,
+                        'full_name': f"{prescription.patient.first_name} {prescription.patient.last_name}",
+                        'email': prescription.patient.email
+                    }
+            
+            return {
+                'success': True,
+                'prescription': prescription,
+                'patient': patient_data
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'success': False,
+                'error': 'Provider not found'
+            }
+        except Prescription.DoesNotExist:
+            logger.error(f"Prescription with ID {prescription_id} not found or not assigned to provider {provider_id}")
+            return {
+                'success': False,
+                'error': 'Prescription not found'
+            }
+        except Exception as e:
+            logger.error(f"Error in get_prescription_details: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def create_prescription(prescription_data):
+        """
+        Create a new prescription
+        """
+        try:
+            # Validate required fields
+            required_fields = ['patient_id', 'medication_name', 'dosage', 'doctor_id']
+            for field in required_fields:
+                if field not in prescription_data or not prescription_data[field]:
+                    return {
+                        'success': False,
+                        'error': f"Field '{field}' is required"
+                    }
+            
+            # Get provider
+            try:
+                provider = Provider.objects.get(id=prescription_data['doctor_id'])
+            except Provider.DoesNotExist:
+                return {
+                    'success': False,
+                    'error': 'Provider not found'
+                }
+            
+            # Get patient
+            try:
+                patient = Patient.objects.get(id=prescription_data['patient_id'])
+                patient_user = patient.user
+            except Patient.DoesNotExist:
+                try:
+                    # Try to get user directly
+                    from django.contrib.auth.models import User
+                    patient_user = User.objects.get(id=prescription_data['patient_id'])
+                except User.DoesNotExist:
+                    return {
+                        'success': False,
+                        'error': 'Patient not found'
+                    }
+            
+            # Parse refills
+            refills = 0
+            try:
+                refills = int(prescription_data.get('refills', 0))
+            except ValueError:
+                refills = 0
+            
+            # Parse expiration date
+            expires = None
+            if 'duration' in prescription_data and prescription_data['duration']:
+                try:
+                    # Try to parse duration as a number of days
+                    duration_days = int(prescription_data['duration'])
+                    expires = timezone.now().date() + timedelta(days=duration_days)
+                except ValueError:
+                    # If not a number, check if it's a duration string like "3 months"
+                    duration_str = prescription_data['duration'].lower().strip()
+                    if 'day' in duration_str:
+                        days = int(''.join(filter(str.isdigit, duration_str)))
+                        expires = timezone.now().date() + timedelta(days=days)
+                    elif 'week' in duration_str:
+                        weeks = int(''.join(filter(str.isdigit, duration_str)))
+                        expires = timezone.now().date() + timedelta(weeks=weeks)
+                    elif 'month' in duration_str:
+                        months = int(''.join(filter(str.isdigit, duration_str)))
+                        # Approximate months as 30 days
+                        expires = timezone.now().date() + timedelta(days=30 * months)
+                    elif 'year' in duration_str:
+                        years = int(''.join(filter(str.isdigit, duration_str)))
+                        # Approximate years as 365 days
+                        expires = timezone.now().date() + timedelta(days=365 * years)
+            
+            # Create the prescription
+            prescription = Prescription.objects.create(
+                patient=patient_user,
+                doctor=provider,
+                medication_name=prescription_data['medication_name'],
+                dosage=prescription_data['dosage'],
+                instructions=prescription_data.get('instructions', ''),
+                refills=refills,
+                refills_remaining=refills,
+                expires=expires,
+                status='Active'  # Automatically active since provider is creating it
+            )
+            
+            # Send notification if configured
+            notification_result = {'success': True}
+            try:
+                from common.services.notification_service import NotificationService
+                notification_result = NotificationService.send_prescription_notification(
+                    prescription=prescription,
+                    notification_type='created'
+                )
+            except (ImportError, AttributeError):
+                notification_result = {
+                    'success': False,
+                    'error': 'Notification service not available'
+                }
+            
+            return {
+                'success': True,
+                'prescription_id': prescription.id,
+                'notification': notification_result
+            }
+            
+        except Exception as e:
+            logger.error(f"Error creating prescription: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def get_prescription_form_data(provider_id):
+        """
+        Get data needed for prescription form:
+        - Patients list
+        - Common medications list
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            
+            # Get patients assigned to this provider
+            patients = Patient.objects.filter(primary_provider=provider)
+            
+            # Get common medications (either from database or predefined list)
+            common_medications = []
+            try:
+                # Try to get from database if such a model exists
+                from common.models import CommonMedication
+                medications = CommonMedication.objects.all()
+                common_medications = [med.name for med in medications]
+            except (ImportError, AttributeError):
+                # Use predefined list if model doesn't exist
+                common_medications = [
+                    'Amoxicillin', 'Lisinopril', 'Metformin', 'Atorvastatin', 
+                    'Levothyroxine', 'Amlodipine', 'Metoprolol', 'Omeprazole',
+                    'Losartan', 'Gabapentin', 'Hydrochlorothiazide', 'Sertraline',
+                    'Simvastatin', 'Hydrocodone', 'Pantoprazole', 'Furosemide'
+                ]
+            
+            return {
+                'patients': patients,
+                'common_medications': common_medications
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'patients': [],
+                'common_medications': []
+            }
+        except Exception as e:
+            logger.error(f"Error in get_prescription_form_data: {str(e)}")
+            return {
+                'patients': [],
+                'common_medications': []
+            }
+    
+    @staticmethod
+    def update_prescription(prescription_id, provider_id, updated_data):
+        """
+        Update an existing prescription
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            prescription = Prescription.objects.get(id=prescription_id, doctor=provider)
+            
+            # Update basic fields
+            if 'medication_name' in updated_data:
+                prescription.medication_name = updated_data['medication_name']
+            
+            if 'dosage' in updated_data:
+                prescription.dosage = updated_data['dosage']
+            
+            if 'instructions' in updated_data:
+                prescription.instructions = updated_data['instructions']
+            
+            # Parse refills
+            if 'refills' in updated_data:
+                try:
+                    refills = int(updated_data['refills'])
+                    # Calculate the difference to apply to refills_remaining
+                    refill_diff = refills - prescription.refills
+                    prescription.refills = refills
+                    prescription.refills_remaining = max(0, prescription.refills_remaining + refill_diff)
+                except ValueError:
+                    pass  # Ignore if not a valid number
+            
+            # Parse expiration date
+            if 'duration' in updated_data and updated_data['duration']:
+                try:
+                    # Try to parse duration as a number of days
+                    duration_days = int(updated_data['duration'])
+                    prescription.expires = timezone.now().date() + timedelta(days=duration_days)
+                except ValueError:
+                    # If not a number, check if it's a duration string like "3 months"
+                    duration_str = updated_data['duration'].lower().strip()
+                    if 'day' in duration_str:
+                        days = int(''.join(filter(str.isdigit, duration_str)))
+                        prescription.expires = timezone.now().date() + timedelta(days=days)
+                    elif 'week' in duration_str:
+                        weeks = int(''.join(filter(str.isdigit, duration_str)))
+                        prescription.expires = timezone.now().date() + timedelta(weeks=weeks)
+                    elif 'month' in duration_str:
+                        months = int(''.join(filter(str.isdigit, duration_str)))
+                        # Approximate months as 30 days
+                        prescription.expires = timezone.now().date() + timedelta(days=30 * months)
+                    elif 'year' in duration_str:
+                        years = int(''.join(filter(str.isdigit, duration_str)))
+                        # Approximate years as 365 days
+                        prescription.expires = timezone.now().date() + timedelta(days=365 * years)
+            
+            # Save changes
+            prescription.save()
+            
+            # Send notification if configured
+            notification_result = {'success': True}
+            try:
+                from common.services.notification_service import NotificationService
+                notification_result = NotificationService.send_prescription_notification(
+                    prescription=prescription,
+                    notification_type='updated'
+                )
+            except (ImportError, AttributeError):
+                notification_result = {
+                    'success': False,
+                    'error': 'Notification service not available'
+                }
+            
+            return {
+                'success': True,
+                'prescription_id': prescription.id,
+                'notification': notification_result
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'success': False,
+                'error': 'Provider not found'
+            }
+        except Prescription.DoesNotExist:
+            logger.error(f"Prescription with ID {prescription_id} not found or not assigned to provider {provider_id}")
+            return {
+                'success': False,
+                'error': 'Prescription not found'
+            }
+        except Exception as e:
+            logger.error(f"Error updating prescription: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }

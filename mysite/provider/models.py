@@ -154,3 +154,45 @@ class GeneratedDocument(models.Model):
     
     def __str__(self):
         return f"{self.template.name} for {self.patient.get_full_name()}"
+
+
+class AIModelConfig(models.Model):
+    """Model to store AI model configuration details"""
+    
+    MODEL_TYPE_CHOICES = [
+        ('transcription', 'Transcription'),
+        ('summarization', 'Summarization'),
+        ('clinical_note', 'Clinical Note Generation'),
+        ('speech_to_text', 'Speech to Text'),
+        ('form_filling', 'Form Auto-Filling'),
+        ('qa', 'Question Answering')
+    ]
+    
+    name = models.CharField(max_length=100)
+    model_type = models.CharField(max_length=50, choices=MODEL_TYPE_CHOICES)
+    api_endpoint = models.URLField()
+    configuration_data = models.TextField(blank=True, default='{}')  # JSON string for configuration
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['name']
+        verbose_name = 'AI Model Configuration'
+        verbose_name_plural = 'AI Model Configurations'
+    
+    def __str__(self):
+        return f"{self.name} ({self.get_model_type_display()})"
+    
+    def get_configuration(self):
+        """Get configuration data as a dictionary"""
+        import json
+        try:
+            return json.loads(self.configuration_data)
+        except json.JSONDecodeError:
+            return {}
+    
+    def set_configuration(self, config_dict):
+        """Set configuration data from a dictionary"""
+        import json
+        self.configuration_data = json.dumps(config_dict)

@@ -307,3 +307,21 @@ def update_appointment_status(request, appointment_id):
             messages.error(request, f"Error updating appointment status: {str(e)}")
     
     return redirect('provider_appointments')
+
+@login_required
+def get_appointment_date(request):
+    """Helper function to get appointment date from request parameters"""
+    try:
+        date_str = request.GET.get('date')
+        if date_str:
+            return datetime.strptime(date_str, '%Y-%m-%d').date()
+        return timezone.now().date()
+    except ValueError:
+        return timezone.now().date()
+
+@login_required
+def process_appointments_for_calendar(appointments, start_date, end_date, view_type):
+    """Process appointments for calendar display"""
+    return AppointmentService.process_appointments_for_calendar(
+        appointments, start_date, end_date, view_type
+    )

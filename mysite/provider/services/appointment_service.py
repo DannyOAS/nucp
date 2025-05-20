@@ -1,485 +1,801 @@
-# services/enhanced_appointment_service.py
-from datetime import datetime, timedelta
+# provider/services/appointment_service.py
 import logging
-import json
-import uuid
-import pytz
-from django.conf import settings
-from django.core.mail import send_mail
+from django.utils import timezone
+from django.db.models import Count, Q
+from datetime import datetime, timedelta, date
+import calendar
 
-from common.services.calendar_service import CalendarService
-from theme_name.repositories import (
-    PatientRepository, 
-    AppointmentRepository, 
-    ProviderRepository
-)
+from provider.models import Provider
+from patient.models import Patient
+from common.models import Appointment
 
 logger = logging.getLogger(__name__)
 
 class AppointmentService:
-    """Service layer for appointment-related operations with CalDAV integration."""
+    """Service layer for appointment-related operations."""
     
     @staticmethod
-    def _get_calendar_service(provider_id=None):
-        """Get a configured CalendarService instance for a provider."""
-        # Get CalDAV settings from Django settings
-        caldav_url = getattr(settings, 'CALDAV_URL', 'https://mail.yourserver.com/SOGo/dav/')
-        
-        if provider_id:
-            # Get provider email and credentials from your system
-            provider = ProviderRepository.get_by_id(provider_id)
-            if not provider:
-                logger.error(f"Provider {provider_id} not found for calendar service")
-                return None
-                
-            username = provider.get('email', f'provider{provider_id}@example.com')
-            # In a real system, you would have secure credential management
-            # This is just for demonstration
-            password = getattr(settings, 'CALDAV_PASSWORD', 'password')
-            
-            provider_caldav_url = f"{caldav_url}{username}/"
-            logger.debug(f"Creating calendar service for provider {provider_id} at {provider_caldav_url}")
-            return CalendarService(provider_caldav_url, username, password)
-        else:
-            # Fall back to system calendar
-            system_username = getattr(settings, 'CALDAV_SYSTEM_USERNAME', 'system@example.com')
-            system_password = getattr(settings, 'CALDAV_SYSTEM_PASSWORD', 'password')
-            logger.debug(f"Creating system calendar service with {system_username}")
-            return CalendarService(caldav_url, system_username, system_password)
-    
-    @staticmethod
-    def _appointment_to_calendar_event(appointment, patient_data=None):
-        """Convert appointment data to calendar event data."""
-        # Get patient information
-        if not patient_data and appointment.get('patient_id'):
-            patient_data = PatientRepository.get_by_id(appointment.get('patient_id'))
-        
-        # Parse appointment time string to datetime
-        # Example format: "Apr 3, 2025 - 10:00 AM"
-        appointment_time = appointment.get('time')
-        start_time = None
-        
+    def get_provider_calendar_view(provider_id, selected_date=None, view_type='week'):
+        """
+        Get calendar view data:
+        - Appointments for selected time period
+        - Today's appointments
+        - Calendar data for rendering
+        - Date navigation info
+        - Stats
+        """
         try:
-            if isinstance(appointment_time, str):
-                # Try to parse the string time format
-                if '-' in appointment_time:
-                    date_part, time_part = appointment_time.split('-', 1)
-                    datetime_str = f"{date_part.strip()} {time_part.strip()}"
-                    # Try different date formats
-                    for fmt in ['%b %d, %Y %I:%M %p', '%B %d, %Y %I:%M %p']:
-                        try:
-                            start_time = datetime.strptime(datetime_str, fmt)
-                            break
-                        except ValueError:
-                            continue
-                else:
-                    # Try direct parsing if no hyphen
+            provider = Provider.objects.get(id=provider_id)
+            now = timezone.now()
+            today = now.date()
+            
+            # Parse selected date if provided
+            if selected_date:
+                if isinstance(selected_date, str):
                     try:
-                        start_time = datetime.strptime(appointment_time, '%b %d, %Y %I:%M %p')
+                        selected_date = datetime.strptime(selected_date, '%Y-%m-%d').date()
                     except ValueError:
-                        start_time = datetime.strptime(appointment_time, '%B %d, %Y %I:%M %p')
-            elif isinstance(appointment_time, datetime):
-                # Already a datetime object
-                start_time = appointment_time
-                
-            # If still not parsed, use a fallback
-            if not start_time:
-                raise ValueError(f"Could not parse appointment time: {appointment_time}")
-                
-            # Add timezone if needed
-            if not start_time.tzinfo:
-                tz = pytz.timezone(settings.TIME_ZONE) if hasattr(settings, 'TIME_ZONE') else pytz.UTC
-                start_time = tz.localize(start_time)
-                
-        except Exception as e:
-            logger.error(f"Error parsing appointment time: {appointment_time}, error: {e}")
-            # Fallback to current time + 1 day if parsing fails
-            start_time = datetime.now() + timedelta(days=1)
-            
-        # Default appointment duration: 30 minutes
-        end_time = start_time + timedelta(minutes=30)
-        
-        # Create summary based on available data
-        patient_name = "Patient"
-        if patient_data:
-            patient_name = f"{patient_data.get('first_name', '')} {patient_data.get('last_name', '')}".strip()
-        elif appointment.get('patient_name'):
-            patient_name = appointment.get('patient_name')
-            
-        summary = f"Appointment with {patient_name}"
-            
-        # Add appointment type to summary if available
-        appointment_type = appointment.get('type', 'In-Person')
-        if appointment_type:
-            summary += f" ({appointment_type})"
-            
-        # Create a unique ID for the event
-        uid = appointment.get('calendar_uid', f"appt-{uuid.uuid4()}")
-        
-        # Compose description with all relevant details
-        description_parts = []
-        if appointment.get('reason'):
-            description_parts.append(f"Reason: {appointment.get('reason')}")
-        if appointment.get('notes'):
-            description_parts.append(f"Notes: {appointment.get('notes')}")
-        
-        # Add patient info if available
-        if patient_data:
-            description_parts.append(f"Patient: {patient_name}")
-            if patient_data.get('primary_phone'):
-                description_parts.append(f"Phone: {patient_data.get('primary_phone')}")
-            if patient_data.get('email'):
-                description_parts.append(f"Email: {patient_data.get('email')}")
-            if patient_data.get('date_of_birth'):
-                description_parts.append(f"DOB: {patient_data.get('date_of_birth')}")
-        
-        description = "\n".join(description_parts)
-        
-        # Determine location based on appointment type
-        location = appointment.get('location', '')
-        if not location:
-            if appointment_type == 'Virtual':
-                location = 'Virtual Meeting'
+                        selected_date = today
+                elif isinstance(selected_date, datetime):
+                    selected_date = selected_date.date()
             else:
-                location = 'Office'
-        
-        # Create attendees list
-        attendees = []
-        if patient_data and patient_data.get('email'):
-            patient_email = patient_data.get('email')
-            attendees.append(f"{patient_name} <{patient_email}>")
-        
-        return {
-            'summary': summary,
-            'start_time': start_time,
-            'end_time': end_time,
-            'description': description,
-            'location': location,
-            'uid': uid,
-            'attendees': attendees
-        }
-    
-    @staticmethod
-    def _calendar_event_to_appointment(event, provider_id=None):
-        """Convert calendar event data to appointment data."""
-        summary = event.get('summary', '')
-        start_time = event.get('start')
-        end_time = event.get('end')
-        uid = event.get('uid', '')
-        description = event.get('description', '')
-        location = event.get('location', '')
-        
-        # Format time for display
-        formatted_time = start_time.strftime('%b %d, %Y - %I:%M %p')
-        
-        # Try to extract appointment type from summary
-        appointment_type = "In-Person"  # Default
-        if "Virtual" in summary or "Video" in summary:
-            appointment_type = "Virtual"
+                selected_date = today
             
-        # Try to extract patient name from summary
-        patient_name = "Unknown Patient"
-        if "with" in summary:
-            parts = summary.split("with", 1)
-            if len(parts) > 1:
-                patient_name = parts[1].split("(")[0].strip()
-        
-        # Extract reason for visit from description
-        reason = ""
-        notes = ""
-        
-        if description:
-            lines = description.split('\n')
-            for line in lines:
-                if line.startswith("Reason:"):
-                    reason = line.replace("Reason:", "").strip()
-                elif line.startswith("Notes:"):
-                    notes = line.replace("Notes:", "").strip()
-        
-        # Create appointment data structure
-        appointment = {
-            'id': hash(uid) % 10000,  # Generate a numerical ID from UID
-            'patient_name': patient_name,
-            'time': formatted_time,
-            'type': appointment_type,
-            'reason': reason,
-            'location': location,
-            'notes': notes,
-            'doctor': f"Dr. {ProviderRepository.get_by_id(provider_id).get('last_name', 'Provider')}" if provider_id else "Doctor",
-            'calendar_uid': uid,
-            'status': 'Scheduled'
-        }
-        
-        return appointment
+            # Calculate date range based on view_type
+            start_date = None
+            end_date = None
+            
+            if view_type == 'day':
+                start_date = selected_date
+                end_date = selected_date
+                date_display = selected_date.strftime('%A, %B %d, %Y')
+                prev_date = (selected_date - timedelta(days=1)).strftime('%Y-%m-%d')
+                next_date = (selected_date + timedelta(days=1)).strftime('%Y-%m-%d')
+                
+            elif view_type == 'week':
+                # Start from Monday of the week containing selected_date
+                weekday = selected_date.weekday()
+                start_date = selected_date - timedelta(days=weekday)
+                end_date = start_date + timedelta(days=6)  # End on Sunday
+                date_display = f"{start_date.strftime('%b %d')} - {end_date.strftime('%b %d, %Y')}"
+                prev_date = (start_date - timedelta(days=7)).strftime('%Y-%m-%d')
+                next_date = (start_date + timedelta(days=7)).strftime('%Y-%m-%d')
+                
+            elif view_type == 'month':
+                # Start from 1st day of the month
+                start_date = date(selected_date.year, selected_date.month, 1)
+                # End on last day of the month
+                last_day = calendar.monthrange(selected_date.year, selected_date.month)[1]
+                end_date = date(selected_date.year, selected_date.month, last_day)
+                date_display = selected_date.strftime('%B %Y')
+                
+                # Previous month
+                if selected_date.month == 1:
+                    prev_month = date(selected_date.year - 1, 12, 1)
+                else:
+                    prev_month = date(selected_date.year, selected_date.month - 1, 1)
+                prev_date = prev_month.strftime('%Y-%m-%d')
+                
+                # Next month
+                if selected_date.month == 12:
+                    next_month = date(selected_date.year + 1, 1, 1)
+                else:
+                    next_month = date(selected_date.year, selected_date.month + 1, 1)
+                next_date = next_month.strftime('%Y-%m-%d')
+            
+            # Get appointments for the selected date range
+            appointments = Appointment.objects.filter(
+                doctor=provider,
+                time__date__gte=start_date,
+                time__date__lte=end_date
+            ).order_by('time')
+            
+            # Get today's appointments
+            todays_appointments = Appointment.objects.filter(
+                doctor=provider,
+                time__date=today
+            ).order_by('time')
+            
+            # Process appointments for calendar display
+            calendar_data = AppointmentService.process_appointments_for_calendar(
+                appointments, start_date, end_date, view_type
+            )
+            
+            # Calculate stats
+            stats = {
+                'today_count': todays_appointments.count(),
+                'upcoming_count': Appointment.objects.filter(
+                    doctor=provider,
+                    time__gt=now,
+                    status='Scheduled'
+                ).count(),
+                'completed_count': Appointment.objects.filter(
+                    doctor=provider,
+                    status='Completed'
+                ).count(),
+                'cancelled_count': Appointment.objects.filter(
+                    doctor=provider,
+                    status='Cancelled'
+                ).count()
+            }
+            
+            return {
+                'appointments': appointments,
+                'todays_appointments': todays_appointments,
+                'calendar_data': calendar_data,
+                'selected_date': selected_date,
+                'date_display': date_display,
+                'prev_date': prev_date,
+                'next_date': next_date,
+                'stats': stats
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'appointments': [],
+                'todays_appointments': [],
+                'calendar_data': {},
+                'selected_date': timezone.now().date(),
+                'date_display': timezone.now().date().strftime('%B %d, %Y'),
+                'prev_date': (timezone.now().date() - timedelta(days=7)).strftime('%Y-%m-%d'),
+                'next_date': (timezone.now().date() + timedelta(days=7)).strftime('%Y-%m-%d'),
+                'stats': {
+                    'today_count': 0,
+                    'upcoming_count': 0,
+                    'completed_count': 0,
+                    'cancelled_count': 0
+                }
+            }
+        except Exception as e:
+            logger.error(f"Error in get_provider_calendar_view: {str(e)}")
+            raise
     
     @staticmethod
-    def get_appointments_dashboard(patient_id):
-        """Get all appointment data needed for appointments dashboard with calendar integration."""
-        # Get patient data to find associated provider
-        patient = PatientRepository.get_by_id(patient_id)
-        if not patient:
-            logger.error(f"Patient {patient_id} not found")
-            return {
-                'upcoming_appointments': [],
-                'past_appointments': [],
-                'upcoming_count': 0,
-                'past_count': 0,
-                'provider_count': 0
+    def process_appointments_for_calendar(appointments, start_date, end_date, view_type):
+        """
+        Process appointments into format needed for calendar display
+        Returns data structure based on view_type (day, week, month)
+        """
+        calendar_data = {}
+        
+        if view_type == 'day':
+            # For day view, organize by hour
+            hours = [(f"{h:02d}:00", []) for h in range(8, 20)]  # 8am to 8pm
+            calendar_data = {
+                'hours': hours,
+                'date': start_date
+            }
+            
+            # Add appointments to appropriate hour slots
+            for appointment in appointments:
+# provider/services/appointment_service.py (continued)
+                hour = appointment.time.hour
+                if 8 <= hour < 20:  # Only handle hours in our display range
+                    hour_slot = hours[hour - 8][1]  # Adjust index (8am is index 0)
+                    hour_slot.append({
+                        'id': appointment.id,
+                        'patient_name': f"{appointment.patient.first_name} {appointment.patient.last_name}" if appointment.patient else "Unknown",
+                        'time': appointment.time.strftime('%H:%M'),
+                        'duration': getattr(appointment, 'duration', 30),  # Default 30 mins if not specified
+                        'status': appointment.status,
+                        'type': appointment.type,
+                        'reason': appointment.reason,
+                        'notes': appointment.notes
+                    })
+            
+        elif view_type == 'week':
+            # For week view, organize by day and hour
+            weekdays = []
+            current_date = start_date
+            
+            # Generate the week structure
+            while current_date <= end_date:
+                day_data = {
+                    'date': current_date,
+                    'name': current_date.strftime('%A'),
+                    'formatted_date': current_date.strftime('%b %d'),
+                    'appointments': []
+                }
+                weekdays.append(day_data)
+                current_date += timedelta(days=1)
+            
+            # Add appointments to appropriate day
+            for appointment in appointments:
+                appointment_date = appointment.time.date()
+                day_index = (appointment_date - start_date).days
+                
+                if 0 <= day_index < len(weekdays):
+                    weekdays[day_index]['appointments'].append({
+                        'id': appointment.id,
+                        'patient_name': f"{appointment.patient.first_name} {appointment.patient.last_name}" if appointment.patient else "Unknown",
+                        'time': appointment.time.strftime('%H:%M'),
+                        'end_time': (appointment.time + timedelta(minutes=getattr(appointment, 'duration', 30))).strftime('%H:%M'),
+                        'status': appointment.status,
+                        'type': appointment.type,
+                        'reason': appointment.reason,
+                        'notes': appointment.notes
+                    })
+            
+            calendar_data = {
+                'weekdays': weekdays
+            }
+            
+        elif view_type == 'month':
+            # For month view, organize by day of month
+            # First, get all dates in the month
+            month_days = []
+            current_date = start_date
+            
+            # Add leading days from previous month to start on Monday
+            first_weekday = start_date.weekday()
+            for i in range(first_weekday):
+                previous_date = start_date - timedelta(days=first_weekday - i)
+                month_days.append({
+                    'date': previous_date,
+                    'in_month': False,
+                    'formatted_date': previous_date.strftime('%d'),
+                    'appointments': []
+                })
+            
+            # Add all days in the selected month
+            while current_date <= end_date:
+                month_days.append({
+                    'date': current_date,
+                    'in_month': True,
+                    'formatted_date': current_date.strftime('%d'),
+                    'is_today': current_date == timezone.now().date(),
+                    'appointments': []
+                })
+                current_date += timedelta(days=1)
+            
+            # Add trailing days from next month to complete the grid
+            last_weekday = end_date.weekday()
+            for i in range(6 - last_weekday):
+                next_date = end_date + timedelta(days=i + 1)
+                month_days.append({
+                    'date': next_date,
+                    'in_month': False,
+                    'formatted_date': next_date.strftime('%d'),
+                    'appointments': []
+                })
+            
+            # Add appointments to appropriate day
+            for appointment in appointments:
+                appointment_date = appointment.time.date()
+                
+                # Find matching day
+                for day in month_days:
+                    if day['date'] == appointment_date:
+                        day['appointments'].append({
+                            'id': appointment.id,
+                            'patient_name': f"{appointment.patient.first_name} {appointment.patient.last_name}" if appointment.patient else "Unknown",
+                            'time': appointment.time.strftime('%H:%M'),
+                            'status': appointment.status,
+                            'type': appointment.type
+                        })
+                        break
+            
+            # Group into weeks for the grid
+            weeks = []
+            for i in range(0, len(month_days), 7):
+                weeks.append(month_days[i:i+7])
+            
+            calendar_data = {
+                'weeks': weeks,
+                'month_name': start_date.strftime('%B %Y')
             }
         
-        # TODO: In a real implementation, get the actual provider assigned to this patient
-        # For now, use a simple mapping for demo purposes
-        provider_id = patient_id % 3 + 1
-        
-        # Try to get appointments from the calendar
-        calendar_service = AppointmentService._get_calendar_service(provider_id)
-        
-        if calendar_service and calendar_service.ready:
-            try:
-                # Get events from calendar for next 90 days
-                events = calendar_service.list_upcoming_events(days=90)
-                
-                # Filter events to find only those for this patient
-                patient_name = f"{patient.get('first_name', '')} {patient.get('last_name', '')}".strip().lower()
-                
-                upcoming_appointments = []
-                past_appointments = []
-                
-                # Current time for comparison
-                now = datetime.now()
-                
-                for event in events:
-                    # Check if this event is for our patient
-                    if 'summary' in event and patient_name in event['summary'].lower():
-                        appointment = AppointmentService._calendar_event_to_appointment(event, provider_id)
-                        
-                        # Parse the appointment time for comparison
-                        event_time = event.get('start')
-                        
-                        if event_time > now:
-                            upcoming_appointments.append(appointment)
-                        else:
-                            # Mark as completed for past appointments
-                            appointment['status'] = 'Completed'
-                            past_appointments.append(appointment)
-                
-                # If no calendar appointments found, fall back to repository data
-                if not upcoming_appointments and not past_appointments:
-                    logger.info(f"No calendar appointments found for patient {patient_id}, checking repository")
-                    upcoming_appointments = AppointmentRepository.get_upcoming_for_patient(patient_id)
-                    past_appointments = AppointmentRepository.get_past_for_patient(patient_id)
-                
-                # Calculate counts
-                upcoming_count = len(upcoming_appointments)
-                past_count = len(past_appointments)
-                
-                # Get unique providers
-                all_appointments = upcoming_appointments + past_appointments
-                provider_count = len(set([a.get('doctor', '') for a in all_appointments]))
-                
-                return {
-                    'upcoming_appointments': upcoming_appointments,
-                    'past_appointments': past_appointments,
-                    'upcoming_count': upcoming_count,
-                    'past_count': past_count,
-                    'provider_count': provider_count
-                }
-                
-            except Exception as e:
-                logger.error(f"Error fetching calendar appointments: {e}")
-        
-        # Fall back to repository data if calendar service failed or has no events
-        logger.info(f"Using repository data for patient {patient_id} appointments")
-        upcoming_appointments = AppointmentRepository.get_upcoming_for_patient(patient_id)
-        past_appointments = AppointmentRepository.get_past_for_patient(patient_id)
-        
-        # Calculate counts
-        upcoming_count = len(upcoming_appointments)
-        past_count = len(past_appointments)
-        provider_count = len(set([a.get('doctor', '') for a in upcoming_appointments + past_appointments]))
-        
-        return {
-            'upcoming_appointments': upcoming_appointments,
-            'past_appointments': past_appointments,
-            'upcoming_count': upcoming_count,
-            'past_count': past_count,
-            'provider_count': provider_count
-        }
+        return calendar_data
     
     @staticmethod
-    def get_provider_appointments(provider_id, start_date=None, end_date=None, view_type='week'):
-        """Get appointments for a provider from calendar."""
-        calendar_service = AppointmentService._get_calendar_service(provider_id)
-        
-        if calendar_service and calendar_service.ready:
-            try:
-                # Default to current date if not specified
-                if not start_date:
-                    start_date = datetime.now()
-                    
-                # Determine end date based on view type
-                if not end_date:
-                    if view_type == 'day':
-                        end_date = start_date + timedelta(days=1)
-                    elif view_type == 'week':
-                        end_date = start_date + timedelta(days=7)
-                    elif view_type == 'month':
-                        # Approximate a month as 30 days
-                        end_date = start_date + timedelta(days=30)
-                    else:
-                        end_date = start_date + timedelta(days=7)  # Default to week
-                
-                # Get events from calendar
-                events = calendar_service.list_upcoming_events(days=(end_date - start_date).days)
-                
-                # Convert events to appointments
-                appointments = []
-                for event in events:
-                    appointment = AppointmentService._calendar_event_to_appointment(event, provider_id)
-                    appointments.append(appointment)
-                
-                # If no appointments found in calendar, fall back to repository
-                if not appointments:
-                    logger.info(f"No calendar appointments found for provider {provider_id}, checking repository")
-                    appointments = ProviderRepository.get_appointments(provider_id)
-                
-                return appointments
-                
-            except Exception as e:
-                logger.error(f"Error fetching provider calendar appointments: {e}")
-        
-        # Fall back to repository data if calendar service failed
-        logger.info(f"Using repository data for provider {provider_id} appointments")
-        return ProviderRepository.get_appointments(provider_id)
-    
-    @staticmethod
-    def get_available_slots(provider_id, date, duration=30):
-        """Get available appointment slots for a provider on a specific date."""
-        calendar_service = AppointmentService._get_calendar_service(provider_id)
-        
-        if calendar_service and calendar_service.ready:
-            try:
-                # Get available time slots from calendar
-                available_slots = calendar_service.get_available_slots(date, duration)
-                
-                # Format the slots for display
-                formatted_slots = []
-                for slot in available_slots:
-                    formatted_slots.append({
-                        'start_time': slot['start'],
-                        'end_time': slot['end'],
-                        'formatted_time': slot['start'].strftime('%I:%M %p')
-                    })
-                
-                return formatted_slots
-                
-            except Exception as e:
-                logger.error(f"Error getting available slots: {e}")
-        
-        # Fall back to default time slots if calendar service failed
-        logger.info(f"Using default time slots for provider {provider_id}")
-        
-        # Default available hours: 9 AM to 5 PM
-        default_slots = []
-        start_hour = 9
-        end_hour = 17
-        
-        slot_start = datetime.combine(date, datetime.min.time().replace(hour=start_hour))
-        
-        while slot_start.hour < end_hour:
-            slot_end = slot_start + timedelta(minutes=duration)
+    def get_appointment_details(appointment_id, provider_id):
+        """
+        Get detailed info for a single appointment
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            appointment = Appointment.objects.get(id=appointment_id, doctor=provider)
             
-            default_slots.append({
-                'start_time': slot_start,
-                'end_time': slot_end,
-                'formatted_time': slot_start.strftime('%I:%M %p')
+            # Get patient details if available
+            patient_data = None
+            if appointment.patient:
+                try:
+                    patient = Patient.objects.get(user=appointment.patient)
+                    patient_data = {
+                        'id': patient.id,
+                        'user_id': patient.user.id,
+                        'first_name': patient.user.first_name,
+                        'last_name': patient.user.last_name,
+                        'full_name': f"{patient.user.first_name} {patient.user.last_name}",
+                        'email': patient.user.email,
+                        'date_of_birth': patient.date_of_birth,
+                        'ohip_number': patient.ohip_number,
+                        'primary_phone': patient.primary_phone
+                    }
+                except Patient.DoesNotExist:
+                    # If patient record not found, use basic user info
+                    patient_data = {
+                        'user_id': appointment.patient.id,
+                        'first_name': appointment.patient.first_name,
+                        'last_name': appointment.patient.last_name,
+                        'full_name': f"{appointment.patient.first_name} {appointment.patient.last_name}",
+                        'email': appointment.patient.email
+                    }
+            
+            return {
+                'success': True,
+                'appointment': appointment,
+                'patient': patient_data
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'success': False,
+                'error': 'Provider not found'
+            }
+        except Appointment.DoesNotExist:
+            logger.error(f"Appointment with ID {appointment_id} not found or not assigned to provider {provider_id}")
+            return {
+                'success': False,
+                'error': 'Appointment not found'
+            }
+        except Exception as e:
+            logger.error(f"Error in get_appointment_details: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def create_appointment(provider_id, form_data):
+        """
+        Create a new appointment from form data
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            
+            # Get patient
+            patient_id = form_data.get('patient_id')
+            if not patient_id:
+                return {
+                    'success': False,
+                    'error': 'Patient is required'
+                }
+            
+            from django.contrib.auth.models import User
+            try:
+                patient = Patient.objects.get(id=patient_id)
+                patient_user = patient.user
+            except Patient.DoesNotExist:
+                try:
+                    # Try to get user directly
+                    patient_user = User.objects.get(id=patient_id)
+                except User.DoesNotExist:
+                    return {
+                        'success': False,
+                        'error': 'Patient not found'
+                    }
+            
+            # Parse appointment date and time
+            appointment_date = form_data.get('appointment_date')
+            appointment_time = form_data.get('appointment_time')
+            
+            if not appointment_date or not appointment_time:
+                return {
+                    'success': False,
+                    'error': 'Appointment date and time are required'
+                }
+            
+            try:
+                # Parse date string
+                if isinstance(appointment_date, str):
+                    date_obj = datetime.strptime(appointment_date, '%Y-%m-%d').date()
+                else:
+                    date_obj = appointment_date
+                
+                # Parse time string
+                if isinstance(appointment_time, str):
+                    # Handle different time formats
+                    try:
+                        time_obj = datetime.strptime(appointment_time, '%H:%M').time()
+                    except ValueError:
+                        try:
+                            time_obj = datetime.strptime(appointment_time, '%I:%M %p').time()
+                        except ValueError:
+                            return {
+                                'success': False,
+                                'error': 'Invalid time format'
+                            }
+                else:
+                    time_obj = appointment_time
+                
+                # Combine date and time
+                appointment_datetime = datetime.combine(date_obj, time_obj)
+                
+                # Convert to timezone-aware datetime if using timezone
+                if settings.USE_TZ:
+                    from django.utils import timezone
+                    appointment_datetime = timezone.make_aware(appointment_datetime)
+            except ValueError as e:
+                return {
+                    'success': False,
+                    'error': f'Invalid date or time: {str(e)}'
+                }
+            
+            # Get appointment type
+            appointment_type = form_data.get('appointment_type', 'In-Person')
+            if appointment_type not in ['In-Person', 'Virtual']:
+                appointment_type = 'In-Person'  # Default to in-person
+            
+            # Create the appointment
+            appointment = Appointment.objects.create(
+                patient=patient_user,
+                doctor=provider,
+                time=appointment_datetime,
+                type=appointment_type,
+                reason=form_data.get('reason', ''),
+                notes=form_data.get('notes', ''),
+                status='Scheduled'
+            )
+            
+            # Check if we need to sync with calendar
+            calendar_sync_result = {'success': True}
+            if hasattr(provider, 'calendar_sync_enabled') and provider.calendar_sync_enabled:
+                try:
+                    from common.services.calendar_service import CalendarService
+                    calendar_sync_result = CalendarService.add_appointment_to_calendar(appointment)
+                except (ImportError, AttributeError):
+                    calendar_sync_result = {
+                        'success': False,
+                        'error': 'Calendar service not available'
+                    }
+            
+            # Send notification if configured
+            notification_result = {'success': True}
+            try:
+                from common.services.notification_service import NotificationService
+                notification_result = NotificationService.send_appointment_notification(
+                    appointment=appointment,
+                    notification_type='created'
+                )
+            except (ImportError, AttributeError):
+                notification_result = {
+                    'success': False,
+                    'error': 'Notification service not available'
+                }
+            
+            return {
+                'success': True,
+                'appointment_id': appointment.id,
+                'calendar_sync': calendar_sync_result,
+                'notification': notification_result
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'success': False,
+                'error': 'Provider not found'
+            }
+        except Exception as e:
+            logger.error(f"Error creating appointment: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def get_scheduling_form_data(provider_id):
+        """
+        Get data needed for appointment scheduling form:
+        - Patients list
+        - Available dates/times
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            
+            # Get patients assigned to this provider
+            patients = Patient.objects.filter(primary_provider=provider)
+            
+            # Generate available dates (next 30 days)
+            available_dates = []
+            start_date = timezone.now().date()
+            for i in range(30):
+                day_date = start_date + timedelta(days=i)
+                # Skip weekends if needed
+                if day_date.weekday() < 5:  # 0-4 is Monday-Friday
+                    available_dates.append(day_date.strftime('%Y-%m-%d'))
+            
+            # Get provider's default working hours or use standard hours
+            default_hours = getattr(provider, 'working_hours', {
+                'start': '09:00',
+                'end': '17:00',
+                'lunch_start': '12:00',
+                'lunch_end': '13:00'
             })
             
-            slot_start += timedelta(minutes=duration)
-        
-        return default_slots
+            # Generate available times
+            available_times = []
+            
+            # Get appointment duration (default 30 minutes)
+            duration = getattr(provider, 'default_appointment_duration', 30)
+            
+            # Parse working hours
+            start_hour = 9  # Default 9 AM
+            end_hour = 17   # Default 5 PM
+            
+            if 'start' in default_hours:
+                try:
+                    start_time = datetime.strptime(default_hours['start'], '%H:%M').time()
+                    start_hour = start_time.hour
+                except ValueError:
+                    pass
+            
+            if 'end' in default_hours:
+                try:
+                    end_time = datetime.strptime(default_hours['end'], '%H:%M').time()
+                    end_hour = end_time.hour
+                except ValueError:
+                    pass
+            
+            # Generate time slots
+            current_hour = start_hour
+            while current_hour < end_hour:
+                # Skip lunch hour if defined
+                is_lunch_hour = False
+                if 'lunch_start' in default_hours and 'lunch_end' in default_hours:
+                    try:
+                        lunch_start = datetime.strptime(default_hours['lunch_start'], '%H:%M').time()
+                        lunch_end = datetime.strptime(default_hours['lunch_end'], '%H:%M').time()
+                        
+                        current_time = time(current_hour, 0)
+                        if lunch_start <= current_time < lunch_end:
+                            is_lunch_hour = True
+                    except ValueError:
+                        pass
+                
+                if not is_lunch_hour:
+                    # Format time with AM/PM
+                    available_times.append(time(current_hour, 0).strftime('%-I:%M %p'))
+                    
+                    # Add additional slots based on duration
+                    if duration < 60:
+                        minutes = duration
+                        while minutes < 60:
+                            available_times.append(time(current_hour, minutes).strftime('%-I:%M %p'))
+                            minutes += duration
+                
+                current_hour += 1
+            
+            return {
+                'patients': patients,
+                'available_dates': available_dates,
+                'available_times': available_times
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'patients': [],
+                'available_dates': [],
+                'available_times': []
+            }
+        except Exception as e:
+            logger.error(f"Error in get_scheduling_form_data: {str(e)}")
+            return {
+                'patients': [],
+                'available_dates': [],
+                'available_times': []
+            }
     
     @staticmethod
-    def schedule_appointment(appointment_data, patient_id=None, provider_id=None):
-        """Schedule a new appointment in both local system and calendar."""
-        # Validate required data
-        if not provider_id:
-            logger.error("Provider ID required to schedule appointment")
-            return None
+    def reschedule_appointment(appointment_id, provider_id, form_data, provider_initiated=True):
+        """
+        Reschedule an existing appointment
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            appointment = Appointment.objects.get(id=appointment_id, doctor=provider)
             
-        if not patient_id and not appointment_data.get('patient_id'):
-            logger.error("Patient ID required to schedule appointment")
-            return None
+            # Parse new appointment date and time
+            appointment_date = form_data.get('appointment_date')
+            appointment_time = form_data.get('appointment_time')
             
-        # Get patient data
-        patient_id = patient_id or appointment_data.get('patient_id')
-        patient = PatientRepository.get_by_id(patient_id)
-        
-        if not patient:
-            logger.error(f"Patient {patient_id} not found")
-            return None
+            if not appointment_date or not appointment_time:
+                return {
+                    'success': False,
+                    'error': 'New appointment date and time are required'
+                }
             
-        # First save to our repository
-        appointment = AppointmentRepository.create(appointment_data)
-        
-        # Then sync to calendar
-        calendar_service = AppointmentService._get_calendar_service(provider_id)
-        
-        if calendar_service and calendar_service.ready:
             try:
-                # Convert to calendar event format
-                event_data = AppointmentService._appointment_to_calendar_event(appointment, patient)
-                
-                # Create event in calendar
-                calendar_event_created = calendar_service.create_event(
-                    summary=event_data['summary'],
-                    start_time=event_data['start_time'],
-                    end_time=event_data['end_time'],
-                    description=event_data['description'],
-                    uid=event_data['uid'],
-                    attendees=event_data['attendees'],
-                    location=event_data['location']
-                )
-                
-                if calendar_event_created:
-                    # Update appointment with calendar UID
-                    appointment['calendar_uid'] = event_data['uid']
-                    AppointmentRepository.update(appointment['id'], {'calendar_uid': event_data['uid']})
-                    
-                    # Send confirmation email to patient if email is available
-                    if patient.get('email'):
-                        try:
-                            subject = "Appointment Confirmation"
-                            message = f"""
-Dear {patient.get('first_name', 'Patient')},
-
-Your appointment has been scheduled.
-
-Details:
-- Provider: {appointment.get('doctor', 'Your healthcare provider')}
-- Date and Time: {appointment.get('time', 'Scheduled time')}
-- Type: {appointment.get('type', 'In-person')}
-- Reason: {appointment.get('reason', 'Consultation')}
-                            
-If you need to reschedule or cancel, please contact us.
-
-Thank you,
-Northern Health Innovations
-"""
-                            # In a real implementation, send the email
-                            # send_mail(
-                            #     subject=subject,
-                            #     message=message,
-                            #     from_email=settings.DEFAULT_FROM_EMAIL,
-                            #     recipient_list=[patient.get('email')],
-                            #     fail_silently=True,
-                            # )
-                            logger.info(f"Appointment confirmation would be sent to {patient.get('email')}")
-                        except Exception as e:
-                            logger.error(f"Error sending confirmation email: {e}")
+                # Parse date string
+                if isinstance(appointment_date, str):
+                    date_obj = datetime.strptime(appointment_date, '%Y-%m-%d').date()
                 else:
-                    logger.warning(f"Failed to create calendar event for appointment {appointment['id']}")
-            except Exception as e:
-                logger.error(f"Error syncing appointment to calendar: {e}")
-        
-        return appointment
+                    date_obj = appointment_date
+                
+                # Parse time string
+                if isinstance(appointment_time, str):
+                    # Handle different time formats
+                    try:
+                        time_obj = datetime.strptime(appointment_time, '%H:%M').time()
+                    except ValueError:
+                        try:
+                            time_obj = datetime.strptime(appointment_time, '%I:%M %p').time()
+                        except ValueError:
+                            return {
+                                'success': False,
+                                'error': 'Invalid time format'
+                            }
+                else:
+                    time_obj = appointment_time
+                
+                # Combine date and time
+                new_appointment_datetime = datetime.combine(date_obj, time_obj)
+                
+                # Convert to timezone-aware datetime if using timezone
+                if settings.USE_TZ:
+                    from django.utils import timezone
+                    new_appointment_datetime = timezone.make_aware(new_appointment_datetime)
+            except ValueError as e:
+                return {
+                    'success': False,
+                    'error': f'Invalid date or time: {str(e)}'
+                }
+            
+            # Store the old time for notification
+            old_time = appointment.time
+            
+            # Update the appointment
+            appointment.time = new_appointment_datetime
+            appointment.save()
+            
+            # Check if we need to update calendar
+            calendar_sync_result = {'success': True}
+            if hasattr(provider, 'calendar_sync_enabled') and provider.calendar_sync_enabled:
+                try:
+                    from common.services.calendar_service import CalendarService
+                    calendar_sync_result = CalendarService.update_appointment_in_calendar(appointment)
+                except (ImportError, AttributeError):
+                    calendar_sync_result = {
+                        'success': False,
+                        'error': 'Calendar service not available'
+                    }
+            
+            # Send notification if configured
+            notification_result = {'success': True}
+            try:
+                from common.services.notification_service import NotificationService
+                notification_result = NotificationService.send_appointment_notification(
+                    appointment=appointment,
+                    notification_type='rescheduled',
+                    additional_data={
+                        'old_time': old_time,
+                        'provider_initiated': provider_initiated
+                    }
+                )
+            except (ImportError, AttributeError):
+                notification_result = {
+                    'success': False,
+                    'error': 'Notification service not available'
+                }
+            
+            return {
+                'success': True,
+                'appointment_id': appointment.id,
+                'calendar_sync': calendar_sync_result,
+                'notification': notification_result
+            }
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'success': False,
+                'error': 'Provider not found'
+            }
+        except Appointment.DoesNotExist:
+            logger.error(f"Appointment with ID {appointment_id} not found or not assigned to provider {provider_id}")
+            return {
+                'success': False,
+                'error': 'Appointment not found'
+            }
+        except Exception as e:
+            logger.error(f"Error rescheduling appointment: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def update_appointment_status(appointment_id, provider_id, status):
+        """
+        Update appointment status (Scheduled, Checked In, Completed, etc.)
+        """
+        try:
+            provider = Provider.objects.get(id=provider_id)
+            appointment = Appointment.objects.get(id=appointment_id, doctor=provider)
+            
+            # Validate status
+            valid_statuses = ['Scheduled', 'Checked In', 'In Progress', 'Completed', 'Cancelled', 'No Show']
+            if status not in valid_statuses:
+                return {
+                    'success': False,
+                    'error': f'Invalid status. Must be one of: {", ".join(valid_statuses)}'
+                }
+            
+            # Store old status for notification
+            old_status = appointment.status
+            
+            # Update status
+            appointment.status = status
+            appointment.save()
+            
+            result = {
+                'success': True,
+                'appointment_id': appointment.id
+            }
+            
+            # Special handling for cancelled appointments
+            if status == 'Cancelled':
+                # Check if we need to update calendar
+                calendar_sync_result = {'success': True}
+                if hasattr(provider, 'calendar_sync_enabled') and provider.calendar_sync_enabled:
+                    try:
+                        from common.services.calendar_service import CalendarService
+                        calendar_sync_result = CalendarService.delete_appointment_from_calendar(appointment)
+                    except (ImportError, AttributeError):
+                        calendar_sync_result = {
+                            'success': False,
+                            'error': 'Calendar service not available'
+                        }
+                result['calendar_sync'] = calendar_sync_result
+            
+            # Send notification if configured
+            notification_result = {'success': True}
+            try:
+                from common.services.notification_service import NotificationService
+                notification_result = NotificationService.send_appointment_notification(
+                    appointment=appointment,
+                    notification_type='status_updated',
+                    additional_data={
+                        'old_status': old_status,
+                        'new_status': status
+                    }
+                )
+            except (ImportError, AttributeError):
+                notification_result = {
+                    'success': False,
+                    'error': 'Notification service not available'
+                }
+            result['notification'] = notification_result
+            
+            return result
+            
+        except Provider.DoesNotExist:
+            logger.error(f"Provider with ID {provider_id} not found")
+            return {
+                'success': False,
+                'error': 'Provider not found'
+            }
+        except Appointment.DoesNotExist:
+            logger.error(f"Appointment with ID {appointment_id} not found or not assigned to provider {provider_id}")
+            return {
+                'success': False,
+                'error': 'Appointment not found'
+            }
+        except Exception as e:
+            logger.error(f"Error updating appointment status: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e)
+            }
+    
+    @staticmethod
+    def get_appointment_for_reschedule(appointment_id, provider_id):
+        """
+        Get appointment data for rescheduling
+        """
+        # Call get_appointment_details for consistency
+        return AppointmentService.get_appointment_details(appointment_id, provider_id)

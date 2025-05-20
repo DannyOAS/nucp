@@ -1,8 +1,8 @@
 # provider/api/serializers.py
 from rest_framework import serializers
-from provider.models import Provider, RecordingSession, ClinicalNote, DocumentTemplate, GeneratedDocument
+from provider.models import Provider, RecordingSession, ClinicalNote, DocumentTemplate, GeneratedDocument, AIModelConfig
 from common.models import Appointment, Prescription, Message
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User, Group
 from api.serializers import (
     UserSerializer as BaseUserSerializer,
     BaseProviderSerializer, 
@@ -135,3 +135,19 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         # In a real implementation, this would render the HTML content
         # For now, just return a placeholder
         return obj.rendered_content or "<p>Preview not available</p>"
+
+class AIModelConfigSerializer(serializers.ModelSerializer):
+    """Serializer for AI model configuration"""
+    model_type_display = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = AIModelConfig  # You need to import this model
+        fields = [
+            'id', 'name', 'model_type', 'model_type_display', 'api_endpoint', 
+            'configuration_data', 'is_active', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'created_at', 'updated_at']
+    
+    def get_model_type_display(self, obj):
+        """Get the display name for the model type"""
+        return obj.get_model_type_display() if hasattr(obj, 'get_model_type_display') else obj.model_type

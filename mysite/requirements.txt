@@ -62,3 +62,4 @@ weasyprint==65.0
 webencodings==0.5.1
 x-wr-timezone==2.0.1
 zopfli==0.2.3.post1
+django-filter==25.1
