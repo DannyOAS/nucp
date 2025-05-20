@@ -1,18 +1,15 @@
-# provider/api/urls.py - Complete Fixed Implementation
+# provider/api/urls.py
 from django.urls import path, include
-
-# This is the key change! We're importing the default router from REST framework
-# directly rather than from another file
 from rest_framework.routers import DefaultRouter
 from .views import (
     ProviderViewSet, AppointmentViewSet, PrescriptionViewSet,
     ClinicalNoteViewSet, DocumentTemplateViewSet, GeneratedDocumentViewSet,
     RecordingSessionViewSet, ProviderPatientsViewSet, MessageViewSet
 )
+from .views import ProviderPatientsViewSet  # Import the new ViewSet
 
-app_name = 'provider_api'
+app_name = 'provider_api'  # Add this line
 
-# Create the router manually right here
 router = DefaultRouter()
 router.register(r'profile', ProviderViewSet, basename='provider-profile')
 router.register(r'appointments', AppointmentViewSet, basename='provider-appointments')
@@ -27,6 +24,5 @@ router.register(r'patients', ProviderPatientsViewSet, basename='provider-patient
 router.register(r'messages', MessageViewSet, basename='provider-messages')
 
 urlpatterns = [
-    # Include the router URLs directly
     path('', include(router.urls)),
 ]

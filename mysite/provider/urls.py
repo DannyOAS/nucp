@@ -75,5 +75,5 @@ urlpatterns = [
     path('templates/edit/<int:template_id>/', views.ai_views_forms.edit_template, name='edit_template'),
     
     # API endpoints
-    path('api/', include('provider.api.urls')),
+#    path('api/', include('provider.api.urls')),
 ]

@@ -1,29 +1,17 @@
-# provider/api/serializers.py (Updated)
+# provider/api/serializers.py
 from rest_framework import serializers
 from provider.models import Provider, RecordingSession, ClinicalNote, DocumentTemplate, GeneratedDocument
 from common.models import Appointment, Prescription, Message
 from django.contrib.auth.models import User
 from common.models import Message
 
-class VersionedSerializerMixin:
-    """
-    Mixin that adds version information to serializer output
-    """
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        # Add version from context if available
-        version = self.context.get('version')
-        if version:
-            data['api_version'] = version
-        return data
-
-class UserSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email']
         read_only_fields = ['id', 'username']
 
-class ProviderSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class ProviderSerializer(serializers.ModelSerializer):
     user = UserSerializer(read_only=True)
     full_name = serializers.CharField(read_only=True)
     
@@ -32,7 +20,7 @@ class ProviderSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
         fields = ['id', 'user', 'license_number', 'specialty', 'bio', 'phone', 'is_active', 'full_name']
         read_only_fields = ['id']
 
-class AppointmentSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class AppointmentSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     doctor_name = serializers.SerializerMethodField()
     
@@ -47,7 +35,7 @@ class AppointmentSerializer(VersionedSerializerMixin, serializers.ModelSerialize
     def get_doctor_name(self, obj):
         return f"Dr. {obj.doctor.user.last_name}" if obj.doctor and obj.doctor.user else ""
 
-class PrescriptionSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class PrescriptionSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     
     class Meta:
@@ -59,7 +47,7 @@ class PrescriptionSerializer(VersionedSerializerMixin, serializers.ModelSerializ
     def get_patient_name(self, obj):
         return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
 
-class MessageSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class MessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
     recipient_name = serializers.SerializerMethodField()
     
@@ -79,7 +67,7 @@ class MessageSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
             return f"{obj.recipient.first_name} {obj.recipient.last_name}"
         return ""
 
-class RecordingSessionSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class RecordingSessionSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     duration = serializers.SerializerMethodField()
     
@@ -99,7 +87,7 @@ class RecordingSessionSerializer(VersionedSerializerMixin, serializers.ModelSeri
             return (obj.end_time - obj.start_time).total_seconds() // 60
         return None
 
-class ClinicalNoteSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class ClinicalNoteSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     
     class Meta:
@@ -113,14 +101,14 @@ class ClinicalNoteSerializer(VersionedSerializerMixin, serializers.ModelSerializ
             return f"{obj.appointment.patient.first_name} {obj.appointment.patient.last_name}"
         return "Unknown"
 
-class DocumentTemplateSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class DocumentTemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentTemplate
         fields = ['id', 'name', 'description', 'template_type', 'template_content',
                  'requires_patient_data', 'requires_provider_data', 'created_at',
                  'updated_at', 'created_by', 'is_active']
 
-class GeneratedDocumentSerializer(VersionedSerializerMixin, serializers.ModelSerializer):
+class GeneratedDocumentSerializer(serializers.ModelSerializer):
     template_name = serializers.SerializerMethodField()
     patient_name = serializers.SerializerMethodField()
     html_content = serializers.SerializerMethodField()

@@ -1,4 +1,4 @@
-# provider/api/views.py (Updated)
+# provider/api/views.py
 from rest_framework import viewsets, permissions, filters, serializers
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -14,49 +14,6 @@ from django.db import models  # For Q objects
 from patient.models import Patient
 from patient.api.serializers import PatientSerializer  # Import the existing patient serializer
 from .permissions import IsProvider  # Import the permission from the new file
-from .pagination import VersionedPagination  # Import the custom pagination class
-
-class ProviderAPIVersionMixin:
-    """Mixin to add API version information to all provider API viewsets"""
-    version = 'v1'
-    pagination_class = VersionedPagination
-    
-    def get_serializer_context(self):
-        context = super().get_serializer_context()
-        context['version'] = self.version
-        return context
-    
-    def initialize_request(self, request, *args, **kwargs):
-        """Add version to request object for use by the pagination class"""
-        request = super().initialize_request(request, *args, **kwargs)
-        request.version = self.version
-        return request
-        
-    def get_paginated_response(self, data):
-        """
-        Override to ensure version information is included in custom action responses
-        that use pagination.
-        """
-        response = super().get_paginated_response(data)
-        if hasattr(response, 'data') and isinstance(response.data, dict):
-            response.data['api_version'] = self.version
-        return response
-    
-    def finalize_response(self, request, response, *args, **kwargs):
-        """
-        Add version information to non-paginated responses, such as detail views
-        and custom actions that don't use pagination.
-        """
-        response = super().finalize_response(request, response, *args, **kwargs)
-        
-        # Only add version to successful responses with data
-        if hasattr(response, 'status_code') and 200 <= response.status_code < 300:
-            if hasattr(response, 'data') and isinstance(response.data, dict):
-                # Don't override if already set by pagination
-                if 'api_version' not in response.data:
-                    response.data['api_version'] = self.version
-                    
-        return response
 
 class IsProviderOrReadOnly(permissions.BasePermission):
     """
@@ -78,9 +35,9 @@ class IsProviderOrReadOnly(permissions.BasePermission):
         
         return False
 
-class ProviderViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+class ProviderViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for provider profiles
+    API endpoint for provider profiles
     """
     serializer_class = ProviderSerializer
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
@@ -91,9 +48,9 @@ class ProviderViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
             return Provider.objects.filter(id=self.request.user.provider_profile.id)
         return Provider.objects.none()
 
-class ProviderPatientsViewSet(ProviderAPIVersionMixin, viewsets.ReadOnlyModelViewSet):
+class ProviderPatientsViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API v1 endpoint that allows providers to view patients assigned to them.
+    API endpoint that allows providers to view patients assigned to them.
     """
     serializer_class = PatientSerializer
     permission_classes = [permissions.IsAuthenticated, IsProvider]
@@ -104,9 +61,22 @@ class ProviderPatientsViewSet(ProviderAPIVersionMixin, viewsets.ReadOnlyModelVie
             return Patient.objects.filter(primary_provider=self.request.user.provider_profile)
         return Patient.objects.none()
 
-class AppointmentViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+#class ProviderPatientsViewSet(viewsets.ReadOnlyModelViewSet):
+#    """
+#    API endpoint that allows providers to view patients assigned to them.
+#    """
+#    serializer_class = PatientSerializer
+#    permission_classes = [permissions.IsAuthenticated, IsProvider]  # Assuming you have an IsProvider permission
+#    
+#    def get_queryset(self):
+#        if hasattr(self.request.user, 'provider_profile'):
+#            # Return patients where this provider is the primary provider
+#            return Patient.objects.filter(primary_provider=self.request.user.provider_profile)
+#        return Patient.objects.none()
+
+class AppointmentViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for provider appointments
+    API endpoint for provider appointments
     """
     serializer_class = AppointmentSerializer
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
@@ -157,14 +127,14 @@ class AppointmentViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-class PrescriptionViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+class PrescriptionViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for provider prescriptions
+    API endpoint for provider prescriptions
     """
     serializer_class = PrescriptionSerializer
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['medication_name', 'patient__first_name', 'patient__last_name', 'status']
+    search_fields = ['name', 'patient__first_name', 'patient__last_name', 'status']
     ordering_fields = ['created_at', 'status']
     ordering = ['-created_at']
     
@@ -195,11 +165,11 @@ class PrescriptionViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-class MessageViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+class MessageViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for provider messages
+    API endpoint for provider messages
     """
-    serializer_class = MessageSerializer
+    serializer_class = MessageSerializer  # Make sure this is imported at the top
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
     filter_backends = [filters.SearchFilter, filters.OrderingFilter]
     search_fields = ['subject', 'content', 'status']
@@ -251,9 +221,9 @@ class MessageViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user, sender_type='provider')
 
-class ClinicalNoteViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+class ClinicalNoteViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for clinical notes
+    API endpoint for clinical notes
     """
     serializer_class = ClinicalNoteSerializer
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
@@ -268,9 +238,9 @@ class ClinicalNoteViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
             return ClinicalNote.objects.filter(provider=self.request.user.provider_profile)
         return ClinicalNote.objects.none()
 
-class DocumentTemplateViewSet(ProviderAPIVersionMixin, viewsets.ReadOnlyModelViewSet):
+class DocumentTemplateViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    API v1 endpoint for document templates (read-only for providers)
+    API endpoint for document templates (read-only for providers)
     """
     serializer_class = DocumentTemplateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -283,9 +253,9 @@ class DocumentTemplateViewSet(ProviderAPIVersionMixin, viewsets.ReadOnlyModelVie
         # Providers can see all active templates
         return DocumentTemplate.objects.filter(is_active=True)
 
-class GeneratedDocumentViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+class GeneratedDocumentViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for generated documents
+    API endpoint for generated documents
     """
     serializer_class = GeneratedDocumentSerializer
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
@@ -300,9 +270,9 @@ class GeneratedDocumentViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
             return GeneratedDocument.objects.filter(provider=self.request.user.provider_profile)
         return GeneratedDocument.objects.none()
 
-class RecordingSessionViewSet(ProviderAPIVersionMixin, viewsets.ModelViewSet):
+class RecordingSessionViewSet(viewsets.ModelViewSet):
     """
-    API v1 endpoint for recording sessions
+    API endpoint for recording sessions
     """
     serializer_class = RecordingSessionSerializer
     permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
