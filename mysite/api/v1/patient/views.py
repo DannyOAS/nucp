@@ -17,6 +17,7 @@ from .filters import (
     MessageFilter, PrescriptionRequestFilter
 )
 from api.versioning import VersionedViewMixin
+from api.mixins import PaginationMixin, MessageActionsMixin
 from django.db.models import Q 
 
 class PatientViewSet(VersionedViewMixin, viewsets.ReadOnlyModelViewSet):
@@ -132,64 +133,85 @@ class PrescriptionRequestViewSet(VersionedViewMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         if hasattr(self.request.user, 'patient_profile'):
             serializer.save(patient=self.request.user.patient_profile)
+#
+#class MessageViewSet(VersionedViewMixin, viewsets.ModelViewSet):
+#    """
+#    API endpoint for patient messages.
+#    Patients can see and create messages they've sent or received.
+#    """
+#    serializer_class = MessageSerializer
+#    permission_classes = [permissions.IsAuthenticated, IsPatientOrReadOnly]
+#    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+#    filterset_class = MessageFilter
+#    search_fields = ['subject', 'content']
+#    ordering_fields = ['created_at', 'status']
+#    ordering = ['-created_at']
+#    version = 'v1'
+#    
+#    def get_queryset(self):
+#        if not self.request.user.is_authenticated:
+#            return Message.objects.none()
+#            
+#        # Get messages where the user is either the sender or recipient
+#        return Message.objects.filter(
+#            Q(recipient=self.request.user) & 
+#            ~Q(status='deleted')
+#        ) | Message.objects.filter(
+#            Q(sender=self.request.user)
+#        )
+#    
+#    @action(detail=False, methods=['get'])
+#    def inbox(self, request):
+#        """Get received messages"""
+#        queryset = Message.objects.filter(
+#            recipient=request.user
+#        ).exclude(
+#            status='deleted'
+#        ).order_by('-created_at')
+#        
+#        page = self.paginate_queryset(queryset)
+#        if page is not None:
+#            serializer = self.get_serializer(page, many=True)
+#            return self.get_paginated_response(serializer.data)
+#            
+#        serializer = self.get_serializer(queryset, many=True)
+#        return Response(serializer.data)
+#    
+#    @action(detail=False, methods=['get'])
+#    def sent(self, request):
+#        """Get sent messages"""
+#        queryset = Message.objects.filter(
+#            sender=request.user
+#        ).order_by('-created_at')
+#        
+#        page = self.paginate_queryset(queryset)
+#        if page is not None:
+#            serializer = self.get_serializer(page, many=True)
+#            return self.get_paginated_response(serializer.data)
+#            
+#        serializer = self.get_serializer(queryset, many=True)
+#        return Response(serializer.data)
+#        
+#    def perform_create(self, serializer):
+#        serializer.save(sender=self.request.user, sender_type='patient')
 
-class MessageViewSet(VersionedViewMixin, viewsets.ModelViewSet):
-    """
-    API endpoint for patient messages.
-    Patients can see and create messages they've sent or received.
-    """
+class MessageViewSet(VersionedViewMixin, PaginationMixin, MessageActionsMixin, viewsets.ModelViewSet):
+    """API v1 endpoint for patient messages"""
     serializer_class = MessageSerializer
     permission_classes = [permissions.IsAuthenticated, IsPatientOrReadOnly]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_class = MessageFilter
-    search_fields = ['subject', 'content']
-    ordering_fields = ['created_at', 'status']
-    ordering = ['-created_at']
     version = 'v1'
     
     def get_queryset(self):
+        # Base queryset logic specific to this viewset
         if not self.request.user.is_authenticated:
             return Message.objects.none()
-            
-        # Get messages where the user is either the sender or recipient
+        
         return Message.objects.filter(
-            Q(recipient=self.request.user) & 
-            ~Q(status='deleted')
+            Q(recipient=self.request.user) & ~Q(status='deleted')
         ) | Message.objects.filter(
-            Q(sender=self.request.user)
+            sender=self.request.user
         )
     
-    @action(detail=False, methods=['get'])
-    def inbox(self, request):
-        """Get received messages"""
-        queryset = Message.objects.filter(
-            recipient=request.user
-        ).exclude(
-            status='deleted'
-        ).order_by('-created_at')
-        
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def sent(self, request):
-        """Get sent messages"""
-        queryset = Message.objects.filter(
-            sender=request.user
-        ).order_by('-created_at')
-        
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-        
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user, sender_type='patient')
+    

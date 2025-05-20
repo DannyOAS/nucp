@@ -3,70 +3,73 @@ from rest_framework import serializers
 from provider.models import Provider, RecordingSession, ClinicalNote, DocumentTemplate, GeneratedDocument
 from common.models import Appointment, Prescription, Message
 from django.contrib.auth.models import User
-from common.models import Message
+from api.serializers import (
+    UserSerializer as BaseUserSerializer,
+    BaseProviderSerializer, 
+    BaseAppointmentSerializer, 
+    BasePrescriptionSerializer, 
+    BaseMessageSerializer
+)
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email']
-        read_only_fields = ['id', 'username']
+# Extend the base UserSerializer if needed, otherwise use it directly
+class UserSerializer(BaseUserSerializer):
+    class Meta(BaseUserSerializer.Meta):
+        # We can customize if needed
+        pass
 
-class ProviderSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
+# Extend BaseProviderSerializer
+class ProviderSerializer(BaseProviderSerializer):
+    """V1 Provider serializer extending the base provider serializer"""
+    
+    # Override to use CharField as in the original
     full_name = serializers.CharField(read_only=True)
     
-    class Meta:
+    class Meta(BaseProviderSerializer.Meta):
         model = Provider
-        fields = ['id', 'user', 'license_number', 'specialty', 'bio', 'phone', 'is_active', 'full_name']
+        # Use the same fields as the base
+        fields = BaseProviderSerializer.Meta.fields
         read_only_fields = ['id']
 
-class AppointmentSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
-    doctor_name = serializers.SerializerMethodField()
+# Extend BaseAppointmentSerializer
+class AppointmentSerializer(BaseAppointmentSerializer):
+    """V1 Appointment serializer extending the base appointment serializer"""
     
-    class Meta:
+    class Meta(BaseAppointmentSerializer.Meta):
         model = Appointment
-        fields = ['id', 'patient', 'doctor', 'time', 'type', 'status', 'reason', 'notes', 'patient_name', 'doctor_name']
+        fields = BaseAppointmentSerializer.Meta.fields
         read_only_fields = ['id']
     
-    def get_patient_name(self, obj):
-        return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
-    
-    def get_doctor_name(self, obj):
-        return f"Dr. {obj.doctor.user.last_name}" if obj.doctor and obj.doctor.user else ""
+    # We're keeping the same implementation as the base class
+    # No need to override get_patient_name or get_doctor_name unless the logic changes
 
-class PrescriptionSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
+# Extend BasePrescriptionSerializer
+class PrescriptionSerializer(BasePrescriptionSerializer):
+    """V1 Prescription serializer extending the base prescription serializer"""
     
-    class Meta:
+    class Meta(BasePrescriptionSerializer.Meta):
         model = Prescription
+        # Customize fields if needed - here we're removing doctor_name which was in the base
         fields = ['id', 'medication_name', 'dosage', 'patient', 'doctor', 'status', 'refills', 
                  'refills_remaining', 'created_at', 'updated_at', 'patient_name']
         read_only_fields = ['id', 'created_at', 'updated_at']
     
+    # Keep original implementation if it differs from base
     def get_patient_name(self, obj):
         return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
 
-class MessageSerializer(serializers.ModelSerializer):
-    sender_name = serializers.SerializerMethodField()
-    recipient_name = serializers.SerializerMethodField()
+# Extend BaseMessageSerializer
+class MessageSerializer(BaseMessageSerializer):
+    """V1 Message serializer extending the base message serializer"""
     
-    class Meta:
+    class Meta(BaseMessageSerializer.Meta):
         model = Message
-        fields = ['id', 'sender', 'recipient', 'subject', 'content', 
-                 'status', 'created_at', 'sender_name', 'recipient_name']
+        fields = BaseMessageSerializer.Meta.fields
+        # Customize read_only_fields to include sender
         read_only_fields = ['id', 'sender', 'created_at', 'sender_name', 'recipient_name']
     
-    def get_sender_name(self, obj):
-        if obj.sender:
-            return f"{obj.sender.first_name} {obj.sender.last_name}"
-        return ""
-    
-    def get_recipient_name(self, obj):
-        if obj.recipient:
-            return f"{obj.recipient.first_name} {obj.recipient.last_name}"
-        return ""
+    # Keep the same implementations for the get methods unless they differ from base
 
+# The following serializers don't have base classes, so they remain unchanged
 class RecordingSessionSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
     duration = serializers.SerializerMethodField()

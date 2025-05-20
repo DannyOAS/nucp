@@ -5,6 +5,8 @@ class IsOwner(permissions.BasePermission):
     """
     Base permission for object-level permissions based on ownership.
     Subclasses should override the has_object_permission method.
+    
+    This acts as a base class for both IsPatientOwner and IsProviderOwner.
     """
     def has_object_permission(self, request, view, obj):
         # Read permissions are allowed to any request
@@ -17,6 +19,9 @@ class IsOwner(permissions.BasePermission):
 class IsPatient(permissions.BasePermission):
     """
     Permission to only allow patients to access a view.
+    
+    This checks if the current user has a patient_profile attribute,
+    which indicates they are a registered patient.
     """
     def has_permission(self, request, view):
         return request.user.is_authenticated and hasattr(request.user, 'patient_profile')
@@ -24,6 +29,9 @@ class IsPatient(permissions.BasePermission):
 class IsProvider(permissions.BasePermission):
     """
     Permission to only allow providers to access a view.
+    
+    This checks if the current user has a provider_profile attribute,
+    which indicates they are a registered healthcare provider.
     """
     def has_permission(self, request, view):
         return request.user.is_authenticated and hasattr(request.user, 'provider_profile')
@@ -31,10 +39,14 @@ class IsProvider(permissions.BasePermission):
 class IsPatientOwner(IsOwner):
     """
     Object-level permission to only allow patients to access their own data.
+    
+    This extends the base IsOwner permission and checks if:
+    1. The user has a patient profile
+    2. The object belongs to that patient (via patient or user field)
     """
     def has_object_permission(self, request, view, obj):
-        # Read permissions are allowed to any request
-        if request.method in permissions.SAFE_METHODS:
+        # First check the base class permissions (read methods)
+        if super().has_object_permission(request, view, obj):
             return True
         
         # Check if the user is a patient
@@ -57,10 +69,14 @@ class IsPatientOwner(IsOwner):
 class IsProviderOwner(IsOwner):
     """
     Object-level permission to only allow providers to access their own data.
+    
+    This extends the base IsOwner permission and checks if:
+    1. The user has a provider profile
+    2. The object belongs to that provider (via provider, doctor, or user field)
     """
     def has_object_permission(self, request, view, obj):
-        # Read permissions are allowed to any request
-        if request.method in permissions.SAFE_METHODS:
+        # First check the base class permissions (read methods)
+        if super().has_object_permission(request, view, obj):
             return True
         
         # Check if the user is a provider
@@ -83,6 +99,8 @@ class IsProviderOwner(IsOwner):
 class IsMessageParticipant(permissions.BasePermission):
     """
     Permission to only allow message participants (sender or recipient) to access a message.
+    
+    This ensures that only users who sent or received a message can view it.
     """
     def has_object_permission(self, request, view, obj):
         # Message objects have sender and recipient fields
@@ -91,9 +109,24 @@ class IsMessageParticipant(permissions.BasePermission):
         
         return False
 
+class IsPatientOrProvider(permissions.BasePermission):
+    """
+    Permission to allow either patients or providers to access a view.
+    
+    This can be used for resources accessible to both user types.
+    """
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+            
+        return (hasattr(request.user, 'patient_profile') or 
+                hasattr(request.user, 'provider_profile'))
+
 class IsAdminUser(permissions.BasePermission):
     """
     Permission to only allow admin users to access a view.
+    
+    This checks if the user has the is_staff flag set to True.
     """
     def has_permission(self, request, view):
         return request.user and request.user.is_staff

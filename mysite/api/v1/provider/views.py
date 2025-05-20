@@ -15,8 +15,9 @@ from .serializers import (
 )
 #from patient.api.serializers import PatientSerializer
 from api.v1.patient.serializers import PatientSerializer
-from .permissions import IsProvider, IsProviderOrReadOnly
+from api.permissions import IsProvider, IsProviderOrReadOnly, IsProviderOwner
 from api.versioning import VersionedViewMixin
+from api.mixins import PaginationMixin, MessageActionsMixin, FilterMixin, SearchMixin
 from django.db.models import Q
 
 class ProviderViewSet(VersionedViewMixin, viewsets.ModelViewSet):
@@ -140,59 +141,88 @@ class PrescriptionViewSet(VersionedViewMixin, viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-class MessageViewSet(VersionedViewMixin, viewsets.ModelViewSet):
-    """
-    API v1 endpoint for provider messages
-    """
+#class MessageViewSet(VersionedViewMixin, viewsets.ModelViewSet):
+#    """
+#    API v1 endpoint for provider messages
+#    """
+#    serializer_class = MessageSerializer
+#    permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
+#    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+#    search_fields = ['subject', 'content', 'status']
+#    ordering_fields = ['created_at', 'status']
+#    ordering = ['-created_at']
+#    version = 'v1'
+#    
+#    def get_queryset(self):
+#        # A provider can see messages they've sent or received
+#        if hasattr(self.request.user, 'provider_profile'):
+#            # Get messages where the user is either the sender or recipient
+#            return Message.objects.filter(
+#                Q(sender=self.request.user) |
+#                Q(recipient=self.request.user)
+#            ).order_by('-created_at')
+#        return Message.objects.none()
+#    
+#    @action(detail=False, methods=['get'])
+#    def inbox(self, request):
+#        """Get received messages"""
+#        queryset = Message.objects.filter(
+#            recipient=request.user
+#        ).exclude(
+#            status='deleted'
+#        ).order_by('-created_at')
+#        
+#        page = self.paginate_queryset(queryset)
+#        if page is not None:
+#            serializer = self.get_serializer(page, many=True)
+#            return self.get_paginated_response(serializer.data)
+#            
+#        serializer = self.get_serializer(queryset, many=True)
+#        return Response(serializer.data)
+#    
+#    @action(detail=False, methods=['get'])
+#    def sent(self, request):
+#        """Get sent messages"""
+#        queryset = Message.objects.filter(
+#            sender=request.user
+#        ).order_by('-created_at')
+#        
+#        page = self.paginate_queryset(queryset)
+#        if page is not None:
+#            serializer = self.get_serializer(page, many=True)
+#            return self.get_paginated_response(serializer.data)
+#            
+#        serializer = self.get_serializer(queryset, many=True)
+#        return Response(serializer.data)
+#    
+#    def perform_create(self, serializer):
+#        serializer.save(sender=self.request.user, sender_type='provider')
+
+class MessageViewSet(VersionedViewMixin, PaginationMixin, MessageActionsMixin, 
+                     FilterMixin, SearchMixin, viewsets.ModelViewSet):
     serializer_class = MessageSerializer
-    permission_classes = [permissions.IsAuthenticated, IsProviderOrReadOnly]
-    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ['subject', 'content', 'status']
-    ordering_fields = ['created_at', 'status']
-    ordering = ['-created_at']
+    permission_classes = [permissions.IsAuthenticated, IsProviderOwner]
     version = 'v1'
     
+    # Define filter fields for FilterMixin
+    filter_fields = {
+        'status': 'status',
+        'since': 'created_at__gte',
+        'until': 'created_at__lte',
+    }
+    
+    # Define search fields for SearchMixin
+    search_fields = ['subject', 'content']
+    
     def get_queryset(self):
-        # A provider can see messages they've sent or received
-        if hasattr(self.request.user, 'provider_profile'):
-            # Get messages where the user is either the sender or recipient
-            return Message.objects.filter(
-                Q(sender=self.request.user) |
-                Q(recipient=self.request.user)
-            ).order_by('-created_at')
-        return Message.objects.none()
-    
-    @action(detail=False, methods=['get'])
-    def inbox(self, request):
-        """Get received messages"""
+        # Call super() to apply filters and search from mixins
         queryset = Message.objects.filter(
-            recipient=request.user
-        ).exclude(
-            status='deleted'
+            Q(sender=self.request.user) | Q(recipient=self.request.user)
         ).order_by('-created_at')
         
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-    
-    @action(detail=False, methods=['get'])
-    def sent(self, request):
-        """Get sent messages"""
-        queryset = Message.objects.filter(
-            sender=request.user
-        ).order_by('-created_at')
-        
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-            
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+        # Apply filters and search from mixins
+        queryset = super().get_queryset(queryset)
+        return queryset
     
     def perform_create(self, serializer):
         serializer.save(sender=self.request.user, sender_type='provider')

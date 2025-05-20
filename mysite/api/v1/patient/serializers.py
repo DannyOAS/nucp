@@ -3,94 +3,97 @@ from rest_framework import serializers
 from patient.models import Patient, PrescriptionRequest
 from django.contrib.auth.models import User
 from common.models import Appointment, Prescription, Message
+from api.serializers import (
+    BasePatientSerializer, 
+    UserSerializer as BaseUserSerializer,
+    BaseAppointmentSerializer,
+    BasePrescriptionSerializer,
+    BasePrescriptionRequestSerializer,
+    BaseMessageSerializer
+)
 
-class UserSerializer(serializers.ModelSerializer):
-    class Meta:
+# Extend the base UserSerializer 
+class UserSerializer(BaseUserSerializer):
+    """V1 User serializer extending the base user serializer"""
+    class Meta(BaseUserSerializer.Meta):
+        # We can keep the same fields or customize if needed
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email']
         read_only_fields = ['id', 'username']
 
-class PatientSerializer(serializers.ModelSerializer):
-    user = UserSerializer(read_only=True)
-    full_name = serializers.SerializerMethodField()
+# Extend BasePatientSerializer - we can see it's already imported but not used
+class PatientSerializer(BasePatientSerializer):
+    """V1 Patient serializer extending the base patient serializer"""
     
-    class Meta:
+    class Meta(BasePatientSerializer.Meta):
         model = Patient
-        fields = ['id', 'user', 'date_of_birth', 'ohip_number', 'primary_phone', 
-                 'alternate_phone', 'address', 'emergency_contact_name', 'emergency_contact_phone',
-                 'current_medications', 'allergies', 'pharmacy_details', 'primary_provider',
-                 'virtual_care_consent', 'ehr_consent', 'full_name']
+        # Extend the fields from the base serializer
+        fields = BasePatientSerializer.Meta.fields + [
+            'current_medications', 'allergies', 'pharmacy_details',
+            'virtual_care_consent', 'ehr_consent'
+        ]
         read_only_fields = ['id']
     
+    # Override the get_full_name method to use obj.full_name directly
     def get_full_name(self, obj):
         return obj.full_name
 
-class PrescriptionRequestSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
+# Extend BasePrescriptionRequestSerializer
+class PrescriptionRequestSerializer(BasePrescriptionRequestSerializer):
+    """V1 Prescription Request serializer extending the base serializer"""
     
-    class Meta:
+    class Meta(BasePrescriptionRequestSerializer.Meta):
         model = PrescriptionRequest
-        fields = ['id', 'patient', 'medication_name', 'current_dosage', 'medication_duration',
-                 'last_refill_date', 'preferred_pharmacy', 'new_medical_conditions',
-                 'new_medications', 'side_effects', 'information_consent',
-                 'pharmacy_consent', 'status', 'created_at', 'updated_at', 'patient_name']
+        fields = BasePrescriptionRequestSerializer.Meta.fields
         read_only_fields = ['id', 'created_at', 'updated_at']
     
+    # Simplified implementation compared to base
     def get_patient_name(self, obj):
         if obj.patient:
             return obj.patient.full_name
         return ""
 
-class AppointmentSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
-    doctor_name = serializers.SerializerMethodField()
+# Extend BaseAppointmentSerializer
+class AppointmentSerializer(BaseAppointmentSerializer):
+    """V1 Appointment serializer extending the base appointment serializer"""
     
-    class Meta:
+    class Meta(BaseAppointmentSerializer.Meta):
         model = Appointment
-        fields = ['id', 'patient', 'doctor', 'time', 'type', 'status', 'reason',
-                 'notes', 'patient_name', 'doctor_name']
+        fields = BaseAppointmentSerializer.Meta.fields
         read_only_fields = ['id']
     
+    # Custom implementation using get_full_name if available
     def get_patient_name(self, obj):
         if hasattr(obj.patient, 'get_full_name'):
             return obj.patient.get_full_name()
         return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
-    
-    def get_doctor_name(self, obj):
-        if obj.doctor and hasattr(obj.doctor, 'user'):
-            return f"Dr. {obj.doctor.user.last_name}"
-        return ""
 
-class PrescriptionSerializer(serializers.ModelSerializer):
-    patient_name = serializers.SerializerMethodField()
+# Extend BasePrescriptionSerializer
+class PrescriptionSerializer(BasePrescriptionSerializer):
+    """V1 Prescription serializer extending the base prescription serializer"""
     
-    class Meta:
+    class Meta(BasePrescriptionSerializer.Meta):
         model = Prescription
+        # Just slightly different field list from base
         fields = ['id', 'medication_name', 'dosage', 'instructions', 'patient', 'doctor',
                  'status', 'refills_remaining', 'expires', 'created_at', 'updated_at', 'patient_name']
         read_only_fields = ['id', 'created_at', 'updated_at']
     
+    # Custom implementation using get_full_name if available
     def get_patient_name(self, obj):
         if hasattr(obj.patient, 'get_full_name'):
             return obj.patient.get_full_name()
         return f"{obj.patient.first_name} {obj.patient.last_name}" if obj.patient else ""
 
-class MessageSerializer(serializers.ModelSerializer):
-    sender_name = serializers.SerializerMethodField()
-    recipient_name = serializers.SerializerMethodField()
+# Extend BaseMessageSerializer
+class MessageSerializer(BaseMessageSerializer):
+    """V1 Message serializer extending the base message serializer"""
     
-    class Meta:
+    class Meta(BaseMessageSerializer.Meta):
         model = Message
-        fields = ['id', 'sender', 'recipient', 'subject', 'content', 'status',
-                 'created_at', 'sender_name', 'recipient_name']
+        fields = BaseMessageSerializer.Meta.fields
         read_only_fields = ['id', 'created_at']
     
-    def get_sender_name(self, obj):
-        if obj.sender:
-            return f"{obj.sender.first_name} {obj.sender.last_name}"
-        return ""
-    
-    def get_recipient_name(self, obj):
-        if obj.recipient:
-            return f"{obj.recipient.first_name} {obj.recipient.last_name}"
-        return ""
+    # We're keeping the same implementation as the base
+    # No need to override get_sender_name or get_recipient_name methods
+    # unless the logic differs from the base class
