@@ -2,13 +2,11 @@
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
-from django.utils import timezone
-from datetime import datetime
 import logging
-import requests
 
-from provider.forms import ProviderProfileEditForm
+from provider.services import ProviderService
 from provider.utils import get_current_provider
+from provider.forms import ProviderProfileEditForm
 
 logger = logging.getLogger(__name__)
 
@@ -26,53 +24,19 @@ def provider_profile(request):
         form = ProviderProfileEditForm(request.POST, instance=provider)
         if form.is_valid():
             try:
-                # Get cleaned data from form
-                updated_data = form.cleaned_data
+                # Update profile using service
+                result = ProviderService.update_provider_profile(
+                    provider_id=provider.id,
+                    form_data=form.cleaned_data,
+                    user=provider.user
+                )
                 
-                # Update user data
-                user = provider.user
-                if 'first_name' in updated_data:
-                    user.first_name = updated_data.get('first_name')
-                if 'last_name' in updated_data:
-                    user.last_name = updated_data.get('last_name')
-                if 'email' in updated_data:
-                    user.email = updated_data.get('email')
-                user.save()
-                
-                # Update provider data 
-                provider = form.save()
-                
-                # API version (commented out for now):
-                # api_url = request.build_absolute_uri(f'/api/provider/profile/{provider.id}/')
-                # data = {
-                #     'user': {
-                #         'first_name': updated_data.get('first_name'),
-                #         'last_name': updated_data.get('last_name'),
-                #         'email': updated_data.get('email')
-                #     },
-                #     'specialty': updated_data.get('specialty'),
-                #     'bio': updated_data.get('bio'),
-                #     'phone': updated_data.get('phone'),
-                #     'license_number': updated_data.get('license_number')
-                # }
-                # response = requests.put(api_url, json=data)
-                # if response.status_code == 200:
-                #     provider_dict = response.json()
-                # else:
-                #     # Handle error
-                #     messages.error(request, "Error updating profile via API")
-                
-                # Update provider_dict for template
-                provider_dict = {
-                    'id': provider.id,
-                    'first_name': user.first_name,
-                    'last_name': user.last_name,
-                    'specialty': provider.specialty,
-                    'is_active': provider.is_active,
-                }
-                
-                # Add success message
-                messages.success(request, "Profile updated successfully!")
+                if result.get('success', False):
+                    messages.success(request, "Profile updated successfully!")
+                    # Update provider_dict for template with new values
+                    provider_dict = result.get('provider_dict', provider_dict)
+                else:
+                    messages.error(request, result.get('error', "Error updating profile."))
             except Exception as e:
                 logger.error(f"Error updating profile: {str(e)}")
                 messages.error(request, f"Error updating profile: {str(e)}")
@@ -108,7 +72,6 @@ def provider_settings(request):
     if provider is None:
         return redirect('unauthorized')
     
-    # Handle settings form submission
     if request.method == 'POST':
         try:
             # Process settings form
@@ -120,27 +83,33 @@ def provider_settings(request):
                 'calendar_sync_enabled': request.POST.get('calendar_sync_enabled') == 'on',
             }
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri(f'/api/provider/profile/{provider.id}/')
-            # response = requests.patch(api_url, json=settings_data)
-            # if response.status_code == 200:
-            #     messages.success(request, "Settings updated successfully!")
-            # else:
-            #     messages.error(request, "Error updating settings via API")
+            # Update settings using service
+            result = ProviderService.update_provider_settings(
+                provider_id=provider.id,
+                settings_data=settings_data
+            )
             
-            # Save settings to provider
-            for key, value in settings_data.items():
-                if hasattr(provider, key):
-                    setattr(provider, key, value)
-            
-            provider.save()
-            messages.success(request, "Settings updated successfully!")
+            if result.get('success', False):
+                messages.success(request, "Settings updated successfully!")
+            else:
+                messages.error(request, result.get('error', "Error updating settings."))
         except Exception as e:
             logger.error(f"Error updating settings: {str(e)}")
             messages.error(request, f"Error updating settings: {str(e)}")
     
     # Get current settings
     try:
+        # Get settings from service
+        settings_data = ProviderService.get_provider_settings(provider.id)
+        settings = settings_data.get('settings', {
+            'notification_email': getattr(provider, 'notification_email', provider.user.email),
+            'sms_notifications': getattr(provider, 'sms_notifications', False),
+            'email_notifications': getattr(provider, 'email_notifications', True),
+            'default_appointment_duration': getattr(provider, 'default_appointment_duration', 30),
+            'calendar_sync_enabled': getattr(provider, 'calendar_sync_enabled', False),
+        })
+    except Exception as e:
+        logger.error(f"Error getting settings: {str(e)}")
         settings = {
             'notification_email': getattr(provider, 'notification_email', provider.user.email),
             'sms_notifications': getattr(provider, 'sms_notifications', False),
@@ -148,9 +117,6 @@ def provider_settings(request):
             'default_appointment_duration': getattr(provider, 'default_appointment_duration', 30),
             'calendar_sync_enabled': getattr(provider, 'calendar_sync_enabled', False),
         }
-    except Exception as e:
-        logger.error(f"Error getting settings: {str(e)}")
-        settings = {}
     
     context = {
         'provider': provider_dict,
@@ -170,29 +136,61 @@ def provider_help_support(request):
     if provider is None:
         return redirect('unauthorized')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'help_support',
-        'support_email': 'support@northernhealth.ca',
-        'support_phone': '1-800-555-0100',
-        'faq_items': [
-            {
-                'question': 'How do I schedule a new appointment?',
-                'answer': 'Go to the Appointments section and click "Schedule Appointment". Then select a patient, date, and time.'
-            },
-            {
-                'question': 'How do I add a new patient?',
-                'answer': 'Go to the Patients section and click "Add Patient". Fill out the required information and submit the form.'
-            },
-            {
-                'question': 'How do I issue a new prescription?',
-                'answer': 'Go to the Prescriptions section and click "Create Prescription". Select a patient and enter the medication details.'
-            },
-            {
-                'question': 'How do I use the AI scribe feature?',
-                'answer': 'During a video consultation, click "Start Recording" to begin recording. After the session, the AI will generate clinical notes for review.'
-            },
-        ]
-    }
+    try:
+        # Get support data from service
+        support_data = ProviderService.get_help_support_data()
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'help_support',
+            'support_email': support_data.get('support_email', 'support@northernhealth.ca'),
+            'support_phone': support_data.get('support_phone', '1-800-555-0100'),
+            'faq_items': support_data.get('faq_items', [
+                {
+                    'question': 'How do I schedule a new appointment?',
+                    'answer': 'Go to the Appointments section and click "Schedule Appointment". Then select a patient, date, and time.'
+                },
+                {
+                    'question': 'How do I add a new patient?',
+                    'answer': 'Go to the Patients section and click "Add Patient". Fill out the required information and submit the form.'
+                },
+                {
+                    'question': 'How do I issue a new prescription?',
+                    'answer': 'Go to the Prescriptions section and click "Create Prescription". Select a patient and enter the medication details.'
+                },
+                {
+                    'question': 'How do I use the AI scribe feature?',
+                    'answer': 'During a video consultation, click "Start Recording" to begin recording. After the session, the AI will generate clinical notes for review.'
+                },
+            ])
+        }
+    except Exception as e:
+        logger.error(f"Error loading help and support data: {str(e)}")
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'help_support',
+            'support_email': 'support@northernhealth.ca',
+            'support_phone': '1-800-555-0100',
+            'faq_items': [
+                {
+                    'question': 'How do I schedule a new appointment?',
+                    'answer': 'Go to the Appointments section and click "Schedule Appointment". Then select a patient, date, and time.'
+                },
+                {
+                    'question': 'How do I add a new patient?',
+                    'answer': 'Go to the Patients section and click "Add Patient". Fill out the required information and submit the form.'
+                },
+                {
+                    'question': 'How do I issue a new prescription?',
+                    'answer': 'Go to the Prescriptions section and click "Create Prescription". Select a patient and enter the medication details.'
+                },
+                {
+                    'question': 'How do I use the AI scribe feature?',
+                    'answer': 'During a video consultation, click "Start Recording" to begin recording. After the session, the AI will generate clinical notes for review.'
+                },
+            ]
+        }
+    
     return render(request, "provider/help_support.html", context)

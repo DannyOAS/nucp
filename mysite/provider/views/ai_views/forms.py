@@ -3,14 +3,12 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.http import require_POST
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test
 import logging
-import requests
 
-from theme_name.repositories import ProviderRepository
 from provider.services import FormAutomationService
-from provider.models import DocumentTemplate, GeneratedDocument
 from provider.utils import get_current_provider
+from api.v1.provider.serializers import DocumentTemplateSerializer, GeneratedDocumentSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -25,57 +23,50 @@ def forms_dashboard(request):
         return redirect('unauthorized')
     
     try:
-        templates_result = FormAutomationService.get_available_templates()
-        patients = ProviderRepository.get_patients(provider.id)
+        # Get forms dashboard data from service
+        forms_data = FormAutomationService.get_forms_dashboard_data(provider.id)
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/forms/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     api_data = response.json()
-        #     templates_result = {
-        #         'success': True,
-        #         'templates': api_data.get('templates', [])
-        #     }
-        #     recent_documents = api_data.get('recent_documents', [])
-        # else:
-        #     templates_result = {'success': False, 'error': 'API error'}
-        #     recent_documents = []
+        if not forms_data.get('success', False):
+            messages.error(request, forms_data.get('error', "Error loading forms dashboard."))
+            templates = []
+            patients = []
+            recent_documents = []
+        else:
+            # Format templates using API serializer if needed
+            templates = forms_data.get('templates', [])
+            if hasattr(templates, 'model'):
+                serializer = DocumentTemplateSerializer(templates, many=True)
+                templates = serializer.data
+            
+            # Format recent documents using API serializer if needed
+            recent_documents = forms_data.get('recent_documents', [])
+            if hasattr(recent_documents, 'model'):
+                serializer = GeneratedDocumentSerializer(recent_documents, many=True)
+                recent_documents = serializer.data
+            
+            patients = forms_data.get('patients', [])
         
-        if not templates_result.get('success'):
-            messages.error(request, f"Error loading templates: {templates_result.get('error', 'Unknown error')}")
-        
-        # Get recent documents for this provider
-        recent_documents_query = GeneratedDocument.objects.filter(
-            provider=provider
-        ).order_by('-created_at')[:5]
-        
-        recent_documents = []
-        for doc in recent_documents_query:
-            recent_documents.append({
-                'id': doc.id,
-                'template_name': doc.template.name if doc.template else "Unknown Template",
-                'patient_name': f"{doc.patient.first_name} {doc.patient.last_name}" if doc.patient else "Unknown Patient",
-                'created_at': doc.created_at.strftime('%B %d, %Y'),
-                'status': doc.status
-            })
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'forms',
+            'templates': templates,
+            'patients': patients,
+            'recent_documents': recent_documents
+        }
     except Exception as e:
         logger.error(f"Error loading forms dashboard: {str(e)}")
-        templates_result = {'success': False, 'error': str(e)}
-        patients = []
-        recent_documents = []
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'forms',
+            'templates': [],
+            'patients': [],
+            'recent_documents': []
+        }
+        messages.error(request, f"Error loading forms dashboard: {str(e)}")
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'forms',
-        'templates': templates_result.get('templates', []),
-        'patients': patients,
-        'recent_documents': recent_documents
-    }
-    
-    return render(request, "provider/forms_dashboard.html", context)
-
+    return render(request, "provider/ai_views/forms_dashboard.html", context)
 @login_required
 def create_form(request, template_id):
     """Create a new form from a template with authenticated provider"""
@@ -87,97 +78,70 @@ def create_form(request, template_id):
         return redirect('unauthorized')
     
     try:
-        template_result = FormAutomationService.get_template_by_id(template_id)
+        # Get template data from service
+        template_data = FormAutomationService.get_template_details(
+            provider_id=provider.id,
+            template_id=template_id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/forms/templates/{template_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     template_result = {
-        #         'success': True,
-        #         'template': response.json()
-        #     }
-        # else:
-        #     template_result = {'success': False, 'error': 'API error'}
-        
-        if not template_result.get('success'):
-            messages.error(request, f"Error loading template: {template_result.get('error', 'Unknown error')}")
+        if not template_data.get('success', False):
+            messages.error(request, template_data.get('error', "Error loading template."))
             return redirect('forms_dashboard')
         
+        # Format template using API serializer if needed
+        template = template_data.get('template')
+        if template and hasattr(template, '__dict__'):
+            serializer = DocumentTemplateSerializer(template)
+            template_data['template'] = serializer.data
+        
         if request.method == 'POST':
-            form_data = request.POST.dict()
-            document_result = FormAutomationService.create_document(
+            # Create document using service
+            result = FormAutomationService.create_document(
+                provider_id=provider.id,
                 template_id=template_id,
-                form_data=form_data,
-                created_by_id=request.user.id
+                form_data=request.POST,
+                user=request.user
             )
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri('/api/provider/forms/documents/')
-            # response = requests.post(api_url, json={
-            #     'template_id': template_id,
-            #     'form_data': form_data
-            # })
-            # if response.status_code == 201:  # Created
-            #     document_result = {
-            #         'success': True,
-            #         'document': response.json()
-            #     }
-            # else:
-            #     document_result = {'success': False, 'error': 'API error'}
-            
-            if document_result.get('success'):
-                document_id = document_result['document']['id']
+            if result.get('success', False):
+                document_id = result.get('document_id')
                 messages.success(request, "Document created successfully!")
                 return redirect('view_document', document_id=document_id)
             else:
-                messages.error(request, f"Error creating document: {document_result.get('error', 'Unknown error')}")
+                messages.error(request, result.get('error', "Error creating document."))
         
         # Check for patient_id for auto-population
         patient_id = request.GET.get('patient_id')
         form_data = {}
         
         if patient_id:
-            auto_populate_result = FormAutomationService.auto_populate_form(
+            # Auto-populate form data from service
+            auto_populate_data = FormAutomationService.auto_populate_form(
+                provider_id=provider.id,
                 template_id=template_id,
-                patient_id=patient_id,
-                provider_id=provider.id
+                patient_id=patient_id
             )
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri(f'/api/provider/forms/auto-populate/')
-            # response = requests.get(api_url, params={
-            #     'template_id': template_id,
-            #     'patient_id': patient_id
-            # })
-            # if response.status_code == 200:
-            #     auto_populate_result = {
-            #         'success': True,
-            #         'form_data': response.json()
-            #     }
-            # else:
-            #     auto_populate_result = {'success': False, 'error': 'API error'}
-            
-            if auto_populate_result.get('success'):
-                form_data = auto_populate_result.get('form_data', {})
+            if auto_populate_data.get('success', False):
+                form_data = auto_populate_data.get('form_data', {})
         
-        # Get patients for this provider
-        patients = ProviderRepository.get_patients(provider.id)
+        # Get patients list for form
+        patients = FormAutomationService.get_provider_patients(provider.id)
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'forms',
+            'template': template_data.get('template'),
+            'form_data': form_data,
+            'patients': patients
+        }
     except Exception as e:
         logger.error(f"Error handling form creation: {str(e)}")
         messages.error(request, f"Error processing form: {str(e)}")
         return redirect('forms_dashboard')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'forms',
-        'template': template_result.get('template'),
-        'form_data': form_data,
-        'patients': patients
-    }
-    
-    return render(request, 'provider/create_form.html', context)
+    return render(request, 'provider/ai_views/create_form.html', context)
 
 @login_required
 def view_document(request, document_id):
@@ -190,43 +154,51 @@ def view_document(request, document_id):
         return redirect('unauthorized')
     
     try:
-        # Check if this document belongs to the provider
-        document = get_object_or_404(GeneratedDocument, id=document_id, provider=provider)
+        # Get document data from service
+        document_data = FormAutomationService.get_document_details(
+            provider_id=provider.id,
+            document_id=document_id
+        )
         
-        # Render the document
-        render_result = FormAutomationService.render_document(document_id)
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/forms/documents/{document_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     render_result = {
-        #         'success': True,
-        #         'html_content': response.json().get('html_content'),
-        #         'pdf_available': response.json().get('pdf_available')
-        #     }
-        # else:
-        #     render_result = {'success': False, 'error': 'API error'}
-        
-        if not render_result.get('success'):
-            messages.error(request, f"Error rendering document: {render_result.get('error', 'Unknown error')}")
+        if not document_data.get('success', False):
+            messages.error(request, document_data.get('error', "Error loading document."))
             return redirect('forms_dashboard')
+        
+        # Format document using API serializer if needed
+        document = document_data.get('document')
+        if document and hasattr(document, '__dict__'):
+            serializer = GeneratedDocumentSerializer(document)
+            document_data['document'] = serializer.data
+        
+        # Render document using service
+        render_result = FormAutomationService.render_document(
+            provider_id=provider.id,
+            document_id=document_id
+        )
+        
+        if not render_result.get('success', False):
+            messages.error(request, render_result.get('error', "Error rendering document."))
+            html_content = "<p>Error: Unable to render document content.</p>"
+            pdf_available = False
+        else:
+            html_content = render_result.get('html_content')
+            pdf_available = render_result.get('pdf_available', False)
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'forms',
+            'document_id': document_id,
+            'document': document_data.get('document'),
+            'html_content': html_content,
+            'pdf_available': pdf_available
+        }
     except Exception as e:
         logger.error(f"Error viewing document: {str(e)}")
         messages.error(request, f"Error viewing document: {str(e)}")
         return redirect('forms_dashboard')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'forms',
-        'document_id': document_id,
-        'document': document,
-        'html_content': render_result.get('html_content'),
-        'pdf_available': render_result.get('pdf_available')
-    }
-    
-    return render(request, 'provider/view_document.html', context)
+    return render(request, 'provider/ai_views/view_document.html', context)
 
 @login_required
 def download_document_pdf(request, document_id):
@@ -239,30 +211,23 @@ def download_document_pdf(request, document_id):
         return redirect('unauthorized')
     
     try:
-        # Check if this document belongs to the provider
-        document = get_object_or_404(GeneratedDocument, id=document_id, provider=provider)
+        # Generate PDF using service
+        pdf_result = FormAutomationService.generate_document_pdf(
+            provider_id=provider.id,
+            document_id=document_id
+        )
         
-        # Render the document
-        render_result = FormAutomationService.render_document(document_id)
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/forms/documents/{document_id}/pdf/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     # This would return the PDF content
-        #     pdf_content = response.content
-        # else:
-        #     messages.error(request, "Error downloading PDF.")
-        #     return redirect('view_document', document_id=document_id)
-        
-        if not render_result.get('success'):
-            messages.error(request, f"Error rendering document: {render_result.get('error', 'Unknown error')}")
+        if not pdf_result.get('success', False):
+            messages.error(request, pdf_result.get('error', "Error generating PDF."))
             return redirect('view_document', document_id=document_id)
         
-        # In a real implementation, we would generate and return the PDF
-        # For now, just return a placeholder response
-        response = HttpResponse(b'PDF content would go here', content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="document_{document_id}.pdf"'
+        # Get PDF content and filename
+        pdf_content = pdf_result.get('pdf_content')
+        filename = pdf_result.get('filename', f"document_{document_id}.pdf")
+        
+        # Return PDF as download
+        response = HttpResponse(pdf_content, content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
         return response
     except Exception as e:
         logger.error(f"Error downloading document PDF: {str(e)}")
@@ -281,31 +246,19 @@ def update_document_status(request, document_id):
         return JsonResponse({'success': False, 'error': 'Authentication required'}, status=401)
     
     try:
-        # Check if this document belongs to the provider
-        document = get_object_or_404(GeneratedDocument, id=document_id, provider=provider)
-        
+        # Update status using service
         status_value = request.POST.get('status')
         if not status_value:
             return JsonResponse({'success': False, 'error': 'Status is required'}, status=400)
         
         result = FormAutomationService.update_document_status(
+            provider_id=provider.id,
             document_id=document_id,
             status=status_value,
-            updated_by_id=request.user.id
+            user=request.user
         )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/forms/documents/{document_id}/status/')
-        # response = requests.post(api_url, json={'status': status_value})
-        # if response.status_code == 200:
-        #     result = {
-        #         'success': True,
-        #         'document': response.json()
-        #     }
-        # else:
-        #     result = {'success': False, 'error': 'API error'}
-        
-        if result.get('success'):
+        if result.get('success', False):
             return JsonResponse({'success': True, 'document': result.get('document')})
         else:
             return JsonResponse({'success': False, 'error': result.get('error', 'Unknown error')}, status=500)
@@ -314,6 +267,7 @@ def update_document_status(request, document_id):
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
+@user_passes_test(lambda u: u.is_staff)
 def templates_dashboard(request):
     """Templates management dashboard with authenticated admin"""
     # Get the current provider
@@ -323,37 +277,36 @@ def templates_dashboard(request):
     if provider is None:
         return redirect('unauthorized')
     
-    # Check if the user is an admin
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('forms_dashboard')
-    
     try:
-        templates = DocumentTemplate.objects.all().order_by('template_type', 'name')
+        # Get templates data from service
+        templates_data = FormAutomationService.get_templates_dashboard_data()
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/admin/templates/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     templates = response.json()
-        # else:
-        #     templates = []
-        #     messages.error(request, "Error loading templates.")
+        # Format templates using API serializer if needed
+        templates = templates_data.get('templates', [])
+        if hasattr(templates, 'model'):
+            serializer = DocumentTemplateSerializer(templates, many=True)
+            templates = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'templates': templates,
+            'active_section': 'templates'
+        }
     except Exception as e:
         logger.error(f"Error loading templates dashboard: {str(e)}")
-        templates = []
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'templates': [],
+            'active_section': 'templates'
+        }
         messages.error(request, f"Error loading templates: {str(e)}")
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'templates': templates,
-        'active_section': 'templates'
-    }
-    
-    return render(request, "provider/templates_dashboard.html", context)
+    return render(request, "provider/ai_views/templates_dashboard.html", context)
 
 @login_required
+@user_passes_test(lambda u: u.is_staff)
 def create_template(request):
     """Create a new template with authenticated admin"""
     # Get the current provider
@@ -363,43 +316,29 @@ def create_template(request):
     if provider is None:
         return redirect('unauthorized')
     
-    # Check if the user is an admin
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('forms_dashboard')
-    
     if request.method == 'POST':
         try:
             # Process form submission
-            template = DocumentTemplate()
-            template.name = request.POST.get('name')
-            template.description = request.POST.get('description')
-            template.template_type = request.POST.get('template_type')
-            template.template_content = request.POST.get('content')
-            template.requires_patient_data = 'requires_patient_data' in request.POST
-            template.requires_provider_data = 'requires_provider_data' in request.POST
-            template.created_by = request.user
-            template.save()
+            template_data = {
+                'name': request.POST.get('name'),
+                'description': request.POST.get('description'),
+                'template_type': request.POST.get('template_type'),
+                'template_content': request.POST.get('content'),
+                'requires_patient_data': 'requires_patient_data' in request.POST,
+                'requires_provider_data': 'requires_provider_data' in request.POST
+            }
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri('/api/admin/templates/')
-            # template_data = {
-            #     'name': request.POST.get('name'),
-            #     'description': request.POST.get('description'),
-            #     'template_type': request.POST.get('template_type'),
-            #     'template_content': request.POST.get('content'),
-            #     'requires_patient_data': 'requires_patient_data' in request.POST,
-            #     'requires_provider_data': 'requires_provider_data' in request.POST
-            # }
-            # response = requests.post(api_url, json=template_data)
-            # if response.status_code == 201:  # Created
-            #     messages.success(request, f"Template '{template_data['name']}' created successfully.")
-            # else:
-            #     messages.error(request, "Error creating template.")
-            #     return redirect('templates_dashboard')
+            # Create template using service
+            result = FormAutomationService.create_template(
+                template_data=template_data,
+                user=request.user
+            )
             
-            messages.success(request, f"Template '{template.name}' created successfully.")
-            return redirect('templates_dashboard')
+            if result.get('success', False):
+                messages.success(request, f"Template '{template_data['name']}' created successfully.")
+                return redirect('templates_dashboard')
+            else:
+                messages.error(request, result.get('error', "Error creating template."))
         except Exception as e:
             logger.error(f"Error creating template: {str(e)}")
             messages.error(request, f"Error creating template: {str(e)}")
@@ -410,9 +349,10 @@ def create_template(request):
         'active_section': 'templates'
     }
     
-    return render(request, "provider/create_template.html", context)
+    return render(request, "provider/ai_views/create_template.html", context)
 
 @login_required
+@user_passes_test(lambda u: u.is_staff)
 def edit_template(request, template_id):
     """Edit an existing template with authenticated admin"""
     # Get the current provider
@@ -422,52 +362,47 @@ def edit_template(request, template_id):
     if provider is None:
         return redirect('unauthorized')
     
-    # Check if the user is an admin
-    if not request.user.is_staff:
-        messages.error(request, "You don't have permission to access this page.")
-        return redirect('forms_dashboard')
-    
     try:
-        template = get_object_or_404(DocumentTemplate, id=template_id)
+        # Get template data from service
+        template_data = FormAutomationService.get_template_details(
+            provider_id=provider.id,
+            template_id=template_id,
+            for_admin=True
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/admin/templates/{template_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     template = response.json()
-        # else:
-        #     messages.error(request, "Error loading template.")
-        #     return redirect('templates_dashboard')
+        if not template_data.get('success', False):
+            messages.error(request, template_data.get('error', "Error loading template."))
+            return redirect('templates_dashboard')
+        
+        # Format template using API serializer if needed
+        template = template_data.get('template')
+        if template and hasattr(template, '__dict__'):
+            serializer = DocumentTemplateSerializer(template)
+            template = serializer.data
         
         if request.method == 'POST':
             # Process form submission
-            template.name = request.POST.get('name')
-            template.description = request.POST.get('description')
-            template.template_type = request.POST.get('template_type')
-            template.template_content = request.POST.get('content')
-            template.requires_patient_data = 'requires_patient_data' in request.POST
-            template.requires_provider_data = 'requires_provider_data' in request.POST
-            template.save()
+            update_data = {
+                'name': request.POST.get('name'),
+                'description': request.POST.get('description'),
+                'template_type': request.POST.get('template_type'),
+                'template_content': request.POST.get('content'),
+                'requires_patient_data': 'requires_patient_data' in request.POST,
+                'requires_provider_data': 'requires_provider_data' in request.POST
+            }
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri(f'/api/admin/templates/{template_id}/')
-            # template_data = {
-            #     'name': request.POST.get('name'),
-            #     'description': request.POST.get('description'),
-            #     'template_type': request.POST.get('template_type'),
-            #     'template_content': request.POST.get('content'),
-            #     'requires_patient_data': 'requires_patient_data' in request.POST,
-            #     'requires_provider_data': 'requires_provider_data' in request.POST
-            # }
-            # response = requests.put(api_url, json=template_data)
-            # if response.status_code == 200:
-            #     messages.success(request, f"Template '{template_data['name']}' updated successfully.")
-            # else:
-            #     messages.error(request, "Error updating template.")
-            #     return redirect('edit_template', template_id=template_id)
+            # Update template using service
+            result = FormAutomationService.update_template(
+                template_id=template_id,
+                update_data=update_data,
+                user=request.user
+            )
             
-            messages.success(request, f"Template '{template.name}' updated successfully.")
-            return redirect('templates_dashboard')
+            if result.get('success', False):
+                messages.success(request, f"Template '{update_data['name']}' updated successfully.")
+                return redirect('templates_dashboard')
+            else:
+                messages.error(request, result.get('error', "Error updating template."))
     except Exception as e:
         logger.error(f"Error editing template: {str(e)}")
         messages.error(request, f"Error editing template: {str(e)}")
@@ -480,4 +415,4 @@ def edit_template(request, template_id):
         'active_section': 'templates'
     }
     
-    return render(request, "provider/edit_template.html", context)
+    return render(request, "provider/ai_views/edit_template.html", context)

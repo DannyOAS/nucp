@@ -2,13 +2,12 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.http import JsonResponse
 import logging
-import requests
 
-from common.services import VideoService
-from theme_name.data_access import get_provider_appointments
+from provider.services import VideoService
 from provider.utils import get_current_provider
-from provider.models import RecordingSession
+from api.v1.provider.serializers import RecordingSessionSerializer, ClinicalNoteSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -23,73 +22,39 @@ def provider_video_consultation(request):
         return redirect('unauthorized')
     
     try:
-        # Get appointments for this provider
-        all_appointments = get_provider_appointments(provider.id)
+        # Get video consultation data from service
+        video_data = VideoService.get_provider_video_dashboard(provider.id)
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/appointments/')
-        # params = {
-        #     'type': 'Virtual',
-        #     'status': 'Scheduled'
-        # }
-        # response = requests.get(api_url, params=params)
-        # if response.status_code == 200:
-        #     all_appointments = response.json()
-        # else:
-        #     all_appointments = []
+        # Format appointments using API serializer if needed
+        video_appointments = video_data.get('video_appointments', [])
+        if hasattr(video_appointments, 'model'):
+            serializer = AppointmentSerializer(video_appointments, many=True)
+            video_data['video_appointments'] = serializer.data
         
-        # Filter for virtual appointments
-        video_appointments = [a for a in all_appointments if a.get('type') == 'Virtual']
+        # Format recordings using API serializer if needed
+        recent_recordings = video_data.get('recent_recordings', [])
+        if hasattr(recent_recordings, 'model'):
+            serializer = RecordingSessionSerializer(recent_recordings, many=True)
+            video_data['recent_recordings'] = serializer.data
         
-        # Get any active video sessions
-        active_sessions = []
-        try:
-            if 'get_active_sessions' in dir(VideoService):
-                active_sessions = VideoService.get_active_sessions(provider.id)
-                
-                # API version (commented out for now):
-                # api_url = request.build_absolute_uri('/api/provider/video-sessions/active/')
-                # response = requests.get(api_url)
-                # if response.status_code == 200:
-                #     active_sessions = response.json()
-                # else:
-                #     active_sessions = []
-        except Exception as e:
-            logger.error(f"Error retrieving active video sessions: {str(e)}")
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'consultations',
+            'video_appointments': video_data.get('video_appointments', []),
+            'active_sessions': video_data.get('active_sessions', []),
+            'recent_recordings': video_data.get('recent_recordings', [])
+        }
     except Exception as e:
-        logger.error(f"Error retrieving video appointments: {str(e)}")
-        video_appointments = []
-        active_sessions = []
-    
-    # Get recent recordings
-    try:
-        recent_recordings = RecordingSession.objects.filter(
-            provider=provider
-        ).order_by('-start_time')[:5]
-        
-        # Format for template
-        recordings_list = []
-        for recording in recent_recordings:
-            recordings_list.append({
-                'id': recording.id,
-                'appointment_id': recording.appointment.id if recording.appointment else None,
-                'patient_name': recording.appointment.patient.get_full_name() if recording.appointment and recording.appointment.patient else "Unknown",
-                'start_time': recording.start_time.strftime('%B %d, %Y - %I:%M %p'),
-                'duration': (recording.end_time - recording.start_time).total_seconds() // 60 if recording.end_time else None,
-                'status': recording.transcription_status
-            })
-    except Exception as e:
-        logger.error(f"Error retrieving recent recordings: {str(e)}")
-        recordings_list = []
-    
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'consultations',
-        'video_appointments': video_appointments,
-        'active_sessions': active_sessions,
-        'recent_recordings': recordings_list
-    }
+        logger.error(f"Error retrieving video consultation data: {str(e)}")
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'consultations',
+            'video_appointments': [],
+            'active_sessions': [],
+            'recent_recordings': []
+        }
     
     return render(request, 'provider/video_consultation.html', context)
 
@@ -104,34 +69,18 @@ def start_recording(request, appointment_id):
         return redirect('unauthorized')
     
     try:
-        # Get the appointment
-        from common.models import Appointment
-        appointment = Appointment.objects.get(id=appointment_id, doctor=provider)
-        
-        # Create a new recording session
-        recording = RecordingSession.objects.create(
-            appointment=appointment,
-            provider=provider,
-            transcription_status='pending'
+        # Start recording using service
+        result = VideoService.start_recording(
+            appointment_id=appointment_id,
+            provider_id=provider.id
         )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/appointments/{appointment_id}/start-recording/')
-        # response = requests.post(api_url)
-        # if response.status_code == 201:  # Created
-        #     recording = response.json()
-        #     messages.success(request, "Recording started successfully.")
-        # else:
-        #     messages.error(request, "Error starting recording.")
-        #     return redirect('provider_video_consultation')
-        
-        messages.success(request, "Recording started successfully.")
-        
-        # Redirect to the consultation view
-        return redirect('provider_video_consultation')
-    except Appointment.DoesNotExist:
-        messages.error(request, "Appointment not found.")
-        return redirect('provider_video_consultation')
+        if result.get('success', False):
+            messages.success(request, "Recording started successfully.")
+            return redirect('provider_video_consultation')
+        else:
+            messages.error(request, result.get('error', "Error starting recording."))
+            return redirect('provider_video_consultation')
     except Exception as e:
         logger.error(f"Error starting recording: {str(e)}")
         messages.error(request, f"Error starting recording: {str(e)}")
@@ -148,29 +97,18 @@ def stop_recording(request, recording_id):
         return redirect('unauthorized')
     
     try:
-        # Get the recording session
-        recording = RecordingSession.objects.get(id=recording_id, provider=provider)
+        # Stop recording using service
+        result = VideoService.stop_recording(
+            recording_id=recording_id,
+            provider_id=provider.id
+        )
         
-        # Update the recording session
-        recording.end_time = timezone.now()
-        recording.transcription_status = 'in_progress'
-        recording.save()
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/recordings/{recording_id}/stop/')
-        # response = requests.post(api_url)
-        # if response.status_code == 200:
-        #     messages.success(request, "Recording stopped and transcription initiated.")
-        # else:
-        #     messages.error(request, "Error stopping recording.")
-        
-        messages.success(request, "Recording stopped and transcription initiated.")
-        
-        # Redirect to the consultation view
-        return redirect('provider_video_consultation')
-    except RecordingSession.DoesNotExist:
-        messages.error(request, "Recording session not found.")
-        return redirect('provider_video_consultation')
+        if result.get('success', False):
+            messages.success(request, "Recording stopped and transcription initiated.")
+            return redirect('provider_video_consultation')
+        else:
+            messages.error(request, result.get('error', "Error stopping recording."))
+            return redirect('provider_video_consultation')
     except Exception as e:
         logger.error(f"Error stopping recording: {str(e)}")
         messages.error(request, f"Error stopping recording: {str(e)}")
@@ -187,59 +125,39 @@ def view_recording(request, recording_id):
         return redirect('unauthorized')
     
     try:
-        # Get the recording session
-        recording = RecordingSession.objects.get(id=recording_id, provider=provider)
+        # Get recording data from service
+        recording_data = VideoService.get_recording_details(
+            recording_id=recording_id,
+            provider_id=provider.id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/recordings/{recording_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     recording_data = response.json()
-        # else:
-        #     messages.error(request, "Recording not found.")
-        #     return redirect('provider_video_consultation')
+        if not recording_data.get('success', False):
+            messages.error(request, recording_data.get('error', "Recording not found."))
+            return redirect('provider_video_consultation')
         
-        # Format for template
-        recording_data = {
-            'id': recording.id,
-            'appointment_id': recording.appointment.id if recording.appointment else None,
-            'patient_name': recording.appointment.patient.get_full_name() if recording.appointment and recording.appointment.patient else "Unknown",
-            'start_time': recording.start_time.strftime('%B %d, %Y - %I:%M %p'),
-            'end_time': recording.end_time.strftime('%B %d, %Y - %I:%M %p') if recording.end_time else None,
-            'duration': (recording.end_time - recording.start_time).total_seconds() // 60 if recording.end_time else None,
-            'status': recording.transcription_status,
-            'transcription_text': recording.transcription_text
+        # Format recording using API serializer if needed
+        recording = recording_data.get('recording')
+        if recording and hasattr(recording, '__dict__'):
+            serializer = RecordingSessionSerializer(recording)
+            recording_data['recording'] = serializer.data
+            
+        # Format notes using API serializer if needed
+        notes = recording_data.get('notes', [])
+        if hasattr(notes, 'model'):
+            serializer = ClinicalNoteSerializer(notes, many=True)
+            recording_data['notes'] = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'consultations',
+            'recording': recording_data.get('recording'),
+            'notes': recording_data.get('notes', [])
         }
-        
-        # Get any clinical notes generated from this recording
-        from provider.models import ClinicalNote
-        notes = ClinicalNote.objects.filter(transcription=recording).order_by('-created_at')
-        
-        notes_list = []
-        for note in notes:
-            notes_list.append({
-                'id': note.id,
-                'status': note.status,
-                'created_at': note.created_at.strftime('%B %d, %Y - %I:%M %p'),
-                'ai_generated_text': note.ai_generated_text[:200] + ('...' if len(note.ai_generated_text) > 200 else ''),
-                'provider_edited_text': note.provider_edited_text[:200] + ('...' if len(note.provider_edited_text) > 200 else '')
-            })
-        
-    except RecordingSession.DoesNotExist:
-        messages.error(request, "Recording session not found.")
-        return redirect('provider_video_consultation')
     except Exception as e:
         logger.error(f"Error viewing recording: {str(e)}")
         messages.error(request, f"Error viewing recording: {str(e)}")
         return redirect('provider_video_consultation')
-    
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'consultations',
-        'recording': recording_data,
-        'notes': notes_list
-    }
     
     return render(request, 'provider/view_recording.html', context)
 
@@ -254,50 +172,18 @@ def generate_clinical_note(request, recording_id):
         return redirect('unauthorized')
     
     try:
-        # Get the recording session
-        recording = RecordingSession.objects.get(id=recording_id, provider=provider)
-        
-        # Check if transcription is complete
-        if recording.transcription_status != 'completed':
-            messages.error(request, "Transcription is not yet complete. Please wait for the transcription to finish.")
-            return redirect('view_recording', recording_id=recording_id)
-        
-        # Create a new clinical note
-        from provider.models import ClinicalNote
-        note = ClinicalNote.objects.create(
-            appointment=recording.appointment,
-            provider=provider,
-            transcription=recording,
-            status='draft'
+        # Generate clinical note using service
+        result = VideoService.generate_clinical_note(
+            recording_id=recording_id,
+            provider_id=provider.id
         )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/recordings/{recording_id}/generate-note/')
-        # response = requests.post(api_url)
-        # if response.status_code == 201:  # Created
-        #     note_data = response.json()
-        #     note_id = note_data.get('id')
-        #     messages.success(request, "Clinical note generation initiated.")
-        #     return redirect('edit_clinical_note', note_id=note_id)
-        # else:
-        #     messages.error(request, "Error generating clinical note.")
-        #     return redirect('view_recording', recording_id=recording_id)
-        
-        # Simulate AI generation of note - in a real app, this would be done async
-        note.ai_generated_text = f"AI-generated clinical note based on transcription of session {recording_id}.\n\n"
-        note.ai_generated_text += "Patient: " + (recording.appointment.patient.get_full_name() if recording.appointment and recording.appointment.patient else "Unknown") + "\n\n"
-        note.ai_generated_text += "Transcription excerpt:\n" + recording.transcription_text[:500] + "...\n\n"
-        note.ai_generated_text += "Assessment and Plan:\n- Follow-up in 2 weeks\n- Continue current medications\n- Labs ordered"
-        
-        note.status = 'generated'
-        note.save()
-        
-        messages.success(request, "Clinical note generated successfully. Please review and edit as needed.")
-        
-        return redirect('edit_clinical_note', note_id=note.id)
-    except RecordingSession.DoesNotExist:
-        messages.error(request, "Recording session not found.")
-        return redirect('provider_video_consultation')
+        if result.get('success', False):
+            messages.success(request, "Clinical note generated successfully. Please review and edit as needed.")
+            return redirect('edit_clinical_note', note_id=result.get('note_id'))
+        else:
+            messages.error(request, result.get('error', "Error generating clinical note."))
+            return redirect('view_recording', recording_id=recording_id)
     except Exception as e:
         logger.error(f"Error generating clinical note: {str(e)}")
         messages.error(request, f"Error generating clinical note: {str(e)}")
@@ -314,66 +200,99 @@ def edit_clinical_note(request, note_id):
         return redirect('unauthorized')
     
     try:
-        # Get the clinical note
-        from provider.models import ClinicalNote
-        note = ClinicalNote.objects.get(id=note_id, provider=provider)
+        # Get clinical note data from service
+        note_data = VideoService.get_clinical_note(
+            note_id=note_id,
+            provider_id=provider.id
+        )
+        
+        if not note_data.get('success', False):
+            messages.error(request, note_data.get('error', "Clinical note not found."))
+            return redirect('provider_video_consultation')
+        
+        # Format note using API serializer if needed
+        note = note_data.get('note')
+        if note and hasattr(note, '__dict__'):
+            serializer = ClinicalNoteSerializer(note)
+            note_data['note'] = serializer.data
         
         if request.method == 'POST':
-            # Update the note with provider edits
-            edited_text = request.POST.get('edited_text')
-            status = request.POST.get('status')
+            # Update note using service
+            update_data = {
+                'provider_edited_text': request.POST.get('edited_text'),
+                'status': request.POST.get('status')
+            }
             
-            note.provider_edited_text = edited_text
-            note.status = status
-            note.last_edited_by = request.user
-            note.save()
+            result = VideoService.update_clinical_note(
+                note_id=note_id,
+                provider_id=provider.id,
+                update_data=update_data,
+                user=request.user
+            )
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri(f'/api/provider/clinical-notes/{note_id}/')
-            # update_data = {
-            #     'provider_edited_text': edited_text,
-            #     'status': status
-            # }
-            # response = requests.patch(api_url, json=update_data)
-            # if response.status_code == 200:
-            #     messages.success(request, "Clinical note updated successfully.")
-            # else:
-            #     messages.error(request, "Error updating clinical note.")
-            
-            messages.success(request, "Clinical note updated successfully.")
-            
-            if status == 'finalized':
-                # Redirect to the appointment view
-                return redirect('view_appointment', appointment_id=note.appointment.id)
-            
-            # Redirect back to the same page
-            return redirect('edit_clinical_note', note_id=note_id)
+            if result.get('success', False):
+                messages.success(request, "Clinical note updated successfully.")
+                
+                if update_data['status'] == 'finalized':
+                    # If note is finalized, redirect to appointment view
+                    appointment_id = note_data.get('note', {}).get('appointment_id')
+                    if appointment_id:
+                        return redirect('view_appointment', appointment_id=appointment_id)
+                
+                # Redirect back to the view note page
+                return redirect('view_clinical_note', note_id=note_id)
+            else:
+                messages.error(request, result.get('error', "Error updating clinical note."))
         
-        # Format for template
-        note_data = {
-            'id': note.id,
-            'appointment_id': note.appointment.id if note.appointment else None,
-            'patient_name': note.appointment.patient.get_full_name() if note.appointment and note.appointment.patient else "Unknown",
-            'created_at': note.created_at.strftime('%B %d, %Y - %I:%M %p'),
-            'updated_at': note.updated_at.strftime('%B %d, %Y - %I:%M %p'),
-            'status': note.status,
-            'ai_generated_text': note.ai_generated_text,
-            'provider_edited_text': note.provider_edited_text or note.ai_generated_text  # Use AI text as starting point if no edits yet
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'consultations',
+            'note': note_data.get('note')
         }
-        
-    except ClinicalNote.DoesNotExist:
-        messages.error(request, "Clinical note not found.")
-        return redirect('provider_video_consultation')
     except Exception as e:
         logger.error(f"Error editing clinical note: {str(e)}")
         messages.error(request, f"Error editing clinical note: {str(e)}")
         return redirect('provider_video_consultation')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'active_section': 'consultations',
-        'note': note_data
-    }
-    
     return render(request, 'provider/edit_clinical_note.html', context)
+
+@login_required
+def view_clinical_note(request, note_id):
+    """View a clinical note"""
+    # Get the current provider
+    provider, provider_dict = get_current_provider(request)
+    
+    # If the function returns None, it has already redirected
+    if provider is None:
+        return redirect('unauthorized')
+    
+    try:
+        # Get clinical note data from service
+        note_data = VideoService.get_clinical_note(
+            note_id=note_id,
+            provider_id=provider.id
+        )
+        
+        if not note_data.get('success', False):
+            messages.error(request, note_data.get('error', "Clinical note not found."))
+            return redirect('provider_video_consultation')
+        
+        # Format note using API serializer if needed
+        note = note_data.get('note')
+        if note and hasattr(note, '__dict__'):
+            serializer = ClinicalNoteSerializer(note)
+            note_data['note'] = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'active_section': 'consultations',
+            'note': note_data.get('note')
+        }
+    except Exception as e:
+        logger.error(f"Error viewing clinical note: {str(e)}")
+        messages.error(request, f"Error viewing clinical note: {str(e)}")
+        return redirect('provider_video_consultation')
+    
+    return render(request, 'provider/view_clinical_note.html', context)

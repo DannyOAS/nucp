@@ -15,7 +15,8 @@ from .serializers import (
 )
 #from patient.api.serializers import PatientSerializer
 from api.v1.patient.serializers import PatientSerializer
-from api.permissions import IsProvider, IsProviderOrReadOnly, IsProviderOwner
+from .permissions import IsProviderOrReadOnly
+from api.permissions import IsProvider, IsProviderOwner
 from api.versioning import VersionedViewMixin
 from api.mixins import PaginationMixin, MessageActionsMixin, FilterMixin, SearchMixin
 from django.db.models import Q

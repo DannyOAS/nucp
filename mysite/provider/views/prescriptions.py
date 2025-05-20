@@ -1,16 +1,14 @@
 # provider/views/prescriptions.py
-from django.shortcuts import render, redirect, get_object_or_404
+from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-import logging
-import requests
 from datetime import datetime, date
+import logging
 
-from theme_name.repositories import PrescriptionRepository
-from provider.services import ProviderService, PrescriptionService
+from provider.services import PrescriptionService
 from provider.utils import get_current_provider
-from theme_name.data_access import get_provider_prescription_requests
+from api.v1.provider.serializers import PrescriptionSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -24,63 +22,75 @@ def provider_prescriptions(request):
     if provider is None:
         return redirect('unauthorized')
     
-    # Direct data access test (for debugging)
-    direct_data = get_provider_prescription_requests(provider.id)
-    logger.debug(f"Direct data access call result: {direct_data}")
-
     time_period = request.GET.get('period', 'week')
     search_query = request.GET.get('search', '')
     
     try:
-        # Use service layer for now, but could switch to API
-        prescriptions_data = ProviderService.get_prescriptions_dashboard(
-            provider.id,  # Use authenticated provider ID
+        # Get prescriptions data from service
+        prescriptions_data = PrescriptionService.get_provider_prescriptions_dashboard(
+            provider_id=provider.id,
             time_period=time_period,
             search_query=search_query
         )
-        logger.debug("Service call successful")
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/')
-        # params = {
-        #     'time_period': time_period,
-        #     'search': search_query
-        # }
-        # response = requests.get(f'{api_url}prescriptions/', params=params)
-        # if response.status_code == 200:
-        #     prescriptions_data = response.json()
-        # else:
-        #     prescriptions_data = {
-        #         'stats': {'active_prescriptions': 0, 'pending_renewals': 0, 'new_today': 0, 'refill_requests': 0},
-        #         'prescription_requests': [],
-        #         'recent_prescriptions': []
-        #     }
+        # Format recent prescriptions using API serializer if needed
+        recent_prescriptions = prescriptions_data.get('recent_prescriptions', [])
+        if hasattr(recent_prescriptions, 'model'):
+            serializer = PrescriptionSerializer(recent_prescriptions, many=True)
+            prescriptions_data['recent_prescriptions'] = serializer.data
         
+        # Pagination
+        page_number = request.GET.get('page', 1)
+        items_per_page = 10
+        paginator = Paginator(prescriptions_data.get('recent_prescriptions', []), items_per_page)
+        
+        try:
+            page_obj = paginator.page(page_number)
+        except PageNotAnInteger:
+            page_obj = paginator.page(1)
+        except EmptyPage:
+            page_obj = paginator.page(paginator.num_pages)
+        
+        # Process expiration dates for prescription requests
+        prescription_requests = prescriptions_data.get('prescription_requests', [])
+        process_prescription_requests(prescription_requests)
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'stats': prescriptions_data.get('stats', {}),
+            'prescription_requests': prescription_requests,
+            'recent_prescriptions': page_obj,
+            'active_section': 'prescriptions',
+            'time_period': time_period,
+            'search_query': search_query,
+            'page_obj': page_obj
+        }
     except Exception as e:
         logger.error(f"Exception in service call: {e}")
-        prescriptions_data = {
-            'stats': {'active_prescriptions': 0, 'pending_renewals': 0, 'new_today': 0, 'refill_requests': 0},
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'stats': {
+                'active_prescriptions': 0,
+                'pending_renewals': 0,
+                'new_today': 0,
+                'refill_requests': 0
+            },
             'prescription_requests': [],
-            'recent_prescriptions': []
+            'recent_prescriptions': [],
+            'active_section': 'prescriptions',
+            'time_period': time_period,
+            'search_query': search_query,
+            'page_obj': None
         }
     
-    logger.debug(f"Full prescriptions_data: {prescriptions_data}")
+    return render(request, 'provider/prescriptions.html', context)
 
-    # Pagination
-    page_number = request.GET.get('page', 1)
-    items_per_page = 10
-    paginator = Paginator(prescriptions_data.get('recent_prescriptions', []), items_per_page)
-    
-    try:
-        page_obj = paginator.page(page_number)
-    except PageNotAnInteger:
-        page_obj = paginator.page(1)
-    except EmptyPage:
-        page_obj = paginator.page(paginator.num_pages)
-
-    # Process expiration dates for prescription requests
+def process_prescription_requests(requests):
+    """Process expiration dates for prescription requests"""
     today = datetime.now().date()
-    for req in prescriptions_data.get('prescription_requests', []):
+    for req in requests:
         req['expiration_date'] = req.get('expires', 'N/A')
         req['days_left'] = None
         
@@ -105,20 +115,6 @@ def provider_prescriptions(request):
             except Exception as e:
                 logger.warning(f"Error calculating expiration for {req.get('medication_name')}: {e}")
 
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'stats': prescriptions_data.get('stats', {}),
-        'prescription_requests': prescriptions_data.get('prescription_requests', []),
-        'recent_prescriptions': page_obj,
-        'active_section': 'prescriptions',
-        'time_period': time_period,
-        'search_query': search_query,
-        'page_obj': page_obj
-    }
-    
-    return render(request, 'provider/prescriptions.html', context)
-
 @login_required
 def approve_prescription(request, prescription_id):
     """Approve a prescription request with authenticated provider"""
@@ -130,28 +126,16 @@ def approve_prescription(request, prescription_id):
         return redirect('unauthorized')
     
     try:
-        # Verify this prescription belongs to the current provider
-        prescription = PrescriptionRepository.get_by_id(prescription_id)
+        # Approve prescription using service
+        result = PrescriptionService.approve_prescription(
+            prescription_id=prescription_id,
+            provider_id=provider.id
+        )
         
-        if not prescription or prescription.get('doctor_id') != provider.id:
-            messages.error(request, "You do not have permission to approve this prescription.")
-            return redirect('provider_prescriptions')
-        
-        # Approve the prescription
-        result = PrescriptionService.approve_prescription(prescription_id, provider.id)
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/approve/')
-        # response = requests.post(api_url)
-        # if response.status_code == 200:
-        #     result = response.json()
-        # else:
-        #     result = None
-        
-        if result:
+        if result.get('success', False):
             messages.success(request, "Prescription approved successfully.")
         else:
-            messages.error(request, "Error approving prescription.")
+            messages.error(request, result.get('error', "Error approving prescription."))
     except Exception as e:
         logger.error(f"Error approving prescription: {str(e)}")
         messages.error(request, f"Error approving prescription: {str(e)}")
@@ -169,36 +153,32 @@ def review_prescription(request, prescription_id):
         return redirect('unauthorized')
     
     try:
-        # Get prescription data
-        prescription = PrescriptionRepository.get_by_id(prescription_id)
+        # Get prescription data using service
+        prescription_data = PrescriptionService.get_prescription_details(
+            prescription_id=prescription_id,
+            provider_id=provider.id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     prescription = response.json()
-        # else:
-        #     prescription = None
-        
-        if not prescription:
-            messages.error(request, "Prescription not found.")
+        if not prescription_data.get('success', False):
+            messages.error(request, prescription_data.get('error', "Prescription not found."))
             return redirect('provider_prescriptions')
         
-        # Verify this prescription belongs to the current provider
-        if prescription.get('doctor_id') != provider.id:
-            messages.error(request, "You do not have permission to review this prescription.")
-            return redirect('provider_prescriptions')
+        # Format prescription data with serializer if needed
+        prescription = prescription_data.get('prescription')
+        if prescription and hasattr(prescription, '__dict__'):
+            serializer = PrescriptionSerializer(prescription)
+            prescription = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'prescription': prescription,
+            'active_section': 'prescriptions'
+        }
     except Exception as e:
         logger.error(f"Error retrieving prescription: {str(e)}")
         messages.error(request, f"Error retrieving prescription: {str(e)}")
         return redirect('provider_prescriptions')
-    
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'prescription': prescription,
-        'active_section': 'prescriptions'
-    }
     
     return render(request, 'provider/review_prescription.html', context)
 
@@ -214,7 +194,7 @@ def create_prescription(request):
     
     if request.method == 'POST':
         try:
-            # Process form data
+            # Create prescription using service
             prescription_data = {
                 'patient_id': request.POST.get('patient_id'),
                 'medication_name': request.POST.get('medication_name'),
@@ -223,70 +203,47 @@ def create_prescription(request):
                 'duration': request.POST.get('duration'),
                 'refills': request.POST.get('refills', 0),
                 'instructions': request.POST.get('instructions'),
-                'doctor_id': provider.id,  # Use authenticated provider
+                'doctor_id': provider.id
             }
             
-            # Create prescription
             result = PrescriptionService.create_prescription(prescription_data)
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri('/api/provider/prescriptions/')
-            # response = requests.post(api_url, json=prescription_data)
-            # if response.status_code == 201:  # Created
-            #     result = {'success': True, 'prescription': response.json()}
-            # else:
-            #     result = {'success': False}
-            
-            if result and result.get('prescription'):
+            if result.get('success', False):
                 messages.success(request, "Prescription created successfully.")
                 return redirect('provider_prescriptions')
             else:
-                messages.error(request, "Error creating prescription.")
+                messages.error(request, result.get('error', "Error creating prescription."))
         except Exception as e:
             logger.error(f"Error creating prescription: {str(e)}")
             messages.error(request, f"Error creating prescription: {str(e)}")
     
     # For GET requests, prepare the form
     try:
-        # Get patients for this provider
-        from theme_name.models import PatientRegistration
+        # Get form data from service
+        form_data = PrescriptionService.get_prescription_form_data(provider.id)
         
-        if hasattr(PatientRegistration, 'provider'):
-            # Direct provider relationship
-            patients = PatientRegistration.objects.filter(provider=provider)
-        else:
-            # Get from appointments
-            from common.models import Appointment
-            patient_ids = Appointment.objects.filter(
-                doctor=provider
-            ).values_list('patient_id', flat=True).distinct()
-            
-            patients = PatientRegistration.objects.filter(id__in=patient_ids)
-            
-        # Convert to list for template
-        patients_list = []
-        for patient in patients:
-            patients_list.append({
-                'id': patient.id,
-                'name': f"{patient.first_name} {patient.last_name}"
-            })
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'patients': form_data.get('patients', []),
+            'common_medications': form_data.get('common_medications', []),
+            'active_section': 'prescriptions'
+        }
     except Exception as e:
-        logger.error(f"Error retrieving patients: {str(e)}")
-        patients_list = []
-    
-    # Get common medications (example data)
-    common_medications = [
-        'Amoxicillin', 'Lisinopril', 'Metformin', 'Atorvastatin', 
-        'Levothyroxine', 'Amlodipine', 'Metoprolol', 'Omeprazole'
-    ]
-    
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'patients': patients_list,
-        'common_medications': common_medications,
-        'active_section': 'prescriptions'
-    }
+        logger.error(f"Error retrieving form data: {str(e)}")
+        # Default values if service fails
+        common_medications = [
+            'Amoxicillin', 'Lisinopril', 'Metformin', 'Atorvastatin', 
+            'Levothyroxine', 'Amlodipine', 'Metoprolol', 'Omeprazole'
+        ]
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'patients': [],
+            'common_medications': common_medications,
+            'active_section': 'prescriptions'
+        }
     
     return render(request, 'provider/create_prescription.html', context)
 
@@ -301,25 +258,22 @@ def edit_prescription(request, prescription_id):
         return redirect('unauthorized')
     
     try:
-        # Get prescription data
-        prescription = PrescriptionRepository.get_by_id(prescription_id)
+        # Get prescription data from service
+        prescription_data = PrescriptionService.get_prescription_details(
+            prescription_id=prescription_id,
+            provider_id=provider.id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     prescription = response.json()
-        # else:
-        #     prescription = None
-        
-        if not prescription:
-            messages.error(request, "Prescription not found.")
+        if not prescription_data.get('success', False):
+            messages.error(request, prescription_data.get('error', "Prescription not found."))
             return redirect('provider_prescriptions')
         
-        # Verify this prescription belongs to the current provider
-        if prescription.get('doctor_id') != provider.id:
-            messages.error(request, "You do not have permission to edit this prescription.")
-            return redirect('provider_prescriptions')
+        prescription = prescription_data.get('prescription')
+        
+        # Format prescription with serializer if needed
+        if prescription and hasattr(prescription, '__dict__'):
+            serializer = PrescriptionSerializer(prescription)
+            prescription = serializer.data
     except Exception as e:
         logger.error(f"Error retrieving prescription: {str(e)}")
         messages.error(request, f"Error retrieving prescription: {str(e)}")
@@ -327,7 +281,7 @@ def edit_prescription(request, prescription_id):
     
     if request.method == 'POST':
         try:
-            # Process form data
+            # Update prescription using service
             updated_data = {
                 'medication_name': request.POST.get('medication_name'),
                 'dosage': request.POST.get('dosage'),
@@ -337,38 +291,47 @@ def edit_prescription(request, prescription_id):
                 'instructions': request.POST.get('instructions'),
             }
             
-            # Update prescription
-            updated_prescription = PrescriptionRepository.update(prescription_id, updated_data)
+            result = PrescriptionService.update_prescription(
+                prescription_id=prescription_id,
+                provider_id=provider.id,
+                updated_data=updated_data
+            )
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri(f'/api/provider/prescriptions/{prescription_id}/')
-            # response = requests.patch(api_url, json=updated_data)
-            # if response.status_code == 200:
-            #     updated_prescription = response.json()
-            # else:
-            #     updated_prescription = None
-            
-            if updated_prescription:
+            if result.get('success', False):
                 messages.success(request, "Prescription updated successfully.")
                 return redirect('provider_prescriptions')
             else:
-                messages.error(request, "Error updating prescription.")
+                messages.error(request, result.get('error', "Error updating prescription."))
         except Exception as e:
             logger.error(f"Error updating prescription: {str(e)}")
             messages.error(request, f"Error updating prescription: {str(e)}")
     
-    # Get common medications (example data)
-    common_medications = [
-        'Amoxicillin', 'Lisinopril', 'Metformin', 'Atorvastatin', 
-        'Levothyroxine', 'Amlodipine', 'Metoprolol', 'Omeprazole'
-    ]
-    
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'prescription': prescription,
-        'common_medications': common_medications,
-        'active_section': 'prescriptions'
-    }
+    # For GET requests, prepare the form
+    try:
+        # Get form data from service
+        form_data = PrescriptionService.get_prescription_form_data(provider.id)
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'prescription': prescription,
+            'common_medications': form_data.get('common_medications', []),
+            'active_section': 'prescriptions'
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving form data: {str(e)}")
+        # Default values if service fails
+        common_medications = [
+            'Amoxicillin', 'Lisinopril', 'Metformin', 'Atorvastatin', 
+            'Levothyroxine', 'Amlodipine', 'Metoprolol', 'Omeprazole'
+        ]
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'prescription': prescription,
+            'common_medications': common_medications,
+            'active_section': 'prescriptions'
+        }
     
     return render(request, 'provider/edit_prescription.html', context)

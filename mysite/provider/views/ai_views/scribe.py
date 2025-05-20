@@ -5,12 +5,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.decorators import login_required
 import logging
-import requests
 
-from theme_name.repositories import ProviderRepository
 from provider.services import AIScribeService
-from provider.models import RecordingSession, ClinicalNote
 from provider.utils import get_current_provider
+from api.v1.provider.serializers import RecordingSessionSerializer, ClinicalNoteSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -25,41 +23,40 @@ def ai_scribe_dashboard(request):
         return redirect('unauthorized')
     
     try:
-        # Get AI scribe data for this provider
-        recordings = RecordingSession.objects.filter(
-            provider=provider
-        ).order_by('-start_time')[:10]
+        # Get AI scribe data from service
+        scribe_data = AIScribeService.get_dashboard_data(provider.id)
         
-        notes = ClinicalNote.objects.filter(
-            provider=provider
-        ).order_by('-created_at')[:10]
+        # Format recordings using API serializer if needed
+        recordings = scribe_data.get('recordings', [])
+        if hasattr(recordings, 'model'):
+            serializer = RecordingSessionSerializer(recordings, many=True)
+            scribe_data['recordings'] = serializer.data
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/ai-scribe/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     api_data = response.json()
-        #     recordings = api_data.get('recordings', [])
-        #     notes = api_data.get('notes', [])
-        # else:
-        #     recordings = []
-        #     notes = []
-        #     messages.error(request, "Error retrieving AI Scribe data.")
+        # Format notes using API serializer if needed
+        notes = scribe_data.get('notes', [])
+        if hasattr(notes, 'model'):
+            serializer = ClinicalNoteSerializer(notes, many=True)
+            scribe_data['notes'] = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'recordings': scribe_data.get('recordings', []),
+            'notes': scribe_data.get('notes', []),
+            'active_section': 'ai_scribe'
+        }
     except Exception as e:
         logger.error(f"Error loading AI Scribe dashboard: {str(e)}")
-        recordings = []
-        notes = []
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'recordings': [],
+            'notes': [],
+            'active_section': 'ai_scribe'
+        }
         messages.error(request, f"Error loading AI Scribe dashboard: {str(e)}")
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'recordings': recordings,
-        'notes': notes,
-        'active_section': 'ai_scribe'
-    }
-    
-    return render(request, "provider/ai_scribe_dashboard.html", context)
+    return render(request, "provider/ai_views/ai_scribe_dashboard.html", context)
 
 @login_required
 @require_POST
@@ -75,29 +72,23 @@ def start_recording(request):
     appointment_id = request.POST.get('appointment_id')
     
     try:
-        recording = AIScribeService.start_recording(provider.id, appointment_id)
+        # Start recording using service
+        result = AIScribeService.start_recording(
+            provider_id=provider.id,
+            appointment_id=appointment_id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/ai-scribe/recordings/')
-        # response = requests.post(api_url, json={'appointment_id': appointment_id})
-        # if response.status_code == 201:  # Created
-        #     recording_data = response.json()
-        #     return JsonResponse({
-        #         'success': True,
-        #         'recording_id': recording_data.get('id'),
-        #         'message': 'Recording started successfully.'
-        #     })
-        # else:
-        #     return JsonResponse({
-        #         'success': False,
-        #         'message': 'Error starting recording through API.'
-        #     }, status=500)
-        
-        return JsonResponse({
-            'success': True,
-            'recording_id': recording.id,
-            'message': 'Recording started successfully.'
-        })
+        if result.get('success', False):
+            return JsonResponse({
+                'success': True,
+                'recording_id': result.get('recording_id'),
+                'message': 'Recording started successfully.'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': result.get('error', 'Error starting recording.')
+            }, status=500)
     except Exception as e:
         logger.error(f"Error starting recording: {str(e)}")
         return JsonResponse({
@@ -119,27 +110,23 @@ def stop_recording(request):
     recording_id = request.POST.get('recording_id')
     
     try:
-        # Verify this recording belongs to this provider
-        recording = get_object_or_404(RecordingSession, id=recording_id, provider=provider)
+        # Stop recording using service
+        result = AIScribeService.stop_recording(
+            provider_id=provider.id,
+            recording_id=recording_id
+        )
         
-        result = AIScribeService.stop_recording(recording_id)
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/ai-scribe/recordings/{recording_id}/stop/')
-        # response = requests.post(api_url)
-        # if response.status_code == 200:
-        #     result = response.json()
-        # else:
-        #     return JsonResponse({
-        #         'success': False,
-        #         'message': 'Error stopping recording through API.'
-        #     }, status=500)
-        
-        return JsonResponse({
-            'success': True,
-            'transcription_status': result.get('transcription_status'),
-            'message': 'Recording stopped successfully.'
-        })
+        if result.get('success', False):
+            return JsonResponse({
+                'success': True,
+                'transcription_status': result.get('transcription_status'),
+                'message': 'Recording stopped successfully.'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': result.get('error', 'Error stopping recording.')
+            }, status=500)
     except Exception as e:
         logger.error(f"Error stopping recording: {str(e)}")
         return JsonResponse({
@@ -158,42 +145,34 @@ def get_transcription(request, recording_id):
         return redirect('unauthorized')
     
     try:
-        # Verify this recording belongs to this provider
-        recording = get_object_or_404(RecordingSession, id=recording_id, provider=provider)
+        # Get transcription data from service
+        transcription_data = AIScribeService.get_transcription(
+            provider_id=provider.id,
+            recording_id=recording_id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/ai-scribe/recordings/{recording_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     recording_data = response.json()
-        # else:
-        #     messages.error(request, "Error retrieving transcription.")
-        #     return redirect('ai_scribe_dashboard')
+        if not transcription_data.get('success', False):
+            messages.error(request, transcription_data.get('error', "Error retrieving transcription."))
+            return redirect('ai_scribe_dashboard')
         
-        # Format recording data for the template
-        recording_data = {
-            'id': recording.id,
-            'appointment_id': recording.appointment.id if recording.appointment else None,
-            'patient_name': recording.appointment.patient.get_full_name() if recording.appointment and recording.appointment.patient else "Unknown",
-            'start_time': recording.start_time.strftime('%B %d, %Y - %I:%M %p'),
-            'end_time': recording.end_time.strftime('%B %d, %Y - %I:%M %p') if recording.end_time else None,
-            'duration': (recording.end_time - recording.start_time).total_seconds() // 60 if recording.end_time else None,
-            'status': recording.transcription_status,
-            'transcription_text': recording.transcription_text
+        # Format recording data using serializer if needed
+        recording = transcription_data.get('recording')
+        if recording and hasattr(recording, '__dict__'):
+            serializer = RecordingSessionSerializer(recording)
+            transcription_data['recording'] = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'recording': transcription_data.get('recording_data'),
+            'active_section': 'ai_scribe'
         }
     except Exception as e:
         logger.error(f"Error retrieving transcription: {str(e)}")
         messages.error(request, f"Error retrieving transcription: {str(e)}")
         return redirect('ai_scribe_dashboard')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'recording': recording_data,
-        'active_section': 'ai_scribe'
-    }
-    
-    return render(request, "provider/transcription.html", context)
+    return render(request, "provider/ai_views/transcription.html", context)
 
 @login_required
 @require_POST
@@ -207,32 +186,23 @@ def generate_clinical_note(request, transcription_id):
         return JsonResponse({'success': False, 'message': 'Authentication required'}, status=401)
     
     try:
-        # Verify this recording belongs to this provider
-        recording = get_object_or_404(RecordingSession, id=transcription_id, provider=provider)
+        # Generate note using service
+        result = AIScribeService.generate_note(
+            provider_id=provider.id,
+            recording_id=transcription_id
+        )
         
-        note = AIScribeService.generate_note(recording.id)
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/ai-scribe/recordings/{transcription_id}/generate-note/')
-        # response = requests.post(api_url)
-        # if response.status_code == 201:  # Created
-        #     note_data = response.json()
-        #     return JsonResponse({
-        #         'success': True,
-        #         'note_id': note_data.get('id'),
-        #         'message': 'Clinical note generated successfully.'
-        #     })
-        # else:
-        #     return JsonResponse({
-        #         'success': False,
-        #         'message': 'Error generating clinical note through API.'
-        #     }, status=500)
-        
-        return JsonResponse({
-            'success': True,
-            'note_id': note.id,
-            'message': 'Clinical note generated successfully.'
-        })
+        if result.get('success', False):
+            return JsonResponse({
+                'success': True,
+                'note_id': result.get('note_id'),
+                'message': 'Clinical note generated successfully.'
+            })
+        else:
+            return JsonResponse({
+                'success': False,
+                'message': result.get('error', 'Error generating clinical note.')
+            }, status=500)
     except Exception as e:
         logger.error(f"Error generating clinical note: {str(e)}")
         return JsonResponse({
@@ -251,44 +221,34 @@ def view_clinical_note(request, note_id):
         return redirect('unauthorized')
     
     try:
-        # Verify this note belongs to this provider
-        note = get_object_or_404(ClinicalNote, id=note_id, provider=provider)
+        # Get clinical note data from service
+        note_data = AIScribeService.get_clinical_note(
+            provider_id=provider.id,
+            note_id=note_id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/ai-scribe/notes/{note_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     note_data = response.json()
-        # else:
-        #     messages.error(request, "Error retrieving clinical note.")
-        #     return redirect('ai_scribe_dashboard')
+        if not note_data.get('success', False):
+            messages.error(request, note_data.get('error', "Error retrieving clinical note."))
+            return redirect('ai_scribe_dashboard')
         
-        # Format note data for the template
-# provider/views/ai_views/scribe.py (continued)
-        # Format note data for the template
-        note_data = {
-            'id': note.id,
-            'appointment_id': note.appointment.id if note.appointment else None,
-            'patient_name': note.appointment.patient.get_full_name() if note.appointment and note.appointment.patient else "Unknown",
-            'created_at': note.created_at.strftime('%B %d, %Y - %I:%M %p'),
-            'updated_at': note.updated_at.strftime('%B %d, %Y - %I:%M %p'),
-            'status': note.status,
-            'ai_generated_text': note.ai_generated_text,
-            'provider_edited_text': note.provider_edited_text
+        # Format note data using serializer if needed
+        note = note_data.get('note')
+        if note and hasattr(note, '__dict__'):
+            serializer = ClinicalNoteSerializer(note)
+            note_data['note'] = serializer.data
+        
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'note': note_data.get('note_data'),
+            'active_section': 'ai_scribe'
         }
     except Exception as e:
         logger.error(f"Error viewing clinical note: {str(e)}")
         messages.error(request, f"Error viewing clinical note: {str(e)}")
         return redirect('ai_scribe_dashboard')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'note': note_data,
-        'active_section': 'ai_scribe'
-    }
-    
-    return render(request, "provider/view_clinical_note.html", context)
+    return render(request, "provider/ai_views/view_clinical_note.html", context)
 
 @login_required
 def edit_clinical_note(request, note_id):
@@ -301,69 +261,59 @@ def edit_clinical_note(request, note_id):
         return redirect('unauthorized')
     
     try:
-        # Verify this note belongs to this provider
-        note = get_object_or_404(ClinicalNote, id=note_id, provider=provider)
+        # Get clinical note data from service
+        note_data = AIScribeService.get_clinical_note(
+            provider_id=provider.id,
+            note_id=note_id
+        )
         
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri(f'/api/provider/ai-scribe/notes/{note_id}/')
-        # response = requests.get(api_url)
-        # if response.status_code == 200:
-        #     note_data = response.json()
-        # else:
-        #     messages.error(request, "Error retrieving clinical note.")
-        #     return redirect('ai_scribe_dashboard')
+        if not note_data.get('success', False):
+            messages.error(request, note_data.get('error', "Error retrieving clinical note."))
+            return redirect('ai_scribe_dashboard')
+        
+        # Format note data using serializer if needed
+        note = note_data.get('note')
+        if note and hasattr(note, '__dict__'):
+            serializer = ClinicalNoteSerializer(note)
+            note_data['note'] = serializer.data
         
         if request.method == 'POST':
-            # Process form submission
-            note.provider_edited_text = request.POST.get('content')
-            note.status = request.POST.get('status', 'reviewed')
-            note.last_edited_by = request.user
-            note.save()
+            # Update note using service
+            update_data = {
+                'provider_edited_text': request.POST.get('content'),
+                'status': request.POST.get('status', 'reviewed')
+            }
             
-            # API version (commented out for now):
-            # api_url = request.build_absolute_uri(f'/api/provider/ai-scribe/notes/{note_id}/')
-            # update_data = {
-            #     'provider_edited_text': request.POST.get('content'),
-            #     'status': request.POST.get('status', 'reviewed')
-            # }
-            # response = requests.patch(api_url, json=update_data)
-            # if response.status_code == 200:
-            #     messages.success(request, "Clinical note updated successfully.")
-            # else:
-            #     messages.error(request, "Error updating clinical note.")
+            result = AIScribeService.update_clinical_note(
+                provider_id=provider.id,
+                note_id=note_id,
+                update_data=update_data,
+                user=request.user
+            )
             
-            messages.success(request, "Clinical note updated successfully.")
-            
-            # Redirect based on the status
-            if note.status == 'finalized':
-                if note.appointment:
-                    return redirect('view_appointment', appointment_id=note.appointment.id)
-                else:
-                    return redirect('view_clinical_note', note_id=note.id)
+            if result.get('success', False):
+                messages.success(request, "Clinical note updated successfully.")
+                
+                # Redirect based on the status
+                if update_data['status'] == 'finalized':
+                    note = note_data.get('note')
+                    appointment_id = note.get('appointment_id') if isinstance(note, dict) else None
+                    if appointment_id:
+                        return redirect('view_appointment', appointment_id=appointment_id)
+                
+                return redirect('view_clinical_note', note_id=note_id)
             else:
-                return redirect('view_clinical_note', note_id=note.id)
+                messages.error(request, result.get('error', "Error updating clinical note."))
         
-        # Format note data for the template
-        note_data = {
-            'id': note.id,
-            'appointment_id': note.appointment.id if note.appointment else None,
-            'patient_name': note.appointment.patient.get_full_name() if note.appointment and note.appointment.patient else "Unknown",
-            'created_at': note.created_at.strftime('%B %d, %Y - %I:%M %p'),
-            'updated_at': note.updated_at.strftime('%B %d, %Y - %I:%M %p'),
-            'status': note.status,
-            'ai_generated_text': note.ai_generated_text,
-            'provider_edited_text': note.provider_edited_text or note.ai_generated_text  # Use AI text as starting point if no edits yet
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'note': note_data.get('note_data'),
+            'active_section': 'ai_scribe'
         }
     except Exception as e:
         logger.error(f"Error editing clinical note: {str(e)}")
         messages.error(request, f"Error editing clinical note: {str(e)}")
         return redirect('ai_scribe_dashboard')
     
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {provider_dict['last_name']}",
-        'note': note_data,
-        'active_section': 'ai_scribe'
-    }
-    
-    return render(request, "provider/edit_clinical_note.html", context)
+    return render(request, "provider/ai_views/edit_clinical_note.html", context)

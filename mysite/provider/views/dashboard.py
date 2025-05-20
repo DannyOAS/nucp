@@ -1,16 +1,16 @@
 # provider/views/dashboard.py
-"""Dashboard view for provider portal."""
-
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import datetime, timedelta
-import requests
 import logging
 
-from common.models import Appointment, Prescription, Message
-from provider.models import Provider, RecordingSession, DocumentTemplate
+from provider.services import ProviderService
 from provider.utils import get_current_provider
+from api.v1.provider.serializers import (
+    AppointmentSerializer, PrescriptionSerializer,
+    RecordingSessionSerializer, GeneratedDocumentSerializer
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,153 +24,78 @@ def provider_dashboard(request):
     if provider is None:
         return redirect('unauthorized')
     
-    # Get today's date for filtering
-    today = timezone.now().date()
-    end_of_day = datetime.combine(today, datetime.max.time())
-    start_of_day = datetime.combine(today, datetime.min.time())
-    
-    # Get appointments using the API or ORM based on configuration
-    # For now, we'll continue using the ORM but structure it so it's easy to switch
     try:
-        # Using ORM for now, but structured to make API transition easier
-        upcoming_appointments = Appointment.objects.filter(
-            doctor=provider, 
-            time__gte=timezone.now()
-        ).order_by('time')[:3]
+        # Get dashboard data from service layer
+        dashboard_data = ProviderService.get_dashboard_data(provider.id)
         
-        today_appointments = Appointment.objects.filter(
-            doctor=provider,
-            time__range=(start_of_day, end_of_day)
-        ).count()
-        
-        # Check if status field exists in Appointment model
-        use_status_field = hasattr(Appointment, 'status')
-        
-        if use_status_field:
-            completed_appointments = Appointment.objects.filter(
-                doctor=provider, 
-                status='Completed'
-            ).count()
-        else:
-            # Alternative: just count all past appointments
-            completed_appointments = Appointment.objects.filter(
-                doctor=provider,
-                time__lt=timezone.now()
-            ).count()
+        # Format appointments using API serializer if needed
+        upcoming_appointments = dashboard_data.get('upcoming_appointments', [])
+        if hasattr(upcoming_appointments, 'model'):
+            serializer = AppointmentSerializer(upcoming_appointments, many=True)
+            upcoming_appointments = serializer.data
             
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/')
-        # upcoming_response = requests.get(f'{api_url}appointments/upcoming/')
-        # if upcoming_response.status_code == 200:
-        #     upcoming_appointments = upcoming_response.json()
-        # else:
-        #     upcoming_appointments = []
-        
-    except Exception as e:
-        logger.error(f"Error retrieving appointments: {str(e)}")
-        upcoming_appointments = []
-        today_appointments = 0
-        completed_appointments = 0
-    
-    # Get patients for this provider
-    try:
-        # Method 1: Get patients directly assigned to provider if field exists
-        from theme_name.models import PatientRegistration
-        
-        if hasattr(PatientRegistration, 'provider'):
-            # Get patients directly assigned to this provider
-            patients = PatientRegistration.objects.filter(provider=provider)
-            active_patients = patients.count()
-        else:
-            # Method 2: Get patient IDs from appointments with this provider
-            patient_ids = Appointment.objects.filter(
-                doctor=provider
-            ).values_list('patient_id', flat=True).distinct()
+        # Format prescription requests if needed
+        prescription_requests = dashboard_data.get('prescription_requests', [])
+        if hasattr(prescription_requests, 'model'):
+            serializer = PrescriptionSerializer(prescription_requests, many=True)
+            prescription_requests = serializer.data
             
-            # Get the patient objects
-            patients = PatientRegistration.objects.filter(id__in=patient_ids)
-            active_patients = patients.count()
-    except Exception as e:
-        logger.error(f"Error retrieving patients: {str(e)}")
-        patients = []
-        active_patients = 0
-    
-    # Get message count
-    try:
-        # Use authenticated user for messages
-        unread_messages = Message.objects.filter(
-            recipient=request.user,
-            read=False
-        ).count()
-    except Exception as e:
-        logger.error(f"Error retrieving messages: {str(e)}")
-        unread_messages = 0
-    
-    # Get pending prescription requests
-    try:
-        prescription_requests = Prescription.objects.filter(
-            doctor=provider,
-            status='Pending'
-        )
-        
-        # API version (commented out for now):
-        # api_url = request.build_absolute_uri('/api/provider/')
-        # prescription_response = requests.get(f'{api_url}prescriptions/pending/')
-        # if prescription_response.status_code == 200:
-        #     prescription_requests = prescription_response.json()
-        # else:
-        #     prescription_requests = []
-    except Exception as e:
-        logger.error(f"Error retrieving prescriptions: {str(e)}")
-        prescription_requests = []
-    
-    # Get AI Scribe data
-    try:
-        ai_scribe_data = {
-            'enabled': True,
-            'recent_recordings': RecordingSession.objects.filter(
-                provider=provider
-            ).order_by('-start_time')[:2]  # Get 2 most recent recordings
+        # Format AI Scribe data if needed
+        ai_scribe_data = dashboard_data.get('ai_scribe_data', {})
+        if 'recent_recordings' in ai_scribe_data and hasattr(ai_scribe_data['recent_recordings'], 'model'):
+            serializer = RecordingSessionSerializer(ai_scribe_data['recent_recordings'], many=True)
+            ai_scribe_data['recent_recordings'] = serializer.data
+            
+        # Format Forms/Templates data if needed
+        forms_templates_data = dashboard_data.get('forms_templates_data', {})
+        if 'recent_documents' in forms_templates_data and hasattr(forms_templates_data['recent_documents'], 'model'):
+            serializer = GeneratedDocumentSerializer(forms_templates_data['recent_documents'], many=True)
+            forms_templates_data['recent_documents'] = serializer.data
+            
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'patients': dashboard_data.get('patients', [])[:5],  # Limit to 5 for dashboard
+            'appointments': upcoming_appointments,
+            'prescription_requests': prescription_requests,
+            'stats': dashboard_data.get('stats', {
+                'today_appointments': 0,
+                'completed_appointments': 0,
+                'active_patients': 0,
+                'pending_prescriptions': 0,
+                'unread_messages': 0
+            }),
+            'ai_scribe_data': ai_scribe_data,
+            'forms_templates_data': forms_templates_data,
+            'active_section': 'dashboard',
+            'today': datetime.now().date()
         }
     except Exception as e:
-        logger.error(f"Error retrieving AI Scribe data: {str(e)}")
-        ai_scribe_data = {
-            'enabled': True,
-            'recent_recordings': []
+        logger.error(f"Error loading dashboard data: {str(e)}")
+        context = {
+            'provider': provider_dict,
+            'provider_name': f"Dr. {provider_dict['last_name']}",
+            'patients': [],
+            'appointments': [],
+            'prescription_requests': [],
+            'stats': {
+                'today_appointments': 0,
+                'completed_appointments': 0,
+                'active_patients': 0,
+                'pending_prescriptions': 0,
+                'unread_messages': 0
+            },
+            'ai_scribe_data': {
+                'enabled': True,
+                'recent_recordings': []
+            },
+            'forms_templates_data': {
+                'enabled': True,
+                'templates': [],
+                'recent_documents': []
+            },
+            'active_section': 'dashboard',
+            'today': datetime.now().date()
         }
-    
-    # Get Templates data
-    try:
-        forms_templates_data = {
-            'enabled': True,
-            'templates': DocumentTemplate.objects.filter(is_active=True)[:5],
-            'recent_documents': provider.generated_documents.all().order_by('-created_at')[:3]
-        }
-    except Exception as e:
-        logger.error(f"Error retrieving form templates: {str(e)}")
-        forms_templates_data = {
-            'enabled': True,
-            'templates': [],
-            'recent_documents': []
-        }
-    
-    context = {
-        'provider': provider_dict,
-        'provider_name': f"Dr. {request.user.last_name}",
-        'patients': patients[:5],  # Limit to 5 for dashboard
-        'appointments': upcoming_appointments,
-        'prescription_requests': prescription_requests,
-        'stats': {
-            'today_appointments': today_appointments,
-            'completed_appointments': completed_appointments,
-            'active_patients': active_patients,
-            'pending_prescriptions': prescription_requests.count(),
-            'unread_messages': unread_messages
-        },
-        'ai_scribe_data': ai_scribe_data,
-        'forms_templates_data': forms_templates_data,
-        'active_section': 'dashboard',
-        'today': datetime.now().date()
-    }
     
     return render(request, "provider/dashboard.html", context)
