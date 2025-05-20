@@ -1,5 +1,5 @@
-# api/urls.py - Complete Fixed Implementation
-from django.urls import path, include
+# mysite/api/urls.py
+from django.urls import path, include, re_path
 from django.http import HttpResponseRedirect
 from rest_framework.routers import DefaultRouter
 from rest_framework import permissions
@@ -29,8 +29,9 @@ router = DefaultRouter()
 router.register(r'users', views.BaseUserViewSet, basename='user')
 router.register(r'groups', views.BaseGroupViewSet, basename='group')
 
-# Legacy redirect function - simpler implementation
+# Legacy redirect function - improved implementation
 def legacy_redirect(request, path=''):
+    """Redirect legacy API paths to versioned ones"""
     return HttpResponseRedirect(f'/api/v1/{path}')
 
 urlpatterns = [
@@ -39,22 +40,13 @@ urlpatterns = [
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     
     # Version 1 API
-    path('v1/', include([
-        path('', include(router.urls)),
-        path('provider/', include('provider.api.urls')),
-        path('patient/', include('patient.api.urls')),
-        path('auth/', include('rest_framework.urls')),
-        path('token-auth/', token_views.obtain_auth_token, name='api-token-auth'),
-    ])),
+    path('v1/', include('api.v1.urls')),
     
-    # Explicit redirects for legacy provider endpoints
-    path('provider/', legacy_redirect),
-    path('provider/<path:path>', legacy_redirect),
+    # Legacy API redirects - these need to be BEFORE the api/ include
+    # We use r'^provider/' instead of r'^provider' to ensure the pattern matches correctly
+    re_path(r'^provider/(?P<path>.*)', lambda request, path: HttpResponseRedirect(f'/api/v1/provider/{path}')),
+    re_path(r'^patient/(?P<path>.*)', lambda request, path: HttpResponseRedirect(f'/api/v1/patient/{path}')),
     
-    # Explicit redirects for legacy patient endpoints  
-    path('patient/', legacy_redirect),
-    path('patient/<path:path>', legacy_redirect),
-    
-    # Redirect root to v1
+    # Root path redirect
     path('', lambda request: HttpResponseRedirect('v1/')),
 ]

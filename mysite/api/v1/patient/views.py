@@ -1,4 +1,4 @@
-# patient/api/views.py
+# mysite/api/v1/patient/views.py
 from rest_framework import viewsets, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -16,14 +16,17 @@ from .filters import (
     AppointmentFilter, PrescriptionFilter, 
     MessageFilter, PrescriptionRequestFilter
 )
+from api.versioning import VersionedViewMixin
+from django.db.models import Q 
 
-class PatientViewSet(viewsets.ReadOnlyModelViewSet):
+class PatientViewSet(VersionedViewMixin, viewsets.ReadOnlyModelViewSet):
     """
     API endpoint that allows patients to view their own profile.
     Patients can only see their own profile.
     """
     serializer_class = PatientSerializer
     permission_classes = [permissions.IsAuthenticated, IsPatientOwner]
+    version = 'v1'
     
     def get_queryset(self):
         if hasattr(self.request.user, 'patient_profile'):
@@ -38,7 +41,7 @@ class PatientViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(serializer.data)
         return Response({"detail": "Patient profile not found."}, status=404)
 
-class AppointmentViewSet(viewsets.ReadOnlyModelViewSet):
+class AppointmentViewSet(VersionedViewMixin, viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for patient appointments.
     Patients can only see their own appointments.
@@ -50,6 +53,7 @@ class AppointmentViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['reason', 'notes', 'doctor__user__last_name']
     ordering_fields = ['time', 'status']
     ordering = ['time']
+    version = 'v1'
     
     def get_queryset(self):
         if hasattr(self.request.user, 'patient_profile'):
@@ -80,7 +84,7 @@ class AppointmentViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-class PrescriptionViewSet(viewsets.ReadOnlyModelViewSet):
+class PrescriptionViewSet(VersionedViewMixin, viewsets.ReadOnlyModelViewSet):
     """
     API endpoint for patient prescriptions.
     Patients can only see their own prescriptions.
@@ -92,6 +96,7 @@ class PrescriptionViewSet(viewsets.ReadOnlyModelViewSet):
     search_fields = ['medication_name', 'instructions', 'doctor__user__last_name']
     ordering_fields = ['created_at', 'status', 'expires']
     ordering = ['-created_at']
+    version = 'v1'
     
     def get_queryset(self):
         if hasattr(self.request.user, 'patient_profile'):
@@ -105,7 +110,7 @@ class PrescriptionViewSet(viewsets.ReadOnlyModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-class PrescriptionRequestViewSet(viewsets.ModelViewSet):
+class PrescriptionRequestViewSet(VersionedViewMixin, viewsets.ModelViewSet):
     """
     API endpoint for prescription requests.
     Patients can only see, create and modify their own prescription requests.
@@ -117,6 +122,7 @@ class PrescriptionRequestViewSet(viewsets.ModelViewSet):
     search_fields = ['medication_name', 'preferred_pharmacy']
     ordering_fields = ['created_at', 'status']
     ordering = ['-created_at']
+    version = 'v1'
     
     def get_queryset(self):
         if hasattr(self.request.user, 'patient_profile'):
@@ -127,7 +133,7 @@ class PrescriptionRequestViewSet(viewsets.ModelViewSet):
         if hasattr(self.request.user, 'patient_profile'):
             serializer.save(patient=self.request.user.patient_profile)
 
-class MessageViewSet(viewsets.ModelViewSet):
+class MessageViewSet(VersionedViewMixin, viewsets.ModelViewSet):
     """
     API endpoint for patient messages.
     Patients can see and create messages they've sent or received.
@@ -139,6 +145,7 @@ class MessageViewSet(viewsets.ModelViewSet):
     search_fields = ['subject', 'content']
     ordering_fields = ['created_at', 'status']
     ordering = ['-created_at']
+    version = 'v1'
     
     def get_queryset(self):
         if not self.request.user.is_authenticated:
@@ -146,11 +153,10 @@ class MessageViewSet(viewsets.ModelViewSet):
             
         # Get messages where the user is either the sender or recipient
         return Message.objects.filter(
-            recipient=self.request.user
-        ).exclude(
-            status='deleted'
+            Q(recipient=self.request.user) & 
+            ~Q(status='deleted')
         ) | Message.objects.filter(
-            sender=self.request.user
+            Q(sender=self.request.user)
         )
     
     @action(detail=False, methods=['get'])
@@ -184,3 +190,6 @@ class MessageViewSet(viewsets.ModelViewSet):
             
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+        
+    def perform_create(self, serializer):
+        serializer.save(sender=self.request.user, sender_type='patient')

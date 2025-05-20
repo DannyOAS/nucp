@@ -1,34 +1,20 @@
-"""
-URL configuration for mysite project.
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-"""
-URL configuration for mysite project.
-"""
-# mysite/urls.py
+# mysite/mysite/urls.py
 from django.contrib import admin
 from django.urls import include, path, re_path
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import redirect
 from rest_framework import permissions
 from drf_yasg.views import get_schema_view
 from drf_yasg import openapi
 
-# Legacy API redirects
-def api_legacy_redirect(request, path=''):
-    """Redirect legacy API paths to versioned ones"""
-    return HttpResponseRedirect(f'/api/v1/{path}')
+# Simplest approach - direct endpoint mapping
+def legacy_provider_redirect(request, endpoint=''):
+    """Redirect legacy provider API paths to versioned ones"""
+    return HttpResponseRedirect(f'/api/v1/provider/{endpoint}')
+
+def legacy_patient_redirect(request, endpoint=''):
+    """Redirect legacy patient API paths to versioned ones"""
+    return HttpResponseRedirect(f'/api/v1/patient/{endpoint}')
 
 schema_view = get_schema_view(
     openapi.Info(
@@ -53,19 +39,19 @@ urlpatterns = [
     path('provider/', include('provider.urls')),
     path('patient/', include('patient.urls')),
     
+    # Legacy API redirects - using the simpler approach with specific functions
+    path('api/provider/', legacy_provider_redirect),
+    re_path(r'^api/provider/(?P<endpoint>.+)$', legacy_provider_redirect),
+    path('api/patient/', legacy_patient_redirect),
+    re_path(r'^api/patient/(?P<endpoint>.+)$', legacy_patient_redirect),
+    
     # Versioned API - v1
     path('api/v1/', include('api.v1.urls')),
     
-    # Legacy API endpoints (redirect to versioned)
+    # Other legacy API endpoints (redirect to versioned)
     path('api/', lambda request: redirect('/api/v1/')),
     path('api/users/', lambda request: redirect('/api/v1/users/')),
     path('api/groups/', lambda request: redirect('/api/v1/groups/')),
-    path('api/patient/', 
-         lambda request: redirect(f'/api/v1/patient{request.path[12:]}'),
-         name='legacy_patient_api'),
-    path('api/provider/', 
-         lambda request: redirect(f'/api/v1/provider{request.path[13:]}'),
-         name='legacy_provider_api'),
     
     # Swagger documentation
     re_path(r'^api/docs(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

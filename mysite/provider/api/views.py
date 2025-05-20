@@ -12,7 +12,8 @@ from .serializers import (
 )
 from django.db import models  # For Q objects
 from patient.models import Patient
-from patient.api.serializers import PatientSerializer  # Import the existing patient serializer
+#from patient.api.serializers import PatientSerializer  # Import the existing patient serializer
+from api.v1.patient.serializers import PatientSerializer
 from .permissions import IsProvider  # Import the permission from the new file
 from .pagination import VersionedPagination  # Import the custom pagination class
 

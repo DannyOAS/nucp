@@ -1,4 +1,4 @@
-# provider/api/urls.py
+# mysite/api/v1/provider/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import (
@@ -6,9 +6,8 @@ from .views import (
     ClinicalNoteViewSet, DocumentTemplateViewSet, GeneratedDocumentViewSet,
     RecordingSessionViewSet, ProviderPatientsViewSet, MessageViewSet
 )
-from .views import ProviderPatientsViewSet  # Import the new ViewSet
 
-app_name = 'provider_api'  # Add this line
+app_name = 'provider_api_v1'
 
 router = DefaultRouter()
 router.register(r'profile', ProviderViewSet, basename='provider-profile')
