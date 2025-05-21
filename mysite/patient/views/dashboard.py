@@ -1,91 +1,72 @@
 # patient/views/dashboard.py
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from patient.decorators import patient_required
-from common.models import Message, Appointment, Prescription
+import logging
 
-# Uncomment for API-based implementation
-# import requests
-# from django.conf import settings
-# from patient.utils import get_auth_header
+from patient.services.dashboard_service import DashboardService
+from patient.utils import get_current_patient
+from api.v1.patient.serializers import (
+    AppointmentSerializer, PrescriptionSerializer, MessageSerializer
+)
+
+logger = logging.getLogger(__name__)
 
 @patient_required
 def patient_dashboard(request):
-    """Patient dashboard view using database models"""
-    patient = request.patient  # Injected by decorator
+    """
+    Patient dashboard view displaying recent appointments, prescriptions and messages.
+    Uses service layer to retrieve data and API serializers for formatting.
+    """
+    # Get the current patient
+    patient, patient_dict = get_current_patient(request)
     
-    # Get recent appointments - use request.user since Appointment.patient is a User FK
-    appointments = Appointment.objects.filter(patient=request.user).order_by('-time')[:5]
+    # If the function returns None, it has already redirected
+    if patient is None:
+        return redirect('unauthorized')
     
-    # Get recent prescriptions - use request.user since Prescription.patient is a User FK
-    prescriptions = Prescription.objects.filter(patient=request.user).order_by('-created_at')[:5]
-    
-    # Get recent messages
-    recent_messages = Message.objects.filter(
-        recipient=request.user
-    ).exclude(
-        status='deleted'
-    ).order_by('-created_at')[:5]
-    
-    # Get unread message count
-    unread_messages_count = Message.objects.filter(
-        recipient=request.user, 
-        status='unread'
-    ).count()
-    
-    context = {
-        'patient': patient,
-        'patient_name': patient.full_name,
-        'appointments': appointments,
-        'prescriptions': prescriptions,
-        'recent_messages': recent_messages,
-        'unread_messages_count': unread_messages_count,
-        'active_section': 'dashboard',
-    }
-    
-    # # Uncomment for API-based implementation
-    # api_url = f"{settings.API_BASE_URL}/api/patient/"
-    # headers = get_auth_header(request)
-    # 
-    # try:
-    #     # Get recent appointments
-    #     appointments_response = requests.get(
-    #         f"{api_url}appointments/?limit=5",
-    #         headers=headers
-    #     )
-    #     appointments = appointments_response.json()['results'] if appointments_response.ok else []
-    #     
-    #     # Get recent prescriptions
-    #     prescriptions_response = requests.get(
-    #         f"{api_url}prescriptions/?limit=5",
-    #         headers=headers
-    #     )
-    #     prescriptions = prescriptions_response.json()['results'] if prescriptions_response.ok else []
-    #     
-    #     # Get recent messages
-    #     messages_response = requests.get(
-    #         f"{api_url}messages/inbox/?limit=5",
-    #         headers=headers
-    #     )
-    #     recent_messages = messages_response.json()['results'] if messages_response.ok else []
-    #     
-    #     # Get unread message count
-    #     unread_count_response = requests.get(
-    #         f"{api_url}messages/inbox/?status=unread&count_only=true",
-    #         headers=headers
-    #     )
-    #     unread_messages_count = unread_count_response.json()['count'] if unread_count_response.ok else 0
-    #     
-    #     context = {
-    #         'patient': patient,
-    #         'patient_name': patient.full_name,
-    #         'appointments': appointments,
-    #         'prescriptions': prescriptions,
-    #         'recent_messages': recent_messages,
-    #         'unread_messages_count': unread_messages_count,
-    #         'active_section': 'dashboard',
-    #     }
-    # except Exception as e:
-    #     # Handle API errors
-    #     messages.error(request, f"Error loading dashboard data: {str(e)}")
+    try:
+        # Get dashboard data from service
+        dashboard_data = DashboardService.get_dashboard_data(patient.id)
+        
+        # Format appointments using API serializer if needed
+        appointments = dashboard_data.get('appointments', [])
+        if hasattr(appointments, 'model'):
+            serializer = AppointmentSerializer(appointments, many=True)
+            dashboard_data['appointments'] = serializer.data
+        
+        # Format prescriptions using API serializer if needed
+        prescriptions = dashboard_data.get('prescriptions', [])
+        if hasattr(prescriptions, 'model'):
+            serializer = PrescriptionSerializer(prescriptions, many=True)
+            dashboard_data['prescriptions'] = serializer.data
+        
+        # Format messages using API serializer if needed
+        recent_messages = dashboard_data.get('recent_messages', [])
+        if hasattr(recent_messages, 'model'):
+            serializer = MessageSerializer(recent_messages, many=True)
+            dashboard_data['recent_messages'] = serializer.data
+        
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'appointments': dashboard_data.get('appointments', []),
+            'prescriptions': dashboard_data.get('prescriptions', []),
+            'recent_messages': dashboard_data.get('recent_messages', []),
+            'unread_messages_count': dashboard_data.get('unread_messages_count', 0),
+            'active_section': 'dashboard',
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving dashboard data: {str(e)}")
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'appointments': [],
+            'prescriptions': [],
+            'recent_messages': [],
+            'unread_messages_count': 0,
+            'active_section': 'dashboard',
+        }
+        messages.error(request, "There was an error loading your dashboard. Please try again later.")
     
     return render(request, "patient/dashboard.html", context)

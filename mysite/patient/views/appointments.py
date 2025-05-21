@@ -1,357 +1,219 @@
 # patient/views/appointments.py
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
-from django.utils import timezone
-from datetime import datetime, timedelta
 from patient.decorators import patient_required
-from common.models import Appointment
-from provider.models import Provider
-from patient.services.appointment_service import AppointmentService
+import logging
 
-# Uncomment for API-based implementation
-# import requests
-# import json
-# from django.conf import settings
-# from patient.utils import get_auth_header
+from patient.services.appointment_service import AppointmentService
+from patient.utils import get_current_patient
+from api.v1.patient.serializers import AppointmentSerializer
+
+logger = logging.getLogger(__name__)
 
 @patient_required
 def appointments_view(request):
-    """Patient appointments view using database models"""
-    patient = request.patient
+    """
+    Patient appointments view showing upcoming and past appointments.
+    Uses service layer to retrieve data and API serializers for formatting.
+    """
+    # Get the current patient
+    patient, patient_dict = get_current_patient(request)
     
-    # Get appointments - use request.user instead of patient
-    today = timezone.now()
-    upcoming_appointments = Appointment.objects.filter(
-        patient=request.user,  # Use request.user, not patient
-        time__gte=today
-    ).order_by('time')
+    # If the function returns None, it has already redirected
+    if patient is None:
+        return redirect('unauthorized')
     
-    past_appointments = Appointment.objects.filter(
-        patient=request.user,  # Use request.user, not patient
-        time__lt=today
-    ).order_by('-time')[:10]  # Last 10 past appointments
-    
-    context = {
-        'patient': patient,
-        'patient_name': patient.full_name,
-        'appointments': upcoming_appointments,
-        'past_appointments': past_appointments,
-        'today': today,
-        'active_section': 'appointments'
-    }
-    
-    # # Uncomment for API-based implementation
-    # api_url = f"{settings.API_BASE_URL}/api/patient/"
-    # headers = get_auth_header(request)
-    # 
-    # try:
-    #     # Get upcoming appointments
-    #     upcoming_response = requests.get(
-    #         f"{api_url}appointments/upcoming/",
-    #         headers=headers
-    #     )
-    #     upcoming_appointments = upcoming_response.json()['results'] if upcoming_response.ok else []
-    #     
-    #     # Get past appointments
-    #     past_response = requests.get(
-    #         f"{api_url}appointments/past/?limit=10",
-    #         headers=headers
-    #     )
-    #     past_appointments = past_response.json()['results'] if past_response.ok else []
-    #     
-    #     context = {
-    #         'patient': patient,
-    #         'patient_name': patient.full_name,
-    #         'appointments': upcoming_appointments,
-    #         'past_appointments': past_appointments,
-    #         'today': today,
-    #         'active_section': 'appointments'
-    #     }
-    # except Exception as e:
-    #     # Handle API errors
-    #     messages.error(request, f"Error loading appointments: {str(e)}")
+    try:
+        # Get appointments data from service
+        appointments_data = AppointmentService.get_patient_appointments(patient.id)
+        
+        # Format appointments using API serializer if needed
+        upcoming_appointments = appointments_data.get('upcoming_appointments', [])
+        if hasattr(upcoming_appointments, 'model'):
+            serializer = AppointmentSerializer(upcoming_appointments, many=True)
+            appointments_data['upcoming_appointments'] = serializer.data
+        
+        past_appointments = appointments_data.get('past_appointments', [])
+        if hasattr(past_appointments, 'model'):
+            serializer = AppointmentSerializer(past_appointments, many=True)
+            appointments_data['past_appointments'] = serializer.data
+        
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'appointments': appointments_data.get('upcoming_appointments', []),
+            'past_appointments': appointments_data.get('past_appointments', []),
+            'today': appointments_data.get('today', None),
+            'active_section': 'appointments'
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving appointments: {str(e)}")
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'appointments': [],
+            'past_appointments': [],
+            'today': None,
+            'active_section': 'appointments'
+        }
+        messages.error(request, "There was an error loading your appointments. Please try again later.")
     
     return render(request, "patient/appointments.html", context)
 
 @patient_required
 def schedule_appointment(request):
-    """Schedule new appointment using database models"""
-    patient = request.patient
+    """
+    View for patient to schedule a new appointment.
+    Uses service layer for business logic and data retrieval.
+    """
+    # Get the current patient
+    patient, patient_dict = get_current_patient(request)
+    
+    # If the function returns None, it has already redirected
+    if patient is None:
+        return redirect('unauthorized')
     
     if request.method == 'POST':
-        # Get form data
-        provider_id = request.POST.get('doctor')
-        appointment_date = request.POST.get('appointment_date')
-        appointment_time = request.POST.get('appointment_time')
-        appointment_type = request.POST.get('appointment_type')
-        reason = request.POST.get('reason')
-        notes = request.POST.get('notes', '')
+        try:
+            # Process appointment creation via service
+            result = AppointmentService.schedule_appointment(
+                patient_id=patient.id,
+                form_data=request.POST
+            )
+            
+            if result.get('success', False):
+                messages.success(request, "Appointment scheduled successfully!")
+                return redirect('patient:patient_appointments')
+            else:
+                messages.error(request, result.get('error', "Error scheduling appointment."))
+        except Exception as e:
+            logger.error(f"Error scheduling appointment: {str(e)}")
+            messages.error(request, f"Error scheduling appointment: {str(e)}")
+    
+    # For GET requests, prepare the scheduling form
+    try:
+        # Get form data from service
+        form_data = AppointmentService.get_scheduling_form_data(patient.id)
         
-        # Use the service to schedule the appointment
-        result = AppointmentService.schedule_appointment(
-            patient=patient,
-            doctor_id=provider_id,
-            appointment_date=appointment_date,
-            appointment_time=appointment_time,
-            appointment_type=appointment_type,
-            reason=reason,
-            notes=notes
-        )
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'available_providers': form_data.get('available_providers', []),
+            'available_dates': form_data.get('available_dates', []),
+            'available_times': form_data.get('available_times', []),
+            'active_section': 'appointments'
+        }
+    except Exception as e:
+        logger.error(f"Error loading scheduling form: {str(e)}")
+        # Default fallback data
+        from django.utils import timezone
+        from datetime import timedelta
         
-        if isinstance(result, Appointment):
-            messages.success(request, "Appointment scheduled successfully!")
-            return redirect('patient:patient_appointments')
-        else:
-            messages.error(request, f"Error scheduling appointment: {result.get('error', 'Please try again.')}")
-    
-    # For GET requests, display the scheduling form
-    available_providers = Provider.objects.filter(is_active=True)
-    
-    # Generate available time slots
-    available_dates = []
-    start_date = timezone.now().date()
-    for i in range(14):  # Next two weeks
-        available_dates.append((start_date + timedelta(days=i)).strftime('%Y-%m-%d'))
-    
-    available_times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM']
-    
-    context = {
-        'patient': patient,
-        'patient_name': patient.full_name,
-        'available_providers': available_providers,
-        'available_dates': available_dates,
-        'available_times': available_times,
-        'active_section': 'appointments'
-    }
-    
-    # # Uncomment for API-based implementation
-    # api_url = f"{settings.API_BASE_URL}/api/patient/"
-    # headers = get_auth_header(request)
-    # 
-    # if request.method == 'POST':
-    #     # Prepare API payload
-    #     payload = {
-    #         'doctor': request.POST.get('doctor'),
-    #         'appointment_date': request.POST.get('appointment_date'),
-    #         'appointment_time': request.POST.get('appointment_time'),
-    #         'appointment_type': request.POST.get('appointment_type'),
-    #         'reason': request.POST.get('reason'),
-    #         'notes': request.POST.get('notes', '')
-    #     }
-    #     
-    #     try:
-    #         # Make API request to schedule appointment
-    #         response = requests.post(
-    #             f"{api_url}appointments/",
-    #             headers=headers,
-    #             json=payload
-    #         )
-    #         
-    #         if response.ok:
-    #             messages.success(request, "Appointment scheduled successfully!")
-    #             return redirect('patient:patient_appointments')
-    #         else:
-    #             error_message = response.json().get('detail', 'Please try again.')
-    #             messages.error(request, f"Error scheduling appointment: {error_message}")
-    #     except Exception as e:
-    #         messages.error(request, f"Error scheduling appointment: {str(e)}")
-    # 
-    # # For GET requests, get providers, dates, and times
-    # try:
-    #     # Get available providers
-    #     providers_response = requests.get(
-    #         f"{settings.API_BASE_URL}/api/providers/",
-    #         headers=headers
-    #     )
-    #     available_providers = providers_response.json()['results'] if providers_response.ok else []
-    #     
-    #     # Get available slots
-    #     slots_response = requests.get(
-    #         f"{api_url}appointments/available-slots/",
-    #         headers=headers
-    #     )
-    #     
-    #     if slots_response.ok:
-    #         slots_data = slots_response.json()
-    #         available_dates = slots_data.get('dates', [])
-    #         available_times = slots_data.get('times', [])
-    #     else:
-    #         # Fallback to default values
-    #         available_dates = []
-    #         start_date = timezone.now().date()
-    #         for i in range(14):  # Next two weeks
-    #             available_dates.append((start_date + timedelta(days=i)).strftime('%Y-%m-%d'))
-    #         
-    #         available_times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM']
-    #     
-    #     context = {
-    #         'patient': patient,
-    #         'patient_name': patient.full_name,
-    #         'available_providers': available_providers,
-    #         'available_dates': available_dates,
-    #         'available_times': available_times,
-    #         'active_section': 'appointments'
-    #     }
-    # except Exception as e:
-    #     messages.error(request, f"Error loading appointment form: {str(e)}")
+        start_date = timezone.now().date()
+        available_dates = [(start_date + timedelta(days=i)).strftime('%Y-%m-%d') for i in range(14)]
+        available_times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM']
+        
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'available_providers': [],
+            'available_dates': available_dates,
+            'available_times': available_times,
+            'active_section': 'appointments'
+        }
+        messages.warning(request, "There was an issue loading available appointments. Using default options.")
     
     return render(request, "patient/schedule_appointment.html", context)
 
 @patient_required
 def reschedule_appointment(request, appointment_id):
-    """View for patient to reschedule an existing appointment"""
-    patient = request.patient
+    """
+    View for patient to reschedule an existing appointment.
+    Uses service layer for validation and business logic.
+    """
+    # Get the current patient
+    patient, patient_dict = get_current_patient(request)
     
-    # Get the appointment
+    # If the function returns None, it has already redirected
+    if patient is None:
+        return redirect('unauthorized')
+    
     try:
-        appointment = Appointment.objects.get(id=appointment_id, patient=request.user)
-    except Appointment.DoesNotExist:
-        messages.error(request, "Appointment not found.")
-        return redirect('patient:patient_appointments')
-    
-    if request.method == 'POST':
-        # Extract new appointment time from form
-        new_time_data = {
-            'time': request.POST.get('appointment_date') + ' - ' + request.POST.get('appointment_time')
-        }
-        
-        # Use the service to reschedule the appointment
-        result = AppointmentService.reschedule_appointment(
+        # Verify appointment ownership and get details
+        appointment_data = AppointmentService.get_appointment_for_reschedule(
             appointment_id=appointment_id,
-            patient=patient,
-            new_time_data=new_time_data
+            patient_id=patient.id
         )
         
-        if result.get('success'):
-            messages.success(request, "Appointment rescheduled successfully!")
+        if not appointment_data.get('success', False):
+            messages.error(request, appointment_data.get('error', "Appointment not found."))
             return redirect('patient:patient_appointments')
-        else:
-            messages.error(request, f"There was an error rescheduling your appointment: {result.get('error', 'Please try again.')}")
-    
-    # For GET requests, display the rescheduling form
-    # Generate available time slots
-    available_dates = []
-    start_date = timezone.now().date()
-    for i in range(14):  # Next two weeks
-        available_dates.append((start_date + timedelta(days=i)).strftime('%Y-%m-%d'))
-    
-    available_times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM']
-    
-    context = {
-        'patient': patient,
-        'patient_name': patient.full_name,
-        'appointment': appointment,
-        'available_dates': available_dates,
-        'available_times': available_times,
-        'active_section': 'appointments'
-    }
-    
-    # # Uncomment for API-based implementation
-    # api_url = f"{settings.API_BASE_URL}/api/patient/"
-    # headers = get_auth_header(request)
-    # 
-    # try:
-    #     # Get appointment details
-    #     appointment_response = requests.get(
-    #         f"{api_url}appointments/{appointment_id}/",
-    #         headers=headers
-    #     )
-    #     
-    #     if not appointment_response.ok:
-    #         messages.error(request, "Appointment not found or you don't have permission to view it.")
-    #         return redirect('patient:patient_appointments')
-    #     
-    #     appointment = appointment_response.json()
-    #     
-    #     if request.method == 'POST':
-    #         # Prepare API payload
-    #         payload = {
-    #             'appointment_date': request.POST.get('appointment_date'),
-    #             'appointment_time': request.POST.get('appointment_time')
-    #         }
-    #         
-    #         # Make API request to reschedule appointment
-    #         reschedule_response = requests.patch(
-    #             f"{api_url}appointments/{appointment_id}/",
-    #             headers=headers,
-    #             json=payload
-    #         )
-    #         
-    #         if reschedule_response.ok:
-    #             messages.success(request, "Appointment rescheduled successfully!")
-    #             return redirect('patient:patient_appointments')
-    #         else:
-    #             error_message = reschedule_response.json().get('detail', 'Please try again.')
-    #             messages.error(request, f"There was an error rescheduling your appointment: {error_message}")
-    #     
-    #     # Get available slots
-    #     slots_response = requests.get(
-    #         f"{api_url}appointments/available-slots/",
-    #         headers=headers
-    #     )
-    #     
-    #     if slots_response.ok:
-    #         slots_data = slots_response.json()
-    #         available_dates = slots_data.get('dates', [])
-    #         available_times = slots_data.get('times', [])
-    #     else:
-    #         # Fallback to default values
-    #         available_dates = []
-    #         start_date = timezone.now().date()
-    #         for i in range(14):  # Next two weeks
-    #             available_dates.append((start_date + timedelta(days=i)).strftime('%Y-%m-%d'))
-    #         
-    #         available_times = ['9:00 AM', '10:00 AM', '11:00 AM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM']
-    #     
-    #     context = {
-    #         'patient': patient,
-    #         'patient_name': patient.full_name,
-    #         'appointment': appointment,
-    #         'available_dates': available_dates,
-    #         'available_times': available_times,
-    #         'active_section': 'appointments'
-    #     }
-    # except Exception as e:
-    #     messages.error(request, f"Error loading appointment data: {str(e)}")
-    #     return redirect('patient:patient_appointments')
+        
+        # Format appointment data using serializer if needed
+        appointment = appointment_data.get('appointment')
+        if appointment and hasattr(appointment, '__dict__'):
+            serializer = AppointmentSerializer(appointment)
+            appointment = serializer.data
+        
+        if request.method == 'POST':
+            # Process reschedule via service
+            result = AppointmentService.reschedule_appointment(
+                appointment_id=appointment_id,
+                patient_id=patient.id,
+                form_data=request.POST
+            )
+            
+            if result.get('success', False):
+                messages.success(request, "Appointment rescheduled successfully!")
+                return redirect('patient:patient_appointments')
+            else:
+                messages.error(request, result.get('error', "Error rescheduling appointment."))
+        
+        # For GET requests, get available dates and times from service
+        form_data = AppointmentService.get_scheduling_form_data(patient.id)
+        
+        context = {
+            'patient': patient_dict,
+            'patient_name': patient.full_name,
+            'appointment': appointment,
+            'available_dates': form_data.get('available_dates', []),
+            'available_times': form_data.get('available_times', []),
+            'active_section': 'appointments'
+        }
+    except Exception as e:
+        logger.error(f"Error processing appointment reschedule: {str(e)}")
+        messages.error(request, "There was an error loading the appointment details.")
+        return redirect('patient:patient_appointments')
     
     return render(request, "patient/reschedule_appointment.html", context)
 
 @patient_required
 def cancel_appointment(request, appointment_id):
-    """View for patient to cancel an appointment"""
-    patient = request.patient
+    """
+    View for patient to cancel an appointment.
+    Uses service layer for validation and cancellation logic.
+    """
+    # Get the current patient
+    patient, patient_dict = get_current_patient(request)
+    
+    # If the function returns None, it has already redirected
+    if patient is None:
+        return redirect('unauthorized')
     
     if request.method == 'POST':
-        # Use the service to cancel the appointment
-        result = AppointmentService.cancel_appointment(
-            appointment_id=appointment_id,
-            patient=patient
-        )
-        
-        if result.get('success'):
-            messages.success(request, "Appointment cancelled successfully.")
-        else:
-            messages.error(request, f"There was an error cancelling your appointment: {result.get('error', 'Please try again.')}")
-    
-    # # Uncomment for API-based implementation
-    # api_url = f"{settings.API_BASE_URL}/api/patient/"
-    # headers = get_auth_header(request)
-    # 
-    # if request.method == 'POST':
-    #     try:
-    #         # Make API request to cancel appointment
-    #         cancel_response = requests.post(
-    #             f"{api_url}appointments/{appointment_id}/cancel/",
-    #             headers=headers
-    #         )
-    #         
-    #         if cancel_response.ok:
-    #             messages.success(request, "Appointment cancelled successfully.")
-    #         else:
-    #             error_message = cancel_response.json().get('detail', 'Please try again.')
-    #             messages.error(request, f"There was an error cancelling your appointment: {error_message}")
-    #     except Exception as e:
-    #         messages.error(request, f"Error cancelling appointment: {str(e)}")
+        try:
+            # Cancel appointment via service
+            result = AppointmentService.cancel_appointment(
+                appointment_id=appointment_id,
+                patient_id=patient.id
+            )
+            
+            if result.get('success', False):
+                messages.success(request, "Appointment cancelled successfully.")
+            else:
+                messages.error(request, result.get('error', "Error cancelling appointment."))
+        except Exception as e:
+            logger.error(f"Error cancelling appointment: {str(e)}")
+            messages.error(request, f"Error cancelling appointment: {str(e)}")
     
     return redirect('patient:patient_appointments')

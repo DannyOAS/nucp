@@ -11,64 +11,38 @@ from django.contrib import messages
 from patient.models import Patient
 
 logger = logging.getLogger(__name__)
-
-def get_current_patient(request, redirect_on_failure=True):
+def get_current_patient(request):
     """
-    Get the Patient object for the currently authenticated user.
-    
-    This is the central function for retrieving the current patient.
-    All patient views should use this function to ensure consistency.
+    Get the current patient object and dictionary representation
     
     Args:
-        request: The HTTP request object containing the authenticated user
-        redirect_on_failure: Whether to redirect to unauthorized page if no patient is found
+        request: HttpRequest object
         
     Returns:
-        Patient: The Patient model instance
-            
-    Note:
-        If no patient is found and redirect_on_failure is True, this function
-        will redirect to the 'unauthorized' view and not return.
+        tuple: (patient, patient_dict) or (None, None) if not found
     """
-    user = request.user
+    if not hasattr(request, 'patient'):
+        return None, None
     
-    # Check if user is authenticated
-    if not user.is_authenticated:
-        logger.warning("Unauthenticated user attempting to access patient view")
-        if redirect_on_failure:
-            messages.error(request, "You must be logged in to access this page.")
-            return redirect('login')
-        return None
+    patient = request.patient
     
-    # Check if user is in patients group
-    if not user.groups.filter(name='patients').exists():
-        logger.warning(f"User {user.username} is not in patients group")
-        if redirect_on_failure:
-            messages.error(request, "You don't have permission to access this page.")
-            return redirect('unauthorized')
-        return None
+    # Create a dictionary representation (useful for templates)
+    patient_dict = {
+        'id': patient.id,
+        'full_name': patient.full_name,
+        'first_name': patient.user.first_name,
+        'last_name': patient.user.last_name,
+        'email': patient.user.email,
+        'date_of_birth': patient.date_of_birth,
+        'ohip_number': patient.ohip_number,
+        'primary_phone': patient.primary_phone,
+        'alternate_phone': patient.alternate_phone,
+        'address': patient.address,
+        'emergency_contact_name': patient.emergency_contact_name,
+        'emergency_contact_phone': patient.emergency_contact_phone
+    }
     
-    try:
-        # Get the patient associated with this user
-        patient = Patient.objects.get(user=user)
-        logger.info(f"Patient retrieved: ID {patient.id}, User: {user.username}")
-        return patient
-        
-    except Patient.DoesNotExist:
-        logger.warning(f"No Patient record found for authenticated user: {user.username}")
-        
-        if redirect_on_failure:
-            messages.error(request, "Patient profile not found. Please contact support.")
-            return redirect('unauthorized')
-        return None
-    
-    except Exception as e:
-        logger.error(f"Error retrieving patient: {str(e)}")
-        if redirect_on_failure:
-            messages.error(request, "There was an error retrieving your patient information.")
-            return redirect('unauthorized')
-        return None
-
+    return patient, patient_dict
 def ensure_patient_profile(user):
     """
     Ensure a Patient profile exists for the given user.
