@@ -7,6 +7,7 @@ import logging
 from patient.services.appointment_service import AppointmentService
 from patient.utils import get_current_patient
 from api.v1.patient.serializers import AppointmentSerializer
+from patient.models import Patient
 
 logger = logging.getLogger(__name__)
 
@@ -38,11 +39,20 @@ def appointments_view(request):
             serializer = AppointmentSerializer(past_appointments, many=True)
             appointments_data['past_appointments'] = serializer.data
         
+        # Fixed syntax error: The line was incomplete and had invalid syntax
+        # providers_count = Patient.objects.get(id=patient.id).primary_provider.count() if patient.primary_provider else 0
+        
+        # Instead, use this simple approach to count providers
+        providers_count = 0
+        if hasattr(patient, 'primary_provider') and patient.primary_provider is not None:
+            providers_count = 1  # Since each patient has one primary provider
+        
         context = {
             'patient': patient_dict,
             'patient_name': patient.full_name,
             'appointments': appointments_data.get('upcoming_appointments', []),
             'past_appointments': appointments_data.get('past_appointments', []),
+            'providers_count': providers_count,
             'today': appointments_data.get('today', None),
             'active_section': 'appointments'
         }
@@ -53,6 +63,7 @@ def appointments_view(request):
             'patient_name': patient.full_name,
             'appointments': [],
             'past_appointments': [],
+            'providers_count': 0,
             'today': None,
             'active_section': 'appointments'
         }
@@ -60,6 +71,7 @@ def appointments_view(request):
     
     return render(request, "patient/appointments.html", context)
 
+# Remaining functions in the file stay the same
 @patient_required
 def schedule_appointment(request):
     """

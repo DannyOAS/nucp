@@ -9,7 +9,54 @@ from patient.utils import get_current_patient
 from api.v1.patient.serializers import PrescriptionSerializer
 
 logger = logging.getLogger(__name__)
-
+#
+#@patient_required
+#def patient_prescriptions(request):
+#    """
+#    Patient prescriptions view showing active and historical prescriptions.
+#    Uses service layer to retrieve data and API serializers for formatting.
+#    """
+#    # Get the current patient
+#    patient, patient_dict = get_current_patient(request)
+#    
+#    # If the function returns None, it has already redirected
+#    if patient is None:
+#        return redirect('unauthorized')
+#    
+#    try:
+#        # Get prescriptions data from service
+#        prescriptions_data = PrescriptionService.get_patient_prescriptions(patient.id)
+#        
+#        # Format prescriptions using API serializer if needed
+#        active_prescriptions = prescriptions_data.get('active_prescriptions', [])
+#        if hasattr(active_prescriptions, 'model'):
+#            serializer = PrescriptionSerializer(active_prescriptions, many=True)
+#            prescriptions_data['active_prescriptions'] = serializer.data
+#        
+#        historical_prescriptions = prescriptions_data.get('historical_prescriptions', [])
+#        if hasattr(historical_prescriptions, 'model'):
+#            serializer = PrescriptionSerializer(historical_prescriptions, many=True)
+#            prescriptions_data['historical_prescriptions'] = serializer.data
+#        
+#        context = {
+#            'patient': patient_dict,
+#            'patient_name': patient.full_name,
+#            'active_prescriptions': prescriptions_data.get('active_prescriptions', []),
+#            'historical_prescriptions': prescriptions_data.get('historical_prescriptions', []),
+#            'active_section': 'prescriptions'
+#        }
+#    except Exception as e:
+#        logger.error(f"Error retrieving prescriptions: {str(e)}")
+#        context = {
+#            'patient': patient_dict,
+#            'patient_name': patient.full_name,
+#            'active_prescriptions': [],
+#            'historical_prescriptions': [],
+#            'active_section': 'prescriptions'
+#        }
+#        messages.error(request, "There was an error loading your prescriptions. Please try again later.")
+#    
+#    return render(request, "patient/prescriptions.html", context)
 @patient_required
 def patient_prescriptions(request):
     """
@@ -38,12 +85,27 @@ def patient_prescriptions(request):
             serializer = PrescriptionSerializer(historical_prescriptions, many=True)
             prescriptions_data['historical_prescriptions'] = serializer.data
         
+        # Calculate additional context variables
         context = {
             'patient': patient_dict,
             'patient_name': patient.full_name,
             'active_prescriptions': prescriptions_data.get('active_prescriptions', []),
             'historical_prescriptions': prescriptions_data.get('historical_prescriptions', []),
-            'active_section': 'prescriptions'
+            'active_section': 'prescriptions',
+            
+            # Additional context variables
+            'active_prescriptions_count': len(active_prescriptions),
+            'prescriptions_needing_renewal_count': len([
+                p for p in active_prescriptions 
+                if p.get('status') == 'Renewal Soon' or p.get('refills_remaining') <= 1
+            ]),
+            'primary_pharmacy': patient.pharmacy_details if hasattr(patient, 'pharmacy_details') else 'Not Set',
+            'primary_pharmacy_details': {
+                'name': patient.pharmacy_details if hasattr(patient, 'pharmacy_details') else 'Northern Pharmacy',
+                'address': getattr(patient, 'address', '123 Health Street'),
+                'phone': getattr(patient, 'primary_phone', '(555) 123-4567')
+            },
+            'pharmacy_delivery_info': 'Home delivery available for eligible prescriptions.'
         }
     except Exception as e:
         logger.error(f"Error retrieving prescriptions: {str(e)}")
@@ -52,7 +114,18 @@ def patient_prescriptions(request):
             'patient_name': patient.full_name,
             'active_prescriptions': [],
             'historical_prescriptions': [],
-            'active_section': 'prescriptions'
+            'active_section': 'prescriptions',
+            
+            # Fallback context variables
+            'active_prescriptions_count': 0,
+            'prescriptions_needing_renewal_count': 0,
+            'primary_pharmacy': 'Not Set',
+            'primary_pharmacy_details': {
+                'name': 'Northern Pharmacy',
+                'address': '',
+                'phone': ''
+            },
+            'pharmacy_delivery_info': 'Home delivery not currently available.'
         }
         messages.error(request, "There was an error loading your prescriptions. Please try again later.")
     

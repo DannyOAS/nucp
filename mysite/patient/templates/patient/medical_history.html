@@ -17,28 +17,30 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        {% for item in medical_history %}
-          <tr class="hover:bg-gray-50">
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900">{{ item.date }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900">{{ item.provider }}</div>
-            </td>
-            <td class="px-6 py-4 whitespace-nowrap">
-              <div class="text-sm text-gray-900">{{ item.description }}</div>
-            </td>
-            <td class="px-6 py-4">
-              <div class="text-sm text-gray-900">{{ item.notes }}</div>
-            </td>
-          </tr>
-        {% empty %}
+        {% if medical_history %}
+          {% for item in medical_history %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ item.date|date:"F j, Y"|default:"Unknown date" }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ item.provider|default:"Unknown provider" }}</div>
+              </td>
+              <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm text-gray-900">{{ item.description|default:"No description" }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-gray-900">{{ item.notes|default:"No notes" }}</div>
+              </td>
+            </tr>
+          {% endfor %}
+        {% else %}
           <tr>
             <td colspan="4" class="px-6 py-4 text-center text-gray-500">
-              No medical history available.
+              No medical history records available. Records will appear here once they are added by your healthcare provider.
             </td>
           </tr>
-        {% endfor %}
+        {% endif %}
       </tbody>
     </table>
   </div>

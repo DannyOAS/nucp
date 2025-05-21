@@ -8,12 +8,12 @@
       <h1 class="text-2xl font-bold text-gray-800">Appointments</h1>
       <p class="text-gray-600">Manage your upcoming and past appointments</p>
     </div>
-    <button class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+    <a href="{% url 'patient:schedule_appointment' %}" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
       </svg>
       Schedule New Appointment
-    </button>
+    </a>
   </div>
 
   <!-- Appointment stats -->
@@ -30,7 +30,7 @@
         </div>
         <div class="ml-4">
           <h3 class="text-sm text-gray-500">Upcoming Appointments</h3>
-          <p class="text-2xl font-semibold text-gray-800">2</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ appointments|length|default:"0" }}</p>
         </div>
       </div>
     </div>
@@ -44,7 +44,7 @@
         </div>
         <div class="ml-4">
           <h3 class="text-sm text-gray-500">Past Appointments</h3>
-          <p class="text-2xl font-semibold text-gray-800">8</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ past_appointments|length|default:"0" }}</p>
         </div>
       </div>
     </div>
@@ -58,7 +58,7 @@
         </div>
         <div class="ml-4">
           <h3 class="text-sm text-gray-500">Healthcare Providers</h3>
-          <p class="text-2xl font-semibold text-gray-800">3</p>
+          <p class="text-2xl font-semibold text-gray-800">{{ healthcare_providers|length|default:"0" }}</p>
         </div>
       </div>
     </div>
@@ -69,65 +69,63 @@
     <h2 class="text-xl font-bold text-gray-800 mb-4">Upcoming Appointments</h2>
     
     <div class="grid grid-cols-1 gap-4">
-      <!-- Appointment 1 -->
-      <div class="bg-white p-6 rounded-xl shadow">
-        <div class="flex flex-col md:flex-row justify-between gap-4">
-          <div class="flex-1">
-            <div class="flex items-center mb-2">
-              <span class="text-xl font-semibold text-gray-800">Dr. Johnson - General Checkup</span>
-              <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded">
-                In-Person
-              </span>
-            </div>
-            <p class="text-gray-600 mb-1"><span class="font-medium">Date:</span> April 3, 2025</p>
-            <p class="text-gray-600 mb-1"><span class="font-medium">Time:</span> 10:00 AM</p>
-            <p class="text-gray-600 mb-1"><span class="font-medium">Location:</span> Northern Health Clinic, Room 305</p>
-            <p class="text-gray-600 mb-4"><span class="font-medium">Notes:</span> Annual physical examination</p>
-            
-            <div class="flex flex-wrap gap-2">
-              <button class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium inline-block">Reschedule</button>
-              <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">Cancel</button>
-              <button class="text-gray-600 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">Add to Calendar</button>
+      {% if appointments %}
+        {% for appointment in appointments %}
+          <!-- Appointment card -->
+          <div class="bg-white p-6 rounded-xl shadow">
+            <div class="flex flex-col md:flex-row justify-between gap-4">
+              <div class="flex-1">
+                <div class="flex items-center mb-2">
+                  <span class="text-xl font-semibold text-gray-800">{{ appointment.doctor_name|default:"Provider" }} - {{ appointment.reason|default:"Appointment" }}</span>
+                  <span class="ml-2 px-2 py-1 bg-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-100 text-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-800 text-xs font-semibold rounded">
+                    {{ appointment.type|default:"In-Person" }}
+                  </span>
+                </div>
+                <p class="text-gray-600 mb-1"><span class="font-medium">Date:</span> {{ appointment.time|date:"F j, Y"|default:"(Not set)" }}</p>
+                <p class="text-gray-600 mb-1"><span class="font-medium">Time:</span> {{ appointment.time|time:"g:i A"|default:"(Not set)" }}</p>
+                <p class="text-gray-600 mb-1">
+                  <span class="font-medium">Location:</span> 
+                  {% if appointment.type == 'Virtual' %}
+                    Jitsi Video
+                  {% else %}
+                    {{ appointment.location|default:"Northern Health Clinic" }}
+                  {% endif %}
+                </p>
+                <p class="text-gray-600 mb-4"><span class="font-medium">Notes:</span> {{ appointment.notes|default:"" }}</p>
+                
+                <div class="flex flex-wrap gap-2">
+                  {% if appointment.type == 'Virtual' %}
+                    <a href="{% url 'patient:join_video_appointment' appointment.id %}" class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium inline-block">Join Meeting</a>
+                  {% endif %}
+                  <a href="{% url 'patient:reschedule_appointment' appointment.id %}" class="text-{% if appointment.type == 'Virtual' %}[#004d40]{% else %}white bg-[#004d40]{% endif %} {% if appointment.type == 'Virtual' %}border border-[#004d40] hover:bg-gray-50{% else %}hover:bg-[#00332e]{% endif %} px-3 py-1 rounded-md text-sm font-medium inline-block">Reschedule</a>
+                  <form method="post" action="{% url 'patient:cancel_appointment' appointment.id %}" class="inline" onsubmit="return confirm('Are you sure you want to cancel this appointment?');">
+                    {% csrf_token %}
+                    <button type="submit" class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">Cancel</button>
+                  </form>
+                  <button class="text-gray-600 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">Add to Calendar</button>
+                </div>
+              </div>
+              <div class="flex items-start justify-end">
+                <div class="bg-gray-100 p-3 rounded-lg text-center">
+                  <p class="text-sm text-gray-500">Appointment in</p>
+                  {% if appointment.time %}
+                    {% with time_diff=appointment.time|timeuntil %}
+                      <p class="text-lg font-bold text-[#004d40]">{{ time_diff }}</p>
+                    {% endwith %}
+                  {% else %}
+                    <p class="text-lg font-bold text-[#004d40]">TBD</p>
+                  {% endif %}
+                </div>
+              </div>
             </div>
           </div>
-          <div class="flex items-start justify-end">
-            <div class="bg-gray-100 p-3 rounded-lg text-center">
-              <p class="text-sm text-gray-500">Appointment in</p>
-              <p class="text-lg font-bold text-[#004d40]">1 day</p>
-            </div>
-          </div>
+        {% endfor %}
+      {% else %}
+        <div class="bg-white p-6 rounded-xl shadow text-center">
+          <p class="text-gray-600">No upcoming appointments scheduled.</p>
+          <a href="{% url 'patient:schedule_appointment' %}" class="mt-4 inline-block text-[#004d40] hover:underline font-semibold">Schedule an appointment</a>
         </div>
-      </div>
-      
-      <!-- Appointment 2 -->
-      <div class="bg-white p-6 rounded-xl shadow">
-        <div class="flex flex-col md:flex-row justify-between gap-4">
-          <div class="flex-1">
-            <div class="flex items-center mb-2">
-              <span class="text-xl font-semibold text-gray-800">Dr. Smith - Follow-up</span>
-              <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded">
-                Virtual
-              </span>
-            </div>
-            <p class="text-gray-600 mb-1"><span class="font-medium">Date:</span> April 10, 2025</p>
-            <p class="text-gray-600 mb-1"><span class="font-medium">Time:</span> 2:30 PM</p>
-            <p class="text-gray-600 mb-1"><span class="font-medium">Platform:</span> Jitsi Video</p>
-            <p class="text-gray-600 mb-4"><span class="font-medium">Notes:</span> Medication review and blood pressure check</p>
-            
-            <div class="flex flex-wrap gap-2">
-              <button class="text-white bg-[#004d40] hover:bg-[#00332e] px-3 py-1 rounded-md text-sm font-medium inline-block">Join Meeting</button>
-              <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">Reschedule</button>
-              <button class="text-gray-600 border border-gray-300 hover:bg-gray-50 px-3 py-1 rounded-md text-sm font-medium inline-block">Add to Calendar</button>
-            </div>
-          </div>
-          <div class="flex items-start justify-end">
-            <div class="bg-gray-100 p-3 rounded-lg text-center">
-              <p class="text-sm text-gray-500">Appointment in</p>
-              <p class="text-lg font-bold text-[#004d40]">8 days</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {% endif %}
     </div>
   </div>
 
@@ -135,7 +133,9 @@
   <div class="mb-8">
     <div class="flex justify-between items-center mb-4">
       <h2 class="text-xl font-bold text-gray-800">Past Appointments</h2>
-      <button class="text-[#004d40] hover:underline font-medium">View All</button>
+      {% if past_appointments|length > 3 %}
+        <button class="text-[#004d40] hover:underline font-medium">View All</button>
+      {% endif %}
     </div>
     
     <div class="bg-white shadow overflow-hidden rounded-lg">
@@ -151,63 +151,35 @@
             </tr>
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">Dr. Wilson</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">Mar 15, 2025, 11:30 AM</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                  Virtual
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">Prescription Review</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Notes</a>
-              </td>
-            </tr>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">Dr. Johnson</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">Feb 28, 2025, 3:00 PM</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                  In-Person
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">Blood Work Results</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Notes</a>
-              </td>
-            </tr>
-            <tr>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">Dr. Miller</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">Jan 10, 2025, 9:15 AM</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                  In-Person
-                </span>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900">Specialist Consultation</div>
-              </td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Notes</a>
-              </td>
-            </tr>
+            {% if past_appointments %}
+              {% for appointment in past_appointments %}
+                <tr>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm font-medium text-gray-900">{{ appointment.doctor_name|default:"Dr." }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ appointment.time|date:"M j, Y, g:i A"|default:"(Not set)" }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-100 text-{% if appointment.type == 'Virtual' %}green{% else %}blue{% endif %}-800">
+                      {{ appointment.type|default:"In-Person" }}
+                    </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="text-sm text-gray-900">{{ appointment.reason|default:"Consultation" }}</div>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View Notes</a>
+                  </td>
+                </tr>
+              {% endfor %}
+            {% else %}
+              <tr>
+                <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                  No past appointments to display.
+                </td>
+              </tr>
+            {% endif %}
           </tbody>
         </table>
       </div>
@@ -219,56 +191,30 @@
     <h2 class="text-xl font-bold text-gray-800 mb-4">Your Healthcare Team</h2>
     
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-      <div class="border border-gray-200 rounded-lg p-4">
-        <div class="flex items-center mb-3">
-          <div class="h-12 w-12 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-            <span class="text-blue-700 font-bold text-xl">JD</span>
+      {% if healthcare_providers %}
+        {% for provider in healthcare_providers %}
+          <div class="border border-gray-200 rounded-lg p-4">
+            <div class="flex items-center mb-3">
+              <div class="h-12 w-12 rounded-full bg-{% cycle 'blue' 'green' 'purple' %}-100 flex items-center justify-center mr-3">
+                <span class="text-{% cycle 'blue' 'green' 'purple' %}-700 font-bold text-xl">{{ provider.name|slice:":2" }}</span>
+              </div>
+              <div>
+                <h3 class="font-medium text-gray-800">{{ provider.name }}</h3>
+                <p class="text-sm text-gray-600">{{ provider.specialty|default:"Provider" }}</p>
+              </div>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">{{ provider.clinic|default:"Northern Health Clinic" }}</p>
+            <div class="flex gap-2">
+              <a href="{% url 'patient:patient_compose_message' %}?recipient={{ provider.id }}" class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Message</a>
+              <a href="{% url 'patient:schedule_appointment' %}?provider={{ provider.id }}" class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Schedule</a>
+            </div>
           </div>
-          <div>
-            <h3 class="font-medium text-gray-800">Dr. James Davis</h3>
-            <p class="text-sm text-gray-600">Primary Care Physician</p>
-          </div>
+        {% endfor %}
+      {% else %}
+        <div class="col-span-3 text-center p-4">
+          <p class="text-gray-600">No healthcare providers assigned to your account yet.</p>
         </div>
-        <p class="text-sm text-gray-600 mb-4">Northern Health Clinic</p>
-        <div class="flex gap-2">
-          <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Message</button>
-          <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Schedule</button>
-        </div>
-      </div>
-      
-      <div class="border border-gray-200 rounded-lg p-4">
-        <div class="flex items-center mb-3">
-          <div class="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center mr-3">
-            <span class="text-green-700 font-bold text-xl">AS</span>
-          </div>
-          <div>
-            <h3 class="font-medium text-gray-800">Dr. Amy Smith</h3>
-            <p class="text-sm text-gray-600">Cardiologist</p>
-          </div>
-        </div>
-        <p class="text-sm text-gray-600 mb-4">Heart Health Specialists</p>
-        <div class="flex gap-2">
-          <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Message</button>
-          <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Schedule</button>
-        </div>
-      </div>
-      
-      <div class="border border-gray-200 rounded-lg p-4">
-        <div class="flex items-center mb-3">
-          <div class="h-12 w-12 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-            <span class="text-purple-700 font-bold text-xl">MW</span>
-          </div>
-          <div>
-            <h3 class="font-medium text-gray-800">Dr. Michael Wilson</h3>
-            <p class="text-sm text-gray-600">Endocrinologist</p>
-          </div>
-        </div>
-        <p class="text-sm text-gray-600 mb-4">Diabetes Care Center</p>
-        <div class="flex gap-2">
-          <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Message</button>
-          <button class="text-[#004d40] border border-[#004d40] hover:bg-gray-50 px-3 py-1 rounded-md text-xs font-medium">Schedule</button>
-        </div>
-      </div>
+      {% endif %}
     </div>
   </div>
 </main>

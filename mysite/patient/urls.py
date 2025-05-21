@@ -20,15 +20,11 @@ urlpatterns = [
     path('appointments/reschedule/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
     path('appointments/cancel/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
 
-    # Email and messaging
+    # Email (keeping email, removing message URLs)
     path('email/', views.email_view, name='patient_email'),
-#    path('messages/', views.patient_messages, name='patient_messages'),
-#    path('messages/sent/', views.patient_sent_messages, name='patient_sent_messages'),
-#    path('messages/archived/', views.patient_archived_messages, name='patient_archived_messages'),
-#    path('messages/view/<int:message_id>/', views.patient_view_message, name='patient_view_message'),
-#    path('messages/compose/', views.patient_compose_message, name='patient_compose_message'),
-#    path('messages/action/<int:message_id>/<str:action>/', views.patient_message_action, name='patient_message_action'),
-
+    
+    # Removed message URLs
+    
     # Video
     path('jitsi-video/', views.jitsi_video_view, name='patient_jitsi'),
     
