@@ -8,7 +8,7 @@
       <h1 class="text-2xl font-bold text-gray-800">Schedule New Appointment</h1>
       <p class="text-gray-600">Complete the form to schedule an appointment with your healthcare provider</p>
     </div>
-    <a href="{% url 'patient_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+    <a href="{% url 'patient:patient_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
       </svg>
@@ -17,7 +17,7 @@
   </div>
 
   <div class="bg-white p-6 rounded-xl shadow mb-8">
-    <form method="post" action="{% url 'schedule_appointment' %}">
+    <form method="post" action="{% url 'patient:schedule_appointment' %}">
       {% csrf_token %}
 
       <!-- Provider Selection -->

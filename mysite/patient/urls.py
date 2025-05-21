@@ -1,6 +1,5 @@
 from django.urls import path
 from . import views
-#from .views import appointments, dashboard, messages, prescriptions, profile, video
 
 app_name = 'patient'
 
@@ -20,13 +19,16 @@ urlpatterns = [
     path('appointments/reschedule/<int:appointment_id>/', views.reschedule_appointment, name='reschedule_appointment'),
     path('appointments/cancel/<int:appointment_id>/', views.cancel_appointment, name='cancel_appointment'),
 
-    # Email (keeping email, removing message URLs)
+    # Email URLs
     path('email/', views.email_view, name='patient_email'),
-    
-    # Removed message URLs
+    path('email/compose/', views.compose_email, name='patient_compose_email'),
+    path('email/folder/<str:folder>/', views.email_folder, name='patient_email_folder'),
+    path('email/view/<int:message_id>/', views.view_email, name='patient_view_message'),
+    path('email/action/<int:message_id>/<str:action>/', views.email_action, name='patient_message_action'),
     
     # Video
     path('jitsi-video/', views.jitsi_video_view, name='patient_jitsi'),
+    path('jitsi-video/join/<int:appointment_id>/', views.join_video_appointment, name='join_video_appointment'),
     
     # Prescriptions
     path('prescriptions/', views.patient_prescriptions, name='patient_prescriptions'),

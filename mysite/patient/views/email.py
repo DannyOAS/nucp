@@ -215,3 +215,66 @@ def email_action(request, message_id, action):
     
     # Return to email dashboard
     return redirect('patient:patient_email')
+@patient_required
+def email_folder(request, folder):
+    """
+    View for displaying emails in a specific folder.
+    """
+    # Get the current patient
+    patient, patient_dict = get_current_patient(request)
+    
+    # If the function returns None, it has already redirected
+    if patient is None:
+        return redirect('unauthorized')
+    
+    # Get emails for the specified folder
+    # This is just a placeholder implementation
+    user = patient.user
+    
+    # Filter messages based on folder
+    if folder == 'inbox':
+        folder_messages = Message.objects.filter(
+            recipient=user
+        ).exclude(
+            status='deleted'
+        ).order_by('-created_at')
+    elif folder == 'sent':
+        folder_messages = Message.objects.filter(
+            sender=user
+        ).order_by('-created_at')
+    elif folder == 'archived':
+        folder_messages = Message.objects.filter(
+            recipient=user,
+            status='archived'
+        ).order_by('-created_at')
+    elif folder == 'trash':
+        folder_messages = Message.objects.filter(
+            recipient=user,
+            status='deleted'
+        ).order_by('-created_at')
+    else:
+        folder_messages = []
+    
+    # Format messages using API serializer
+    serializer = MessageSerializer(folder_messages, many=True)
+    messages_data = serializer.data
+    
+    # Count unread, read, sent, archived messages
+    unread_count = Message.objects.filter(recipient=user, status='unread').count()
+    read_count = Message.objects.filter(recipient=user, status='read').count()
+    sent_count = Message.objects.filter(sender=user).count()
+    archived_count = Message.objects.filter(recipient=user, status='archived').count()
+    
+    context = {
+        'patient': patient_dict,
+        'patient_name': patient.full_name,
+        'messages': messages_data,
+        'folder': folder,
+        'unread_count': unread_count,
+        'read_count': read_count,
+        'sent_count': sent_count,
+        'archived_count': archived_count,
+        'active_section': 'email'
+    }
+    
+    return render(request, "patient/email_folder.html", context)
