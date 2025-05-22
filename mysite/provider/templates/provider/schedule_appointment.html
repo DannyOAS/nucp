@@ -3,7 +3,7 @@
 {% block content %}
 <div class="flex justify-between items-center mb-6">
   <h2 class="text-xl font-bold text-gray-800">Schedule New Appointment</h2>
-  <a href="{% url 'provider_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
+  <a href="{% url 'provider:provider_appointments' %}" class="text-[#004d40] hover:text-[#00332e] flex items-center">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
     </svg>
@@ -12,7 +12,7 @@
 </div>
 
 <div class="bg-white p-6 rounded-xl shadow mb-8">
-  <form method="post" action="{% url 'schedule_appointment' %}">
+  <form method="post" action="{% url 'provider:schedule_appointment' %}">
     {% csrf_token %}
 
     <!-- Patient Selection -->

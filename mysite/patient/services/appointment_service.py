@@ -4,14 +4,17 @@ from common.models import Appointment
 from patient.models import Patient
 from provider.models import Provider
 from datetime import datetime, timedelta
+import logging
+
+logger = logging.getLogger(__name__)
 
 class AppointmentService:
-    """Service layer for patient appointment operations"""
+    """Service layer for patient appointment operations - OPTIMIZED"""
     
     @staticmethod
     def get_patient_appointments(patient_id):
         """
-        Get upcoming and past appointments for a patient
+        OPTIMIZED: Get upcoming and past appointments with efficient joins
         
         Args:
             patient_id: ID of the patient
@@ -20,23 +23,29 @@ class AppointmentService:
             dict: Dictionary containing appointment data
         """
         try:
-            patient = Patient.objects.get(id=patient_id)
+            patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
-            # Get current date for filtering
+            # Current date for filtering
             today = timezone.now()
             
-            # Get upcoming appointments
+            # OPTIMIZED: Single query with proper joins for upcoming appointments
             upcoming_appointments = Appointment.objects.filter(
                 patient=user,
                 time__gte=today
+            ).select_related(
+                'doctor',           # Join Provider table
+                'doctor__user'      # Join User table for provider info
             ).order_by('time')
             
-            # Get past appointments
+            # OPTIMIZED: Single query with proper joins for past appointments  
             past_appointments = Appointment.objects.filter(
                 patient=user,
                 time__lt=today
-            ).order_by('-time')[:10]  # Limit to last 10
+            ).select_related(
+                'doctor',
+                'doctor__user'
+            ).order_by('-time')[:10]  # Limit early for performance
             
             return {
                 'success': True,
@@ -53,6 +62,7 @@ class AppointmentService:
                 'today': timezone.now()
             }
         except Exception as e:
+            logger.error(f"Error in get_patient_appointments: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
@@ -62,9 +72,75 @@ class AppointmentService:
             }
     
     @staticmethod
+    def get_patient_healthcare_providers(patient_id):
+        """
+        OPTIMIZED: Get healthcare providers with single efficient query
+        
+        Args:
+            patient_id: ID of the patient
+            
+        Returns:
+            dict: Dictionary containing provider data
+        """
+        try:
+            patient = Patient.objects.select_related('user', 'primary_provider__user').get(id=patient_id)
+            user = patient.user
+            
+            # OPTIMIZED: Single query to get all providers from appointments
+            provider_data = Appointment.objects.filter(
+                patient=user
+            ).values(
+                'doctor__id',
+                'doctor__user__first_name',
+                'doctor__user__last_name', 
+                'doctor__specialty'
+            ).distinct().order_by('doctor__user__last_name')
+            
+            providers = []
+            seen_ids = set()
+            
+            # Process appointment providers
+            for data in provider_data:
+                if data['doctor__id'] and data['doctor__id'] not in seen_ids:
+                    providers.append({
+                        'id': data['doctor__id'],
+                        'name': f"{data['doctor__user__first_name']} {data['doctor__user__last_name']}".strip(),
+                        'specialty': data['doctor__specialty'] or 'General Practice',
+                        'clinic': 'Northern Health Clinic'
+                    })
+                    seen_ids.add(data['doctor__id'])
+            
+            # Add primary provider if not already included (already loaded with select_related)
+            if patient.primary_provider and patient.primary_provider.id not in seen_ids:
+                providers.append({
+                    'id': patient.primary_provider.id,
+                    'name': f"{patient.primary_provider.user.first_name} {patient.primary_provider.user.last_name}".strip(),
+                    'specialty': patient.primary_provider.specialty or 'General Practice',
+                    'clinic': 'Northern Health Clinic'
+                })
+            
+            return {
+                'success': True,
+                'healthcare_providers': providers
+            }
+        except Patient.DoesNotExist:
+            return {
+                'success': False,
+                'error': 'Patient not found',
+                'healthcare_providers': []
+            }
+        except Exception as e:
+            logger.error(f"Error in get_patient_healthcare_providers: {str(e)}")
+            return {
+                'success': False,
+                'error': str(e),
+                'healthcare_providers': []
+            }
+    
+    @staticmethod
     def get_scheduling_form_data(patient_id):
         """
-        Get data needed for appointment scheduling form
+        OPTIMIZED: Get data needed for appointment scheduling form
         
         Args:
             patient_id: ID of the patient
@@ -73,8 +149,10 @@ class AppointmentService:
             dict: Form data including available providers, dates and times
         """
         try:
-            # Get available providers
-            available_providers = Provider.objects.filter(is_active=True)
+            # OPTIMIZED: Get available providers with single query
+            available_providers = Provider.objects.filter(
+                is_active=True
+            ).select_related('user').order_by('user__last_name')
             
             # Generate available dates (next two weeks)
             available_dates = []
@@ -92,6 +170,7 @@ class AppointmentService:
                 'available_times': available_times
             }
         except Exception as e:
+            logger.error(f"Error in get_scheduling_form_data: {str(e)}")
             return {
                 'success': False,
                 'error': str(e),
@@ -103,7 +182,7 @@ class AppointmentService:
     @staticmethod
     def schedule_appointment(patient_id, form_data):
         """
-        Schedule a new appointment
+        OPTIMIZED: Schedule a new appointment
         
         Args:
             patient_id: ID of the patient
@@ -113,7 +192,7 @@ class AppointmentService:
             dict: Result of the operation
         """
         try:
-            patient = Patient.objects.get(id=patient_id)
+            patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
             # Extract form data
@@ -142,10 +221,19 @@ class AppointmentService:
                     'error': 'Invalid date or time format'
                 }
             
+            # OPTIMIZED: Get provider with single query
+            try:
+                provider = Provider.objects.select_related('user').get(id=doctor_id)
+            except Provider.DoesNotExist:
+                return {
+                    'success': False,
+                    'error': 'Provider not found'
+                }
+            
             # Create appointment
             appointment = Appointment.objects.create(
                 patient=user,
-                doctor_id=doctor_id,
+                doctor=provider,
                 time=appointment_datetime,
                 type=appointment_type,
                 reason=reason,
@@ -164,6 +252,7 @@ class AppointmentService:
                 'error': 'Patient not found'
             }
         except Exception as e:
+            logger.error(f"Error in schedule_appointment: {str(e)}")
             return {
                 'success': False,
                 'error': str(e)
@@ -172,7 +261,7 @@ class AppointmentService:
     @staticmethod
     def get_appointment_for_reschedule(appointment_id, patient_id):
         """
-        Get appointment data for rescheduling
+        OPTIMIZED: Get appointment data for rescheduling
         
         Args:
             appointment_id: ID of the appointment to reschedule
@@ -182,11 +271,14 @@ class AppointmentService:
             dict: Result containing appointment data if successful
         """
         try:
-            patient = Patient.objects.get(id=patient_id)
+            patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
-            # Get appointment and verify ownership
-            appointment = Appointment.objects.get(id=appointment_id, patient=user)
+            # OPTIMIZED: Get appointment with provider info in single query
+            appointment = Appointment.objects.select_related(
+                'doctor',
+                'doctor__user'
+            ).get(id=appointment_id, patient=user)
             
             return {
                 'success': True,
@@ -203,6 +295,7 @@ class AppointmentService:
                 'error': 'Appointment not found or not authorized'
             }
         except Exception as e:
+            logger.error(f"Error in get_appointment_for_reschedule: {str(e)}")
             return {
                 'success': False,
                 'error': str(e)
@@ -211,7 +304,7 @@ class AppointmentService:
     @staticmethod
     def reschedule_appointment(appointment_id, patient_id, form_data):
         """
-        Reschedule an existing appointment
+        OPTIMIZED: Reschedule an existing appointment
         
         Args:
             appointment_id: ID of the appointment to reschedule
@@ -222,10 +315,10 @@ class AppointmentService:
             dict: Result of the operation
         """
         try:
-            patient = Patient.objects.get(id=patient_id)
+            patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
-            # Get appointment and verify ownership
+            # OPTIMIZED: Get appointment with single query
             appointment = Appointment.objects.get(id=appointment_id, patient=user)
             
             # Extract form data
@@ -270,6 +363,7 @@ class AppointmentService:
                 'error': 'Appointment not found or not authorized'
             }
         except Exception as e:
+            logger.error(f"Error in reschedule_appointment: {str(e)}")
             return {
                 'success': False,
                 'error': str(e)
@@ -278,7 +372,7 @@ class AppointmentService:
     @staticmethod
     def cancel_appointment(appointment_id, patient_id):
         """
-        Cancel an appointment
+        OPTIMIZED: Cancel an appointment
         
         Args:
             appointment_id: ID of the appointment to cancel
@@ -288,10 +382,10 @@ class AppointmentService:
             dict: Result of the operation
         """
         try:
-            patient = Patient.objects.get(id=patient_id)
+            patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
-            # Get appointment and verify ownership
+            # OPTIMIZED: Get appointment with single query
             appointment = Appointment.objects.get(id=appointment_id, patient=user)
             
             # Cancel appointment
@@ -313,6 +407,7 @@ class AppointmentService:
                 'error': 'Appointment not found or not authorized'
             }
         except Exception as e:
+            logger.error(f"Error in cancel_appointment: {str(e)}")
             return {
                 'success': False,
                 'error': str(e)

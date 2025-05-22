@@ -28,6 +28,9 @@ def appointments_view(request):
         # Get appointments data from service
         appointments_data = AppointmentService.get_patient_appointments(patient.id)
         
+        # Get healthcare providers from service - NEW
+        provider_data = AppointmentService.get_patient_healthcare_providers(patient.id)
+        
         # Format appointments using API serializer if needed
         upcoming_appointments = appointments_data.get('upcoming_appointments', [])
         if hasattr(upcoming_appointments, 'model'):
@@ -39,19 +42,16 @@ def appointments_view(request):
             serializer = AppointmentSerializer(past_appointments, many=True)
             appointments_data['past_appointments'] = serializer.data
         
-        # Fixed syntax error: The line was incomplete and had invalid syntax
-        # providers_count = Patient.objects.get(id=patient.id).primary_provider.count() if patient.primary_provider else 0
-        
-        # Instead, use this simple approach to count providers
-        providers_count = 0
-        if hasattr(patient, 'primary_provider') and patient.primary_provider is not None:
-            providers_count = 1  # Since each patient has one primary provider
+        # Get healthcare providers from service response
+        healthcare_providers = provider_data.get('healthcare_providers', [])
+        providers_count = len(healthcare_providers)
         
         context = {
             'patient': patient_dict,
             'patient_name': patient.full_name,
             'appointments': appointments_data.get('upcoming_appointments', []),
             'past_appointments': appointments_data.get('past_appointments', []),
+            'healthcare_providers': healthcare_providers,  # From service
             'providers_count': providers_count,
             'today': appointments_data.get('today', None),
             'active_section': 'appointments'
@@ -63,6 +63,7 @@ def appointments_view(request):
             'patient_name': patient.full_name,
             'appointments': [],
             'past_appointments': [],
+            'healthcare_providers': [],  # Empty fallback
             'providers_count': 0,
             'today': None,
             'active_section': 'appointments'
@@ -71,7 +72,6 @@ def appointments_view(request):
     
     return render(request, "patient/appointments.html", context)
 
-# Remaining functions in the file stay the same
 @patient_required
 def schedule_appointment(request):
     """

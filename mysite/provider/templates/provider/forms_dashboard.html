@@ -10,7 +10,7 @@
       </svg>
       Recent Documents
     </button>
-    <a href="#" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
+    <a href="#" onclick="showHelp(); return false;" class="bg-[#004d40] hover:bg-[#00332e] text-white py-2 px-4 rounded-lg flex items-center">
       <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
@@ -24,6 +24,16 @@
   <!-- Will be filled dynamically with appropriate status messages -->
 </div>
 
+{% if messages %}
+<div class="mb-6">
+  {% for message in messages %}
+    <div class="p-4 rounded-lg {% if message.tags == 'success' %}bg-green-100 text-green-700{% elif message.tags == 'error' %}bg-red-100 text-red-700{% elif message.tags == 'info' %}bg-blue-100 text-blue-700{% elif message.tags == 'warning' %}bg-yellow-100 text-yellow-700{% endif %}">
+      {{ message }}
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
 <!-- Patient Selection -->
 <div class="bg-white rounded-xl shadow p-6 mb-6">
   <h3 class="text-lg font-semibold text-[#004d40] mb-4">Select Patient</h3>
@@ -33,10 +43,10 @@
       <label for="patientSelect" class="block text-sm font-medium text-gray-700 mb-1">Patient</label>
       <select id="patientSelect" class="w-full border border-gray-300 rounded-lg p-2">
         <option value="">Select a patient</option>
-          {% for patient in patients %}
-        <option value="{{ patient.id }}">{{ patient.first_name }} {{ patient.last_name }}</option>
-          {% endfor %}
-        </select>
+        {% for patient in patients %}
+          <option value="{{ patient.id }}">{{ patient.user.first_name }} {{ patient.user.last_name }}</option>
+        {% endfor %}
+      </select>
     </div>
     
     <div>
@@ -51,9 +61,9 @@
     <div id="patientInfoPanel" class="hidden w-full bg-gray-50 p-4 rounded-lg mt-4">
       <div class="flex justify-between items-start">
         <div>
-          <h4 class="font-medium text-gray-800" id="selectedPatientName">Jane Doe</h4>
-          <p class="text-sm text-gray-600" id="selectedPatientDOB">DOB: April 12, 1985</p>
-          <p class="text-sm text-gray-600" id="selectedPatientOHIP">OHIP: 1234567890</p>
+          <h4 class="font-medium text-gray-800" id="selectedPatientName"></h4>
+          <p class="text-sm text-gray-600" id="selectedPatientDOB"></p>
+          <p class="text-sm text-gray-600" id="selectedPatientOHIP"></p>
         </div>
         <button id="clearPatientBtn" class="text-gray-400 hover:text-gray-600">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -129,7 +139,7 @@
             {% endif %}
           </div>
           
-          <a href="#" class="create-form-btn text-[#004d40] hover:text-[#00332e]" data-template-id="{{ template.id }}">
+          <a href="{% url 'create_form' template.id %}" class="create-form-btn text-[#004d40] hover:text-[#00332e]" data-template-id="{{ template.id }}">
             Create →
           </a>
         </div>
@@ -140,7 +150,6 @@
         No templates available. Please contact your administrator.
       </div>
     {% endfor %}
-    
   </div>
 </div>
 
@@ -162,75 +171,46 @@
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
-        <!-- Recent documents would be populated here -->
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">Lab Requisition</div>
-            <div class="text-sm text-gray-500">Standard Lab Requisition</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Jane Doe</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Today, 11:23 AM</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-              Completed
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
-            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
-            <a href="#" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
-          </td>
-        </tr>
-        
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">Sick Note</div>
-            <div class="text-sm text-gray-500">Short-term Sick Note</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">John Smith</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Yesterday, 3:45 PM</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-              Draft
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
-            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
-            <a href="#" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
-          </td>
-        </tr>
-        
-        <tr class="hover:bg-gray-50">
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm font-medium text-gray-900">Specialist Referral</div>
-            <div class="text-sm text-gray-500">Cardiology Referral</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">Emily Williams</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <div class="text-sm text-gray-900">March 30, 2025</div>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap">
-            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-              Sent
-            </span>
-          </td>
-          <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
-            <a href="#" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
-            <a href="#" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
-          </td>
-        </tr>
+        {% for document in recent_documents %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm font-medium text-gray-900">{{ document.template.name }}</div>
+              <div class="text-sm text-gray-500">{{ document.template.template_type|title }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ document.patient_name }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <div class="text-sm text-gray-900">{{ document.created_at|date:"M d, Y" }} {{ document.created_at|time:"g:i A" }}</div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+              <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                {% if document.status == 'draft' %}bg-yellow-100 text-yellow-800
+                {% elif document.status == 'final' %}bg-green-100 text-green-800
+                {% elif document.status == 'approved' %}bg-blue-100 text-blue-800
+                {% elif document.status == 'sent' %}bg-purple-100 text-purple-800
+                {% elif document.status == 'archived' %}bg-gray-100 text-gray-800
+                {% else %}bg-gray-100 text-gray-800{% endif %}">
+                {{ document.status|title }}
+              </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+              <a href="#" onclick="viewDocument('{{ document.id }}'); return false;" class="text-[#004d40] hover:text-[#00332e] mr-3">View</a>
+              {% if document.status == 'draft' %}
+                <a href="#" onclick="editDocument('{{ document.id }}'); return false;" class="text-[#004d40] hover:text-[#00332e] mr-3">Edit</a>
+              {% endif %}
+              {% if document.pdf_storage_path %}
+                <a href="#" onclick="downloadPdf('{{ document.id }}'); return false;" class="text-[#004d40] hover:text-[#00332e]">PDF</a>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
+              No recent documents found. Create a new document using one of the templates above.
+            </td>
+          </tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>
@@ -247,22 +227,30 @@
     const selectedPatientOHIP = document.getElementById('selectedPatientOHIP');
     const clearPatientBtn = document.getElementById('clearPatientBtn');
     
+    // Store patient data for display
+    const patientData = {
+      {% for patient in patients %}
+        "{{ patient.id }}": {
+          "name": "{{ patient.user.first_name }} {{ patient.user.last_name }}",
+          "dob": "{% if patient.date_of_birth %}DOB: {{ patient.date_of_birth|date:'Y-m-d' }}{% else %}DOB: Not available{% endif %}",
+          "ohip": "{% if patient.ohip_number %}OHIP: {{ patient.ohip_number }}{% else %}OHIP: Not available{% endif %}"
+        }{% if not forloop.last %},{% endif %}
+      {% endfor %}
+    };
+    
     // Update the patient info based on selected patient
     patientSelect.addEventListener('change', function() {
       const patientId = this.value;
   
-      if (patientId) {
+      if (patientId && patientData[patientId]) {
         // Show the patient info panel
         patientInfoPanel.classList.remove('hidden');
-    
-        // Find the selected patient data
-        {% for patient in patients %}
-        if (patientId == "{{ patient.id }}") {
-          selectedPatientName.textContent = "{{ patient.first_name }} {{ patient.last_name }}";
-          selectedPatientDOB.textContent = "DOB: {{ patient.date_of_birth }}";
-          selectedPatientOHIP.textContent = "OHIP: {{ patient.ohip_number }}";
-        }
-        {% endfor %}
+        
+        // Update with selected patient data
+        const patient = patientData[patientId];
+        selectedPatientName.textContent = patient.name;
+        selectedPatientDOB.textContent = patient.dob;
+        selectedPatientOHIP.textContent = patient.ohip;
       } else {
         // Hide the patient info panel if no patient is selected
         patientInfoPanel.classList.add('hidden');
@@ -280,24 +268,20 @@
     
     createFormButtons.forEach(button => {
       button.addEventListener('click', function(e) {
-        e.preventDefault();
-        
-        const templateId = this.getAttribute('data-template-id');
         const patientId = patientSelect.value;
         
         if (!patientId) {
+          e.preventDefault();
           showStatusMessage('Please select a patient before creating a form.', 'error');
           return;
         }
         
-        // In a real implementation, would redirect to the form creation page
-        // For now, just show a success message
-        showStatusMessage('Redirecting to form creation page...', 'info');
+        // Add the patient_id parameter to the URL
+        const templateId = this.getAttribute('data-template-id');
+        const url = this.getAttribute('href');
         
-        // Simulate a redirect
-        setTimeout(function() {
-          window.location.href = `/provider/forms/create/${templateId}/?patient_id=${patientId}`;
-        }, 1000);
+        // Update the href with the patient_id
+        this.setAttribute('href', `${url}?patient_id=${patientId}`);
       });
     });
     
@@ -335,7 +319,7 @@
     
     searchTemplatesInput.addEventListener('input', function() {
       const searchTerm = this.value.toLowerCase();
-      const templateCards = document.querySelectorAll('.border.border-gray-200.rounded-lg');
+      const templateCards = document.querySelectorAll('.template-card');
       
       templateCards.forEach(card => {
         const templateName = card.querySelector('h4').textContent.toLowerCase();
@@ -348,40 +332,75 @@
         }
       });
     });
-  });
-
-  //tab filtering
-  document.addEventListener('DOMContentLoaded', function() {
-  // Get all tab buttons and template cards
-  const tabButtons = document.querySelectorAll('.template-tab');
-  const templateCards = document.querySelectorAll('.template-card');
-  
-  // Add click event to each tab button
-  tabButtons.forEach(button => {
-    button.addEventListener('click', function() {
-      const filterType = this.getAttribute('data-type');
-      
-      // Update active tab styling
-      tabButtons.forEach(btn => {
-        btn.classList.remove('active', 'text-[#004d40]', 'border-b-2', 'border-[#004d40]');
-        btn.classList.add('text-gray-500', 'hover:text-[#004d40]', 'hover:border-b-2', 'hover:border-[#004d40]');
-      });
-      
-      this.classList.remove('text-gray-500', 'hover:text-[#004d40]', 'hover:border-b-2', 'hover:border-[#004d40]');
-      this.classList.add('active', 'text-[#004d40]', 'border-b-2', 'border-[#004d40]');
-      
-      // Filter template cards
-      templateCards.forEach(card => {
-        const cardType = card.getAttribute('data-type');
+    
+    // Tab filtering
+    const tabButtons = document.querySelectorAll('.template-tab');
+    const templateCards = document.querySelectorAll('.template-card');
+    
+    // Add click event to each tab button
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function() {
+        const filterType = this.getAttribute('data-type');
         
-        if (filterType === 'all' || cardType === filterType) {
-          card.style.display = '';
-        } else {
-          card.style.display = 'none';
-        }
+        // Update active tab styling
+        tabButtons.forEach(btn => {
+          btn.classList.remove('active', 'text-[#004d40]', 'border-b-2', 'border-[#004d40]');
+          btn.classList.add('text-gray-500', 'hover:text-[#004d40]', 'hover:border-b-2', 'hover:border-[#004d40]');
+        });
+        
+        this.classList.remove('text-gray-500', 'hover:text-[#004d40]', 'hover:border-b-2', 'hover:border-[#004d40]');
+        this.classList.add('active', 'text-[#004d40]', 'border-b-2', 'border-[#004d40]');
+        
+        // Filter template cards
+        templateCards.forEach(card => {
+          const cardType = card.getAttribute('data-type');
+          
+          if (filterType === 'all' || cardType === filterType) {
+            card.style.display = '';
+          } else {
+            card.style.display = 'none';
+          }
+        });
       });
     });
-  });
-});
-</script>
+    
+    // Document action functions
+    function viewDocument(documentId) {
+      window.location.href = `/provider/forms/document/${documentId}/`;
+    }
+    
+    function editDocument(documentId) {
+      window.location.href = `/provider/forms/document/${documentId}/edit/`;
+    }
+    
+    function downloadPdf(documentId) {
+      window.location.href = `/provider/forms/document/${documentId}/pdf/`;
+    }
+    
+    // Help function
+    function showHelp() {
+      showStatusMessage('Forms & Templates Help: This section allows you to create and manage medical forms and documents. Select a patient, choose a template, and create professional medical documents.', 'info');
+    }
+    
+    // Check for URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const messageParam = urlParams.get('message');
+    const messageTypeParam = urlParams.get('message_type');
+    
+    if (messageParam) {
+      showStatusMessage(decodeURIComponent(messageParam), messageTypeParam || 'info');
+    }
+    
+    // Handle Recent Documents button
+    const recentDocsButton = document.getElementById('recentDocsButton');
+    if (recentDocsButton) {
+      recentDocsButton.addEventListener('click', function() {
+        // Scroll to Recent Documents section
+        const recentDocsSection = document.querySelector('h3.text-lg.font-semibold:last-of-type');
+        if (recentDocsSection) {
+          recentDocsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+      });
+    }
 {% endblock %}
+

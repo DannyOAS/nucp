@@ -22,7 +22,6 @@ class PrescriptionRequestForm(forms.ModelForm):
     class Meta:
         model = PrescriptionRequest
         fields = [
-            'patient',  # This is now a ForeignKey to Patient
             'medication_name', 
             'current_dosage', 
             'medication_duration', 

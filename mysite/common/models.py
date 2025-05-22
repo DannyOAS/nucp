@@ -12,7 +12,14 @@ class Appointment(models.Model):
         ('Cancelled', 'Cancelled'),
         ('No Show', 'No Show'),
     ]
-    
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['patient', 'time']),  # For patient appointment queries
+            models.Index(fields=['doctor', 'time']),   # For provider queries
+            models.Index(fields=['status', 'time']),   # For status filtering
+        ]
+
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='patient_appointments')
     doctor = models.ForeignKey('provider.Provider', on_delete=models.CASCADE, related_name='doctor_appointments')
     time = models.DateTimeField()
@@ -42,6 +49,13 @@ class Prescription(models.Model):
         ('Refill Requested', 'Refill Requested'),
     ]
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['patient', 'status']),     # For patient prescription queries
+            models.Index(fields=['doctor', 'created_at']),  # For provider queries
+            models.Index(fields=['medication_name']),       # For search
+        ]
+
     medication_name = models.CharField(max_length=255)  # Changed from name
     dosage = models.CharField(max_length=100)  # Changed from dose
     patient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='prescriptions')
@@ -58,7 +72,7 @@ class Prescription(models.Model):
     refills_remaining = models.PositiveIntegerField(default=0)
     
     def __str__(self):
-        return f"{self.name} - {self.dose} for {self.patient.get_full_name()}"
+        return f"{self.medication_name} - {self.dosage} for {self.patient.get_full_name()}"
     
     def save(self, *args, **kwargs):
         # Set refills_remaining equal to refills on creation
@@ -106,6 +120,11 @@ class Message(models.Model):
     
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['recipient', 'status', 'created_at']),  # For inbox queries
+            models.Index(fields=['sender', 'created_at']),               # For sent messages
+            models.Index(fields=['subject']),                            # For search
+        ]
     
     def __str__(self):
         return f"Message from {self.sender} to {self.recipient}: {self.subject}"

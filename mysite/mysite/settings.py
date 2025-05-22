@@ -337,6 +337,13 @@ LOGGING = {
         },
     },
     'loggers': {
+        # ADD THIS SECTION for database query monitoring:
+        'django.db.backends': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+
         'theme_name.services.calendarservice': {
             'handlers': ['console'],
             'level': 'DEBUG',

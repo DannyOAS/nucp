@@ -47,6 +47,12 @@ def patient_dashboard(request):
             serializer = MessageSerializer(recent_messages, many=True)
             dashboard_data['recent_messages'] = serializer.data
         
+        # GET HEALTH METRICS FROM DATABASE - NO HARDCODED DATA
+        # You'll need to create a HealthMetric model or retrieve from existing models
+        health_metrics = []
+        # TODO: Replace with actual health metrics query when model exists
+        # For now, just pass empty list - template should handle this gracefully
+        
         context = {
             'patient': patient_dict,
             'patient_name': patient.full_name,
@@ -54,6 +60,7 @@ def patient_dashboard(request):
             'prescriptions': dashboard_data.get('prescriptions', []),
             'recent_messages': dashboard_data.get('recent_messages', []),
             'unread_messages_count': dashboard_data.get('unread_messages_count', 0),
+            'health_metrics': health_metrics,  # Empty list until model exists
             'active_section': 'dashboard',
         }
     except Exception as e:
@@ -65,6 +72,7 @@ def patient_dashboard(request):
             'prescriptions': [],
             'recent_messages': [],
             'unread_messages_count': 0,
+            'health_metrics': [],  # Empty fallback
             'active_section': 'dashboard',
         }
         messages.error(request, "There was an error loading your dashboard. Please try again later.")

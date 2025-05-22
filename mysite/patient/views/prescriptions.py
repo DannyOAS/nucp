@@ -9,54 +9,7 @@ from patient.utils import get_current_patient
 from api.v1.patient.serializers import PrescriptionSerializer
 
 logger = logging.getLogger(__name__)
-#
-#@patient_required
-#def patient_prescriptions(request):
-#    """
-#    Patient prescriptions view showing active and historical prescriptions.
-#    Uses service layer to retrieve data and API serializers for formatting.
-#    """
-#    # Get the current patient
-#    patient, patient_dict = get_current_patient(request)
-#    
-#    # If the function returns None, it has already redirected
-#    if patient is None:
-#        return redirect('unauthorized')
-#    
-#    try:
-#        # Get prescriptions data from service
-#        prescriptions_data = PrescriptionService.get_patient_prescriptions(patient.id)
-#        
-#        # Format prescriptions using API serializer if needed
-#        active_prescriptions = prescriptions_data.get('active_prescriptions', [])
-#        if hasattr(active_prescriptions, 'model'):
-#            serializer = PrescriptionSerializer(active_prescriptions, many=True)
-#            prescriptions_data['active_prescriptions'] = serializer.data
-#        
-#        historical_prescriptions = prescriptions_data.get('historical_prescriptions', [])
-#        if hasattr(historical_prescriptions, 'model'):
-#            serializer = PrescriptionSerializer(historical_prescriptions, many=True)
-#            prescriptions_data['historical_prescriptions'] = serializer.data
-#        
-#        context = {
-#            'patient': patient_dict,
-#            'patient_name': patient.full_name,
-#            'active_prescriptions': prescriptions_data.get('active_prescriptions', []),
-#            'historical_prescriptions': prescriptions_data.get('historical_prescriptions', []),
-#            'active_section': 'prescriptions'
-#        }
-#    except Exception as e:
-#        logger.error(f"Error retrieving prescriptions: {str(e)}")
-#        context = {
-#            'patient': patient_dict,
-#            'patient_name': patient.full_name,
-#            'active_prescriptions': [],
-#            'historical_prescriptions': [],
-#            'active_section': 'prescriptions'
-#        }
-#        messages.error(request, "There was an error loading your prescriptions. Please try again later.")
-#    
-#    return render(request, "patient/prescriptions.html", context)
+
 @patient_required
 def patient_prescriptions(request):
     """
@@ -74,38 +27,44 @@ def patient_prescriptions(request):
         # Get prescriptions data from service
         prescriptions_data = PrescriptionService.get_patient_prescriptions(patient.id)
         
-        # Format prescriptions using API serializer if needed
+        # FIXED: Consistent data handling
         active_prescriptions = prescriptions_data.get('active_prescriptions', [])
-        if hasattr(active_prescriptions, 'model'):
-            serializer = PrescriptionSerializer(active_prescriptions, many=True)
-            prescriptions_data['active_prescriptions'] = serializer.data
-        
         historical_prescriptions = prescriptions_data.get('historical_prescriptions', [])
-        if hasattr(historical_prescriptions, 'model'):
-            serializer = PrescriptionSerializer(historical_prescriptions, many=True)
-            prescriptions_data['historical_prescriptions'] = serializer.data
         
-        # Calculate additional context variables
+        # FIXED: Handle both QuerySet and serialized data consistently
+        if active_prescriptions and hasattr(active_prescriptions, 'model'):
+            # It's a QuerySet - serialize it
+            serializer = PrescriptionSerializer(active_prescriptions, many=True)
+            active_prescriptions_data = serializer.data
+        else:
+            # It's already serialized or a list
+            active_prescriptions_data = active_prescriptions
+        
+        if historical_prescriptions and hasattr(historical_prescriptions, 'model'):
+            # It's a QuerySet - serialize it
+            serializer = PrescriptionSerializer(historical_prescriptions, many=True)
+            historical_prescriptions_data = serializer.data
+        else:
+            # It's already serialized or a list
+            historical_prescriptions_data = historical_prescriptions
+        
+        # FIXED: Calculate renewal_needed_count with consistent data structure
+        renewal_needed_count = 0
+        for prescription in active_prescriptions_data:
+            # Now we consistently work with dict/serialized data
+            refills_remaining = prescription.get('refills_remaining', 0) if isinstance(prescription, dict) else getattr(prescription, 'refills_remaining', 0)
+            if refills_remaining <= 1:
+                renewal_needed_count += 1
+        
         context = {
             'patient': patient_dict,
             'patient_name': patient.full_name,
-            'active_prescriptions': prescriptions_data.get('active_prescriptions', []),
-            'historical_prescriptions': prescriptions_data.get('historical_prescriptions', []),
+            'active_prescriptions': active_prescriptions_data,
+            'historical_prescriptions': historical_prescriptions_data,
             'active_section': 'prescriptions',
-            
-            # Additional context variables
-            'active_prescriptions_count': len(active_prescriptions),
-            'prescriptions_needing_renewal_count': len([
-                p for p in active_prescriptions 
-                if p.get('status') == 'Renewal Soon' or p.get('refills_remaining') <= 1
-            ]),
-            'primary_pharmacy': patient.pharmacy_details if hasattr(patient, 'pharmacy_details') else 'Not Set',
-            'primary_pharmacy_details': {
-                'name': patient.pharmacy_details if hasattr(patient, 'pharmacy_details') else 'Northern Pharmacy',
-                'address': getattr(patient, 'address', '123 Health Street'),
-                'phone': getattr(patient, 'primary_phone', '(555) 123-4567')
-            },
-            'pharmacy_delivery_info': 'Home delivery available for eligible prescriptions.'
+            'renewal_needed_count': renewal_needed_count,  # FIXED
+            'active_prescriptions_count': len(active_prescriptions_data),
+            'primary_pharmacy': getattr(patient, 'pharmacy_details', 'Northern Pharmacy'),
         }
     except Exception as e:
         logger.error(f"Error retrieving prescriptions: {str(e)}")
@@ -115,17 +74,9 @@ def patient_prescriptions(request):
             'active_prescriptions': [],
             'historical_prescriptions': [],
             'active_section': 'prescriptions',
-            
-            # Fallback context variables
+            'renewal_needed_count': 0,  # FIXED
             'active_prescriptions_count': 0,
-            'prescriptions_needing_renewal_count': 0,
-            'primary_pharmacy': 'Not Set',
-            'primary_pharmacy_details': {
-                'name': 'Northern Pharmacy',
-                'address': '',
-                'phone': ''
-            },
-            'pharmacy_delivery_info': 'Home delivery not currently available.'
+            'primary_pharmacy': 'Northern Pharmacy',
         }
         messages.error(request, "There was an error loading your prescriptions. Please try again later.")
     
@@ -146,7 +97,7 @@ def request_prescription(request):
     
     if request.method == 'POST':
         try:
-            # Process prescription request via service
+            # FIXED: Process prescription request via service with proper patient handling
             result = PrescriptionService.create_prescription_request(
                 patient_id=patient.id,
                 form_data=request.POST
@@ -208,11 +159,15 @@ def request_refill(request, prescription_id):
             messages.error(request, prescription_data.get('error', "Prescription not found."))
             return redirect('patient:patient_prescriptions')
         
-        # Format prescription data using serializer if needed
+        # FIXED: Format prescription data using serializer if needed
         prescription = prescription_data.get('prescription')
         if prescription and hasattr(prescription, '__dict__'):
             serializer = PrescriptionSerializer(prescription)
             prescription = serializer.data
+        elif prescription and isinstance(prescription, dict):
+            # Already in dict format, ensure required fields exist
+            prescription.setdefault('refills_remaining', 0)
+            prescription.setdefault('medication_name', 'Unknown Medication')
         
         if request.method == 'POST':
             # Process refill request via service
@@ -234,7 +189,8 @@ def request_refill(request, prescription_id):
             )
             
             if result.get('success', False):
-                messages.success(request, f"Refill request for {prescription.get('medication_name')} submitted successfully!")
+                medication_name = prescription.get('medication_name') if isinstance(prescription, dict) else getattr(prescription, 'medication_name', 'medication')
+                messages.success(request, f"Refill request for {medication_name} submitted successfully!")
                 return redirect('patient:patient_prescriptions')
             else:
                 messages.error(request, result.get('error', "Error requesting refill."))
@@ -276,11 +232,23 @@ def prescription_detail(request, prescription_id):
             messages.error(request, prescription_data.get('error', "Prescription not found."))
             return redirect('patient:patient_prescriptions')
         
-        # Format prescription data using serializer if needed
+        # FIXED: Format prescription data using serializer if needed
         prescription = prescription_data.get('prescription')
         if prescription and hasattr(prescription, '__dict__'):
             serializer = PrescriptionSerializer(prescription)
             prescription = serializer.data
+        elif prescription and isinstance(prescription, dict):
+            # Already in dict format, ensure required fields exist with defaults
+            prescription.setdefault('refills_remaining', 0)
+            prescription.setdefault('medication_name', 'Unknown Medication')
+            prescription.setdefault('dosage', 'Not specified')
+            prescription.setdefault('instructions', 'Take as directed')
+            prescription.setdefault('prescribed_by', 'Your Healthcare Provider')
+            prescription.setdefault('prescribed_date', 'Not specified')
+            prescription.setdefault('expires', 'Not specified')
+            prescription.setdefault('pharmacy', 'Northern Pharmacy')
+            prescription.setdefault('side_effects', 'Consult your healthcare provider')
+            prescription.setdefault('warnings', 'Follow prescription instructions carefully')
         
         context = {
             'patient': patient_dict,

@@ -66,7 +66,8 @@ def forms_dashboard(request):
         }
         messages.error(request, f"Error loading forms dashboard: {str(e)}")
     
-    return render(request, "provider/ai_views/forms_dashboard.html", context)
+    return render(request, "provider/forms_dashboard.html", context)
+
 @login_required
 def create_form(request, template_id):
     """Create a new form from a template with authenticated provider"""
@@ -141,7 +142,7 @@ def create_form(request, template_id):
         messages.error(request, f"Error processing form: {str(e)}")
         return redirect('forms_dashboard')
     
-    return render(request, 'provider/ai_views/create_form.html', context)
+    return render(request, 'provider/create_form.html', context)
 
 @login_required
 def view_document(request, document_id):
@@ -198,7 +199,7 @@ def view_document(request, document_id):
         messages.error(request, f"Error viewing document: {str(e)}")
         return redirect('forms_dashboard')
     
-    return render(request, 'provider/ai_views/view_document.html', context)
+    return render(request, 'provider/view_document.html', context)
 
 @login_required
 def download_document_pdf(request, document_id):
@@ -303,7 +304,7 @@ def templates_dashboard(request):
         }
         messages.error(request, f"Error loading templates: {str(e)}")
     
-    return render(request, "provider/ai_views/templates_dashboard.html", context)
+    return render(request, "provider/templates_dashboard.html", context)
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -349,7 +350,7 @@ def create_template(request):
         'active_section': 'templates'
     }
     
-    return render(request, "provider/ai_views/create_template.html", context)
+    return render(request, "provider/create_template.html", context)
 
 @login_required
 @user_passes_test(lambda u: u.is_staff)
@@ -415,4 +416,4 @@ def edit_template(request, template_id):
         'active_section': 'templates'
     }
     
-    return render(request, "provider/ai_views/edit_template.html", context)
+    return render(request, "provider/edit_template.html", context)

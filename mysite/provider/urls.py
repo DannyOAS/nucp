@@ -1,6 +1,8 @@
 # provider/urls.py
 from django.urls import path, include
 from . import views
+from provider.views import dashboard, settings
+from provider.views.ai_views import forms
 
 app_name = 'provider'
 
@@ -11,6 +13,10 @@ urlpatterns = [
     # Profile pages
     path('profile/', views.provider_profile, name='provider_profile'),
     path('settings/', views.provider_settings, name='provider_settings'),
+    path('settings/update-email/', settings.update_provider_email, name='provider_update_email'),
+    path('settings/update-password/', settings.update_provider_password, name='provider_update_password'),
+    path('settings/update-info/', settings.update_provider_info, name='provider_update_info'),
+    path('settings/update-schedule/', settings.update_provider_schedule, name='provider_update_schedule'),
     path('help-support/', views.provider_help_support, name='provider_help_support'),
 
     # Patient management

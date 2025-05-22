@@ -22,6 +22,7 @@ urlpatterns = [
     # Email URLs
     path('email/', views.email_view, name='patient_email'),
     path('email/compose/', views.compose_email, name='patient_compose_email'),
+    path('email/compose/message/', views.compose_email, name='patient_compose_message'),
     path('email/folder/<str:folder>/', views.email_folder, name='patient_email_folder'),
     path('email/view/<int:message_id>/', views.view_email, name='patient_view_message'),
     path('email/action/<int:message_id>/<str:action>/', views.email_action, name='patient_message_action'),
@@ -32,6 +33,7 @@ urlpatterns = [
     
     # Prescriptions
     path('prescriptions/', views.patient_prescriptions, name='patient_prescriptions'),
+    path('prescriptions/<int:prescription_id>/', views.prescription_detail, name='prescription_detail'),
     path('prescriptions/request/', views.request_prescription, name='request_prescription'),
     path('prescriptions/refill/<int:prescription_id>/', views.request_refill, name='request_refill'),
     path('prescriptions/<int:prescription_id>/', views.prescription_detail, name='prescription_detail'),

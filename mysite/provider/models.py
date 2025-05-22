@@ -1,3 +1,4 @@
+import json
 from django.db import models
 from django.contrib.auth.models import User
 from common.models import Appointment, Prescription, Message
@@ -196,3 +197,49 @@ class AIModelConfig(models.Model):
         """Set configuration data from a dictionary"""
         import json
         self.configuration_data = json.dumps(config_dict)
+
+
+class ProviderSettings(models.Model):
+    """Provider appointment and scheduling settings"""
+    provider = models.OneToOneField(Provider, on_delete=models.CASCADE, related_name='settings')
+    
+    # Appointment type settings
+    appt_in_person = models.BooleanField(default=True)
+    appt_virtual = models.BooleanField(default=True)
+    appt_emergency = models.BooleanField(default=False)
+    
+    # Appointment duration settings (in minutes)
+    appt_duration_standard = models.IntegerField(default=30)
+    appt_duration_extended = models.IntegerField(default=60)
+    
+    # Booking settings
+    appt_lead_time = models.IntegerField(default=24)  # hours
+    appt_future_limit = models.IntegerField(default=30)  # days
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Settings for {self.provider}"
+
+class ProviderSchedule(models.Model):
+    """Provider weekly schedule"""
+    provider = models.OneToOneField(Provider, on_delete=models.CASCADE, related_name='schedule')
+    schedule_data = models.TextField(default='{}')  # JSON field for schedule data
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Schedule for {self.provider}"
+    
+    def get_schedule(self):
+        """Get schedule data as dictionary"""
+        try:
+            return json.loads(self.schedule_data)
+        except:
+            return {}
+    
+    def set_schedule(self, schedule_data):
+        """Set schedule data from dictionary"""
+        self.schedule_data = json.dumps(schedule_data)

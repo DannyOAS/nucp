@@ -23,13 +23,24 @@
     </div>
     {% endif %}
     
-    <!-- Recipient field -->
+    <!-- Recipient field - Modified to show list of healthcare providers -->
     <div>
-      <label for="recipient_type" class="block text-sm font-medium text-gray-700 mb-1">Send To:</label>
-      <select id="recipient_type" name="recipient_type" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm">
-        {% for value, label in recipient_choices %}
-          <option value="{{ value }}">{{ label }}</option>
-        {% endfor %}
+      <label for="provider_id" class="block text-sm font-medium text-gray-700 mb-1">Send To:</label>
+      <select id="provider_id" name="provider_id" class="block w-full py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-[#004d40] focus:border-[#004d40] sm:text-sm">
+        <option value="" disabled selected>Select a healthcare provider</option>
+        
+        {% if assigned_providers %}
+          {% for provider in assigned_providers %}
+            <option value="{{ provider.id }}">Dr. {{ provider.full_name }} ({{ provider.specialty|default:"General" }})</option>
+          {% endfor %}
+        {% else %}
+          <option value="{{ patient.primary_provider.id }}">Dr. {{ patient.primary_provider.full_name }} (Primary Provider)</option>
+        {% endif %}
+        
+        <optgroup label="Other Departments">
+          <option value="pharmacy">Pharmacy</option>
+          <option value="billing">Billing Department</option>
+        </optgroup>
       </select>
     </div>
     
