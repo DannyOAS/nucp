@@ -202,30 +202,47 @@ def reschedule_appointment(request, appointment_id):
 @patient_required
 def cancel_appointment(request, appointment_id):
     """
-    View for patient to cancel an appointment.
-    Uses service layer for validation and cancellation logic.
+    SECURED: Cancel appointment with enhanced verification
     """
-    # Get the current patient
     patient, patient_dict = get_current_patient(request)
-    
-    # If the function returns None, it has already redirected
     if patient is None:
-        return redirect('unauthorized')
+        raise Http404("Access denied")
     
     if request.method == 'POST':
         try:
-            # Cancel appointment via service
-            result = AppointmentService.cancel_appointment(
-                appointment_id=appointment_id,
-                patient_id=patient.id
+            # CRITICAL: Enhanced ownership verification
+            from common.models import Appointment
+            appointment = get_object_or_404(
+                Appointment.objects.select_related('patient'),
+                id=appointment_id,
+                patient=request.user,
+                patient__patient_profile=patient
             )
             
-            if result.get('success', False):
-                messages.success(request, "Appointment cancelled successfully.")
-            else:
-                messages.error(request, result.get('error', "Error cancelling appointment."))
+            # ADDITIONAL SECURITY: Check appointment isn't already cancelled/completed
+            if appointment.status in ['Cancelled', 'Completed']:
+                logger.warning(f"SECURITY: User {request.user.username} attempted to cancel already {appointment.status.lower()} appointment {appointment_id}")
+                messages.error(request, f"Cannot cancel {appointment.status.lower()} appointment.")
+                return redirect('patient:patient_appointments')
+            
+            # BUSINESS RULE: Check cancellation timing (24-hour rule)
+            from django.utils import timezone
+            from datetime import timedelta
+            
+            if appointment.time <= timezone.now() + timedelta(hours=24):
+                logger.warning(f"SECURITY: Late cancellation attempted by user {request.user.username} for appointment {appointment_id}")
+                messages.warning(request, "Appointments should be cancelled at least 24 hours in advance. A late cancellation fee may apply.")
+            
+            # Cancel appointment
+            appointment.status = 'Cancelled'
+            appointment.save()
+            
+            # Log cancellation for audit
+            logger.info(f"AUDIT: User {request.user.username} cancelled appointment {appointment_id}")
+            messages.success(request, "Appointment cancelled successfully.")
+            
         except Exception as e:
-            logger.error(f"Error cancelling appointment: {str(e)}")
-            messages.error(request, f"Error cancelling appointment: {str(e)}")
+            logger.error(f"SECURITY: Appointment cancellation error for user {request.user.username}: {str(e)}")
+            messages.error(request, "Error cancelling appointment.")
     
     return redirect('patient:patient_appointments')

@@ -47,6 +47,45 @@ def patient_required_secure(view_func):
     
     return wrapped_view
 
+# patient/utils.py - ENHANCED SECURITY VERSION
+def get_current_patient_secure(request):
+    """
+    ENHANCED: Get patient with security verification
+    """
+    # Verify security flag from decorator
+    if not getattr(request, 'patient_verified', False):
+        logger.error("SECURITY: get_current_patient called without security verification")
+        return None, None
+    
+    if not hasattr(request, 'patient'):
+        logger.error("SECURITY: No patient attached to request")
+        return None, None
+    
+    patient = request.patient
+    
+    # CRITICAL: Double-verify user ownership
+    if patient.user.id != request.user.id:
+        logger.error(f"SECURITY BREACH: Patient ownership verification failed in get_current_patient")
+        return None, None
+    
+    # Create secure patient dict (with masked sensitive data)
+    patient_dict = {
+        'id': patient.id,
+        'full_name': patient.full_name,
+        'first_name': patient.user.first_name,
+        'last_name': patient.user.last_name,
+        'email_masked': mask_email(patient.user.email),
+        'date_of_birth': patient.date_of_birth,
+        'ohip_masked': mask_ohip(patient.ohip_number),
+        'phone_masked': mask_phone(patient.primary_phone),
+        'address_truncated': truncate_address(patient.address),
+        # Emergency contact info should also be masked
+        'emergency_contact_name': patient.emergency_contact_name,
+        'emergency_contact_phone_masked': mask_phone(patient.emergency_contact_phone)
+    }
+    
+    return patient, patient_dict
+
 def mask_ohip(ohip_number):
     """Mask OHIP number for security"""
     if not ohip_number or len(ohip_number) < 4:
@@ -78,12 +117,3 @@ def truncate_address(address):
         return "Address on file"
     lines = address.split('\n')
     return f"{lines[0]}..." if lines else "Address on file"
-
-# COMPATIBILITY: Keep old decorator but make it use the secure version
-def patient_required(view_func):
-    """
-    COMPATIBILITY: Old decorator that now uses secure implementation
-    This allows existing code to work while gradually migrating to patient_required_secure
-    """
-    logger.warning(f"DEPRECATED: View {view_func.__name__} is using deprecated @patient_required decorator. Update to @patient_required_secure")
-    return patient_required_secure(view_func)

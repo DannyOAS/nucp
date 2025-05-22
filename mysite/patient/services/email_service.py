@@ -7,22 +7,16 @@ from django.core.paginator import Paginator
 import logging
 
 logger = logging.getLogger(__name__)
-
 class EmailService:
-    """Service layer for patient email operations - OPTIMIZED"""
+    """OPTIMIZED: Email service with efficient message loading"""
     
     @staticmethod
     def get_email_dashboard(patient_id):
         """
-        OPTIMIZED: Get email data with efficient queries and minimal database hits
-        
-        Args:
-            patient_id: ID of the patient
-            
-        Returns:
-            dict: Dictionary containing email data
+        OPTIMIZED: Get email data with single queries and aggregation
         """
         try:
+            # OPTIMIZED: Load patient with user relationship
             patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
@@ -32,10 +26,12 @@ class EmailService:
             ).exclude(
                 status='deleted'
             ).select_related(
-                'sender'  # Join sender user data
+                'sender',           # Load sender User data
+                'recipient'         # Load recipient User data
             ).order_by('-created_at')[:5]
             
-            # OPTIMIZED: Single query to get all message counts using aggregation
+            # OPTIMIZED: Single aggregation query for all counts
+            from django.db.models import Count, Q
             message_counts = Message.objects.filter(
                 Q(recipient=user) | Q(sender=user)
             ).aggregate(
@@ -53,6 +49,7 @@ class EmailService:
                 'sent_count': message_counts['sent_count'] or 0,
                 'archived_count': message_counts['archived_count'] or 0
             }
+            
         except Patient.DoesNotExist:
             return {
                 'success': False,
@@ -63,18 +60,7 @@ class EmailService:
                 'sent_count': 0,
                 'archived_count': 0
             }
-        except Exception as e:
-            logger.error(f"Error in get_email_dashboard: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e),
-                'inbox_messages': [],
-                'unread_count': 0,
-                'read_count': 0,
-                'sent_count': 0,
-                'archived_count': 0
-            }
-    
+
     @staticmethod
     def get_inbox_messages(patient_id, page=1, page_size=10):
         """

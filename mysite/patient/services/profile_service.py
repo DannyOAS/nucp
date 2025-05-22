@@ -1,6 +1,7 @@
 # patient/services/profile_service.py
 from patient.models import Patient
-from patient.forms import PatientProfileEditForm
+#from patient.forms import PatientProfileEditForm
+from patient.forms import SecurePatientProfileEditForm as PatientProfileEditForm
 
 class ProfileService:
     """Service layer for patient profile operations"""

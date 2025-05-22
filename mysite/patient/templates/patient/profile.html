@@ -30,31 +30,34 @@
             <div class="text-gray-800">{{ patient.date_of_birth|date:"F j, Y" }}</div>
           </div>
           
-          <div>
-            <label class="block text-sm font-medium text-gray-500">OHIP Number</label>
-            <div class="text-gray-800">{{ patient.ohip_number }}</div>
-          </div>
-        </div>
+<div>
+  <label class="block text-sm font-medium text-gray-500">OHIP Number</label>
+  <div class="text-gray-800">{{ patient.ohip_number|mask_ohip }}</div>
+  <button onclick="showFullOHIP()" class="text-xs text-blue-600 hover:underline">Show Full</button>
+</div>
       </div>
       
       <div>
         <h3 class="text-lg font-semibold text-[#004d40] mb-4">Contact Information</h3>
         
         <div class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-500">Email</label>
-            <div class="text-gray-800">{{ patient.user.email }}</div>
-          </div>
+      <div>
+  <label class="block text-sm font-medium text-gray-500">Email</label>
+  <div class="text-gray-800">{{ patient.user.email|mask_email }}</div>
+  <button onclick="showFullEmail()" class="text-xs text-blue-600 hover:underline">Show Full</button>
+</div>
+
+      <div>
+  <label class="block text-sm font-medium text-gray-500">Primary Phone</label>
+  <div class="text-gray-800">{{ patient.primary_phone|mask_phone }}</div>
+  <button onclick="showFullPhone()" class="text-xs text-blue-600 hover:underline">Show Full</button>
+</div>
           
-          <div>
-            <label class="block text-sm font-medium text-gray-500">Primary Phone</label>
-            <div class="text-gray-800">{{ patient.primary_phone }}</div>
-          </div>
-          
-          <div>
-            <label class="block text-sm font-medium text-gray-500">Address</label>
-            <div class="text-gray-800">{{ patient.address|default:"Not provided" }}</div>
-          </div>
+<div>
+  <label class="block text-sm font-medium text-gray-500">Address</label>
+  <div class="text-gray-800">{{ patient.address|truncate_address }}</div>
+  <button onclick="showFullAddress()" class="text-xs text-blue-600 hover:underline">Show Full</button>
+</div>
         </div>
       </div>
     </div>
@@ -187,5 +190,43 @@
       });
     }
   });
+
+function showFullOHIP() {
+  if (confirm('Are you sure you want to view your full OHIP number? Make sure no one else can see your screen.')) {
+    // AJAX call to get full OHIP number
+    fetch('{% url "patient:get_full_ohip" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('OHIP: ' + data.ohip_number);
+      }
+    });
+  }
+}
+
+function showFullPhone() {
+  if (confirm('Show full phone number?')) {
+    // Similar AJAX call for phone
+    fetch('{% url "patient:get_full_phone" %}', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': '{{ csrf_token }}',
+        'Content-Type': 'application/json',
+      },
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.success) {
+        alert('Phone: ' + data.phone_number);
+      }
+    });
+  }
+}
 </script>
 {% endblock %}

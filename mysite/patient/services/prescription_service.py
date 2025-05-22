@@ -1,148 +1,93 @@
 # patient/services/prescription_service.py
 from common.models import Prescription
 from patient.models import Patient, PrescriptionRequest
-from patient.forms import PrescriptionRequestForm
+#from patient.forms import PrescriptionRequestForm
+from patient.forms import SecurePrescriptionRequestForm as PrescriptionRequestForm
 from django.utils import timezone
 import logging
 
 logger = logging.getLogger(__name__)
 
 class PrescriptionService:
-    """Service layer for patient prescription operations"""
+    """OPTIMIZED: Service with efficient database queries"""
 
     @staticmethod
     def get_patient_prescriptions(patient_id):
         """
-        OPTIMIZED: Get prescriptions with efficient single queries
+        OPTIMIZED: Get prescriptions with minimal database hits using select_related()
         """
         try:
+            # OPTIMIZED: Load patient with user relationship in single query
             patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
-            try:
-                # OPTIMIZED: Single query with join to provider for active prescriptions
-                active_prescriptions = Prescription.objects.filter(
-                    patient=user,
-                    status='Active'
-                ).select_related(
-                    'doctor',
-                    'doctor__user'
-                ).order_by('-created_at')
-                
-                # OPTIMIZED: Single query with join to provider for historical prescriptions  
-                historical_prescriptions = Prescription.objects.filter(
-                    patient=user
-                ).exclude(
-                    status='Active'
-                ).select_related(
-                    'doctor',
-                    'doctor__user'
-                ).order_by('-created_at')[:20]  # Limit for performance
-                
-                # Convert to consistent format with optimized data access
-                active_list = []
-                for prescription in active_prescriptions:
-                    active_list.append({
-                        'id': prescription.id,
-                        'medication_name': prescription.medication_name,
-                        'dosage': prescription.dosage,
-                        'status': prescription.status,
-                        'refills_remaining': prescription.refills_remaining,
-                        'created_at': prescription.created_at,
-                        'prescribed_by': f"Dr. {prescription.doctor.user.last_name}" if prescription.doctor else 'Your Healthcare Provider',
-                        'prescribed_date': prescription.created_at.date(),
-                        'expires': prescription.expires or 'Not specified',
-                        'pharmacy': 'Northern Pharmacy',  # Could be a field later
-                        'instructions': prescription.instructions or 'Take as directed',
-                        'side_effects': 'Consult your healthcare provider',
-                        'warnings': 'Follow prescription instructions carefully'
-                    })
-                
-                historical_list = []
-                for prescription in historical_prescriptions:
-                    historical_list.append({
-                        'id': prescription.id,
-                        'medication_name': prescription.medication_name,
-                        'dosage': prescription.dosage,
-                        'status': prescription.status,
-                        'refills_remaining': prescription.refills_remaining,
-                        'created_at': prescription.created_at,
-                        'prescribed_by': f"Dr. {prescription.doctor.user.last_name}" if prescription.doctor else 'Your Healthcare Provider',
-                        'prescribed_date': prescription.created_at.date(),
-                        'expires': prescription.expires or 'Not specified',
-                        'pharmacy': 'Northern Pharmacy',
-                        'instructions': prescription.instructions or 'Take as directed',
-                        'side_effects': 'Consult your healthcare provider',
-                        'warnings': 'Follow prescription instructions carefully'
-                    })
-                
-                return {
-                    'success': True,
-                    'active_prescriptions': active_list,
-                    'historical_prescriptions': historical_list
-                }
-                
-            except Exception as prescription_error:
-                # Fallback to PrescriptionRequest - OPTIMIZED
-                logger.warning(f"Prescription model error: {prescription_error}, falling back to PrescriptionRequest")
-                
-                # OPTIMIZED: Use select_related for patient relationship
-                active_requests = PrescriptionRequest.objects.filter(
-                    patient=patient,
-                    status='approved'
-                ).select_related('patient__user').order_by('-created_at')
-                
-                historical_requests = PrescriptionRequest.objects.filter(
-                    patient=patient
-                ).exclude(
-                    status='approved'
-                ).select_related('patient__user').order_by('-created_at')[:20]
-                
-                # Convert with optimized access
-                active_prescriptions = [
-                    {
-                        'id': req.id,
-                        'medication_name': req.medication_name,
-                        'dosage': req.current_dosage,
-                        'status': 'Active',
-                        'refills_remaining': 3,
-                        'created_at': req.created_at,
-                        'prescribed_by': 'Your Healthcare Provider',
-                        'prescribed_date': req.created_at.date(),
-                        'expires': 'Not specified',
-                        'pharmacy': req.preferred_pharmacy,
-                        'instructions': 'Take as directed',
-                        'side_effects': req.side_effects or 'Consult your healthcare provider',
-                        'warnings': 'Follow prescription instructions carefully'
-                    }
-                    for req in active_requests
-                ]
-                
-                historical_prescriptions = [
-                    {
-                        'id': req.id,
-                        'medication_name': req.medication_name,
-                        'dosage': req.current_dosage,
-                        'status': req.status.title(),
-                        'refills_remaining': 0,
-                        'created_at': req.created_at,
-                        'prescribed_by': 'Your Healthcare Provider',
-                        'prescribed_date': req.created_at.date(),
-                        'expires': 'Not specified',
-                        'pharmacy': req.preferred_pharmacy,
-                        'instructions': 'Take as directed',
-                        'side_effects': req.side_effects or 'Consult your healthcare provider',
-                        'warnings': 'Follow prescription instructions carefully'
-                    }
-                    for req in historical_requests
-                ]
-                
-                return {
-                    'success': True,
-                    'active_prescriptions': active_prescriptions,
-                    'historical_prescriptions': historical_prescriptions
-                }
-                
+            # OPTIMIZED: Load prescriptions with all related data in single queries
+            active_prescriptions = Prescription.objects.filter(
+                patient=user,
+                status='Active'
+            ).select_related(
+                'doctor',                    # Join Provider table
+                'doctor__user',              # Join Provider's User table
+                'patient'                    # Join Patient's User table
+            ).prefetch_related(
+                'prescription_requests'       # Prefetch related requests if needed
+            ).order_by('-created_at')
+            
+            historical_prescriptions = Prescription.objects.filter(
+                patient=user
+            ).exclude(
+                status='Active'
+            ).select_related(
+                'doctor',
+                'doctor__user',
+                'patient'
+            ).order_by('-created_at')[:20]  # Limit for performance
+            
+            # OPTIMIZED: Convert to dict format with pre-loaded data (no additional queries)
+            active_list = []
+            for prescription in active_prescriptions:
+                active_list.append({
+                    'id': prescription.id,
+                    'medication_name': prescription.medication_name,
+                    'dosage': prescription.dosage,
+                    'status': prescription.status,
+                    'refills_remaining': prescription.refills_remaining,
+                    'created_at': prescription.created_at,
+                    # Using pre-loaded doctor relationship (no additional query)
+                    'prescribed_by': f"Dr. {prescription.doctor.user.last_name}" if prescription.doctor else 'Your Healthcare Provider',
+                    'prescribed_date': prescription.created_at.date(),
+                    'expires': prescription.expires or 'Not specified',
+                    'pharmacy': 'Northern Pharmacy',
+                    'instructions': prescription.instructions or 'Take as directed',
+                    'side_effects': 'Consult your healthcare provider',
+                    'warnings': 'Follow prescription instructions carefully'
+                })
+            
+            # Same optimization for historical prescriptions
+            historical_list = []
+            for prescription in historical_prescriptions:
+                historical_list.append({
+                    'id': prescription.id,
+                    'medication_name': prescription.medication_name,
+                    'dosage': prescription.dosage,
+                    'status': prescription.status,
+                    'refills_remaining': prescription.refills_remaining,
+                    'created_at': prescription.created_at,
+                    'prescribed_by': f"Dr. {prescription.doctor.user.last_name}" if prescription.doctor else 'Your Healthcare Provider',
+                    'prescribed_date': prescription.created_at.date(),
+                    'expires': prescription.expires or 'Not specified',
+                    'pharmacy': 'Northern Pharmacy',
+                    'instructions': prescription.instructions or 'Take as directed',
+                    'side_effects': 'Consult your healthcare provider',
+                    'warnings': 'Follow prescription instructions carefully'
+                })
+            
+            return {
+                'success': True,
+                'active_prescriptions': active_list,
+                'historical_prescriptions': historical_list
+            }
+            
         except Patient.DoesNotExist:
             return {
                 'success': False,
@@ -150,7 +95,6 @@ class PrescriptionService:
                 'active_prescriptions': [],
                 'historical_prescriptions': []
             }
-
 
     @staticmethod
     def get_prescription_details(prescription_id, patient_id):

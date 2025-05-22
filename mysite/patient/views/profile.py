@@ -6,7 +6,7 @@ import logging
 
 from patient.services.profile_service import ProfileService
 from patient.utils import get_current_patient
-from patient.forms import PatientProfileEditForm
+from patient.forms import SecurePatientProfileEditForm as PatientProfileEditForm
 
 logger = logging.getLogger(__name__)
 

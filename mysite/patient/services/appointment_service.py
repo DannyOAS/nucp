@@ -7,44 +7,40 @@ from datetime import datetime, timedelta
 import logging
 
 logger = logging.getLogger(__name__)
-
 class AppointmentService:
-    """Service layer for patient appointment operations - OPTIMIZED"""
+    """OPTIMIZED: Service with efficient appointment queries"""
     
     @staticmethod
     def get_patient_appointments(patient_id):
         """
-        OPTIMIZED: Get upcoming and past appointments with efficient joins
-        
-        Args:
-            patient_id: ID of the patient
-            
-        Returns:
-            dict: Dictionary containing appointment data
+        OPTIMIZED: Get appointments with all related data in minimal queries
         """
         try:
+            # OPTIMIZED: Load patient with user in single query
             patient = Patient.objects.select_related('user').get(id=patient_id)
             user = patient.user
             
-            # Current date for filtering
+            from django.utils import timezone
             today = timezone.now()
             
-            # OPTIMIZED: Single query with proper joins for upcoming appointments
+            # OPTIMIZED: Load upcoming appointments with all related data
             upcoming_appointments = Appointment.objects.filter(
                 patient=user,
                 time__gte=today
             ).select_related(
-                'doctor',           # Join Provider table
-                'doctor__user'      # Join User table for provider info
+                'doctor',                # Join Provider
+                'doctor__user',          # Join Provider's User
+                'patient'                # Join Patient's User (already have, but explicit)
             ).order_by('time')
             
-            # OPTIMIZED: Single query with proper joins for past appointments  
+            # OPTIMIZED: Load past appointments with related data
             past_appointments = Appointment.objects.filter(
                 patient=user,
                 time__lt=today
             ).select_related(
                 'doctor',
-                'doctor__user'
+                'doctor__user',
+                'patient'
             ).order_by('-time')[:10]  # Limit early for performance
             
             return {
@@ -53,6 +49,7 @@ class AppointmentService:
                 'past_appointments': past_appointments,
                 'today': today
             }
+            
         except Patient.DoesNotExist:
             return {
                 'success': False,
@@ -61,45 +58,39 @@ class AppointmentService:
                 'past_appointments': [],
                 'today': timezone.now()
             }
-        except Exception as e:
-            logger.error(f"Error in get_patient_appointments: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e),
-                'upcoming_appointments': [],
-                'past_appointments': [],
-                'today': timezone.now()
-            }
-    
+
     @staticmethod
     def get_patient_healthcare_providers(patient_id):
         """
         OPTIMIZED: Get healthcare providers with single efficient query
-        
-        Args:
-            patient_id: ID of the patient
-            
-        Returns:
-            dict: Dictionary containing provider data
         """
         try:
-            patient = Patient.objects.select_related('user', 'primary_provider__user').get(id=patient_id)
+            # OPTIMIZED: Load patient with primary provider in single query
+            patient = Patient.objects.select_related(
+                'user',
+                'primary_provider',
+                'primary_provider__user'
+            ).get(id=patient_id)
+            
             user = patient.user
             
-            # OPTIMIZED: Single query to get all providers from appointments
+            # OPTIMIZED: Single query to get all providers from appointments with user data
             provider_data = Appointment.objects.filter(
                 patient=user
+            ).select_related(
+                'doctor',
+                'doctor__user'
             ).values(
                 'doctor__id',
                 'doctor__user__first_name',
                 'doctor__user__last_name', 
                 'doctor__specialty'
-            ).distinct().order_by('doctor__user__last_name')
+            ).distinct()
             
             providers = []
             seen_ids = set()
             
-            # Process appointment providers
+            # Process appointment providers (no additional queries needed)
             for data in provider_data:
                 if data['doctor__id'] and data['doctor__id'] not in seen_ids:
                     providers.append({
@@ -123,20 +114,14 @@ class AppointmentService:
                 'success': True,
                 'healthcare_providers': providers
             }
+            
         except Patient.DoesNotExist:
             return {
                 'success': False,
                 'error': 'Patient not found',
                 'healthcare_providers': []
             }
-        except Exception as e:
-            logger.error(f"Error in get_patient_healthcare_providers: {str(e)}")
-            return {
-                'success': False,
-                'error': str(e),
-                'healthcare_providers': []
-            }
-    
+
     @staticmethod
     def get_scheduling_form_data(patient_id):
         """
